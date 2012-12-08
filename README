@@ -1,0 +1,2 @@
+json_tools is a set of source files meant to be embedded in applications that
+need to tokenize, parse and validate json.
