@@ -57,17 +57,22 @@ class JsonTokenizer
 public:
 
     enum Error {
-        NoError,
-        InvalidToken,
-        NeedMoreData,
-        ExpectedPropertyName,
-        IlligalPropertyName,
+        NoError = 0,
+        InvalidToken = -1,
+        NeedMoreData = -2,
+        ExpectedPropertyName = -3,
+        IlligalPropertyName = -4,
+        IlligalDataValue = -5,
+        ExpectedDataToken = -6,
+        EncounteredIlligalChar = -7
     };
 
     JsonTokenizer(ReleaseDataCallback release_data_callback = 0);
     ~JsonTokenizer();
 
     void addData(const char *data, size_t size, void *user_handle);
+    void allowAsciiType(bool allow);
+    void allowNewLineAsTokenDelimiter(bool allow);
 
     JsonTokenizer::Error nextToken(JsonToken *next_token);
 

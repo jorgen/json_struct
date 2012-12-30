@@ -23,5 +23,7 @@ stamp-h1
 src/json_tools-version.h
 *.la
 tests/json-tokenizer-test
-
+*.swp
+*.swo
+tests/json-tokenizer-fail-test
 

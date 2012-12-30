@@ -1,10 +1,13 @@
 TESTS =						\
-	json-tokenizer-test
+	json-tokenizer-test			\
+	json-tokenizer-fail-test
 
 check_PROGRAMS =				\
 	$(TESTS)
 
 json_tokenizer_test_SOURCES = json-tokenizer-test.cpp
+
+json_tokenizer_fail_test_SOURCES = json-tokenizer-fail-test.cpp
 
 AM_CPPFLAGS = -I$(top_builddir)/src -I$(top_srcdir)/src
 LDADD = $(top_builddir)/src/libjson_tokenizer.la
