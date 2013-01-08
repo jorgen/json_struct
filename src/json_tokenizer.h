@@ -57,14 +57,15 @@ class JsonTokenizer
 public:
 
     enum Error {
-        NoError = 0,
-        InvalidToken = -1,
-        NeedMoreData = -2,
-        ExpectedPropertyName = -3,
-        IlligalPropertyName = -4,
-        IlligalDataValue = -5,
-        ExpectedDataToken = -6,
-        EncounteredIlligalChar = -7
+        NoError,
+        InvalidToken,
+        NeedMoreData,
+        ExpectedPropertyName,
+        ExpectedDelimiter,
+        ExpectedDataToken,
+        IlligalPropertyName,
+        IlligalDataValue,
+        EncounteredIlligalChar
     };
 
     JsonTokenizer(ReleaseDataCallback release_data_callback = 0);
