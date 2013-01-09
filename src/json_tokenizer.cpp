@@ -39,7 +39,6 @@ public:
         , m_false("false")
     { }
     JsonToken::Type type(const char *data, int length) {
-        //trusting std::string to just return false of different sizes
         if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
             return JsonToken::Null;
         if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
@@ -113,6 +112,7 @@ struct JsonTokenizerPrivate
 
     JsonTokenizerPrivate(ReleaseDataCallback release_data_callback)
         : cursor_index(0)
+        , current_data_start(0)
         , token_state(FindingName)
         , property_state(NoStartFound)
         , property_type(JsonToken::Error)
@@ -139,6 +139,7 @@ struct JsonTokenizerPrivate
     {
         property_state = NoStartFound;
         property_type = JsonToken::Error;
+        current_data_start = 0;
     }
 
     JsonTokenizer::Error findStringEnd(const JsonData &json_data, size_t *chars_ahead)
@@ -177,7 +178,6 @@ struct JsonTokenizerPrivate
                 return JsonTokenizer::NeedMoreData;
             } else {
                 *chars_ahead = end - cursor_index - 1;
-                std::string ascii(json_data.data + cursor_index, end + 1 - cursor_index);
                 return JsonTokenizer::NoError;
             }
         }
@@ -220,23 +220,23 @@ struct JsonTokenizerPrivate
                     break;
                 case '"':
                     *type = JsonToken::String;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '{':
                     *type = JsonToken::ObjectStart;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '}':
                     *type = JsonToken::ObjectEnd;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '[':
                     *type = JsonToken::ArrayStart;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case ']':
                     *type = JsonToken::ArrayEnd;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '-':
                 case '+':
@@ -251,7 +251,7 @@ struct JsonTokenizerPrivate
                 case '8':
                 case '9':
                     *type = JsonToken::Number;
-                    *chars_ahead = current_pos - cursor_index;;
+                    *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 default:
                     char ascii_code = *(json_data.data + current_pos);
@@ -334,6 +334,7 @@ struct JsonTokenizerPrivate
         }
         data_list.pop_front();
         cursor_index = 0;
+        current_data_start = 0;
     }
 
     JsonTokenizer::Error populateFromData(const char **data, int *length, JsonToken::Type *type, const JsonData &json_data)
@@ -350,6 +351,7 @@ struct JsonTokenizerPrivate
             }
 
             *data = json_data.data + cursor_index + diff;
+            current_data_start = cursor_index + diff;
             cursor_index += diff + 1;
             property_type = *type;
 
@@ -383,8 +385,7 @@ struct JsonTokenizerPrivate
             }
 
             cursor_index += diff + 1;
-            // + 2 because diff is last index - second index
-            *length = diff + 2;
+            *length = cursor_index - current_data_start;
             property_state = FoundEnd;
         }
 
@@ -405,8 +406,8 @@ struct JsonTokenizerPrivate
                     if (error == JsonTokenizer::NeedMoreData) {
                         if (property_state > NoStartFound) {
                             intermediate_token.intermedia_set = true;
-                            size_t to_null = strnlen(data , json_data.size - cursor_index);
-                            intermediate_token.name.append(json_data.data + cursor_index , to_null);
+                            size_t to_null = strnlen(data , json_data.size - current_data_start);
+                            intermediate_token.name.append(data , to_null);
                             if (!intermediate_token.name_type_set) {
                                 intermediate_token.name_type = type;
                                 intermediate_token.name_type_set = true;
@@ -505,8 +506,8 @@ struct JsonTokenizerPrivate
                             intermediate_token.intermedia_set = true;
                         }
                         if (property_state > NoStartFound) {
-                            size_t data_length = strnlen(json_data.data + cursor_index, json_data.size - cursor_index);
-                            intermediate_token.data.append(json_data.data + cursor_index, data_length);
+                            size_t data_length = strnlen(data , json_data.size - current_data_start);
+                            intermediate_token.data.append(data, data_length);
                             if (!intermediate_token.data_type_set) {
                                 intermediate_token.data_type = type;
                                 intermediate_token.data_type_set = true;
@@ -527,7 +528,6 @@ struct JsonTokenizerPrivate
                     }
 
                     if (type == JsonToken::String) {
-                        std::string test(data +1, data_length -2);
                         next_token->data = data + 1;
                         next_token->data_length = data_length - 2;
                     } else {
@@ -568,6 +568,7 @@ struct JsonTokenizerPrivate
 
     std::list<JsonData> data_list;
     size_t cursor_index;
+    size_t current_data_start;
     InTokenState token_state;
     InPropertyState property_state;
     JsonToken::Type property_type;
