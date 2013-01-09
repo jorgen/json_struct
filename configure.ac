@@ -19,15 +19,16 @@ AC_SUBST([JSON_TOOLS_VERSION], [json_tools_version])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+m4_include([m4/ax_cxx_compile_stdcxx_11.m4])
 
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
 AM_SILENT_RULES([yes])
 
-AC_LANG(C)
-AC_PROG_CC
-AC_LANG(C++)
+AC_LANG([C++])
 AC_PROG_CXX
+
+AX_CXX_COMPILE_STDCXX_11([ext])
 
 # Initialize libtool
 LT_PREREQ([2.2])
