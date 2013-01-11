@@ -154,7 +154,7 @@ struct JsonTokenizerPrivate
                     is_escaped = true;
                     break;
                 case '"':
-                    *chars_ahead = end - cursor_index;
+                    *chars_ahead = end + 1 - cursor_index;
                     return JsonTokenizer::NoError;
 
                 default:
@@ -177,7 +177,7 @@ struct JsonTokenizerPrivate
                 *chars_ahead = end - cursor_index;
                 return JsonTokenizer::NeedMoreData;
             } else {
-                *chars_ahead = end - cursor_index - 1;
+                *chars_ahead = end - cursor_index;
                 return JsonTokenizer::NoError;
             }
         }
@@ -198,7 +198,7 @@ struct JsonTokenizerPrivate
                 case 'E':
                     continue;
                 default:
-                    *chars_ahead = end - cursor_index -1;
+                    *chars_ahead = end - cursor_index;
                     return JsonTokenizer::NoError;
             }
         }
@@ -277,15 +277,15 @@ struct JsonTokenizerPrivate
             switch(*(json_data.data + end)) {
                 case ':':
                     token_state = FindingData;
-                    *chars_ahead = end - cursor_index;
+                    *chars_ahead = end + 1 - cursor_index;
                     return JsonTokenizer::NoError;
                 case ',':
                     token_state = FindingName;
-                    *chars_ahead = end - cursor_index;
+                    *chars_ahead = end + 1 - cursor_index;
                     return JsonTokenizer::NoError;
                 case ']':
                     token_state = FindingName;
-                    *chars_ahead = end - cursor_index - 1;
+                    *chars_ahead = end - cursor_index;
                     return JsonTokenizer::NoError;
                 case ' ':
                     break;
@@ -303,23 +303,23 @@ struct JsonTokenizerPrivate
             switch(*(json_data.data + end)) {
                 case ',':
                     expecting_prop_or_annonymous_data = true;
-                    *chars_ahead = end - cursor_index;
+                    *chars_ahead = end + 1 - cursor_index;
                     return JsonTokenizer::NoError;
                 case '\n':
                     if (allow_new_lines) {
-                        *chars_ahead = end - cursor_index;
+                        *chars_ahead = end + 1 - cursor_index;
                         return JsonTokenizer::NoError;
                     }
                     break;
                 case ']':
                 case '}':
-                    *chars_ahead = end - cursor_index - 1;
+                    *chars_ahead = end - cursor_index;
                     return JsonTokenizer::NoError;
                 case ' ':
                 case '\0':
                     break;
                 default:
-                    *chars_ahead = end - cursor_index;
+                    *chars_ahead = end + 1 - cursor_index;
                     return JsonTokenizer::InvalidToken;
             }
         }
@@ -384,7 +384,7 @@ struct JsonTokenizerPrivate
                 return error;
             }
 
-            cursor_index += diff + 1;
+            cursor_index += diff;
             *length = cursor_index - current_data_start;
             property_state = FoundEnd;
         }
@@ -476,7 +476,7 @@ struct JsonTokenizerPrivate
                         }
                         return JsonTokenizer::NeedMoreData;
                     }
-                    cursor_index += diff +1;
+                    cursor_index += diff;
                     resetForNewValue();
                     expecting_prop_or_annonymous_data = false;
                     if (token_state == FindingName) {
@@ -559,8 +559,9 @@ struct JsonTokenizerPrivate
                     if (error != JsonTokenizer::NoError) {
                         return error;
                     }
-                    cursor_index += diff + 1;
+                    cursor_index += diff;
                     token_state = FindingName;
+                    break;
             }
         }
         return JsonTokenizer::NeedMoreData;
