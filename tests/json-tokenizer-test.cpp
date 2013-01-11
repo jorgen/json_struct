@@ -118,7 +118,6 @@ static int check_json_with_string_and_ascii()
     assert(token.data_type == JsonType::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    fprintf(stderr, "Error %d\n", error);
     assert(error == JsonTokenizer::NoError);
     assert((assert_token(token, JsonType::Ascii, "AnotherProp", JsonType::String, "prop") == 0));
 
@@ -152,7 +151,6 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JsonTokenizer::NoError);
-    fprintf(stderr, "data type %d\n", token.data_type);
     assert(token.data_type == JsonType::ArrayEnd);
 
     error = tokenizer.nextToken(&token);

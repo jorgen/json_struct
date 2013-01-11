@@ -1,5 +1,5 @@
 JsonTools has a C++11 configure check. On OS X use 
 
-CXX=clang ./autogen.sh
+CXX=clang++ ./autogen.sh
 
 Infact on OS X it should be exported so that it is allways used from cli.
