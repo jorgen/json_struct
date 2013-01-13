@@ -38,14 +38,14 @@ public:
         , m_true("true")
         , m_false("false")
     { }
-    JsonType::Type type(const char *data, int length) {
+    JsonToken::Type type(const char *data, int length) {
         if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
-            return JsonType::Null;
+            return JsonToken::Null;
         if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
-            return JsonType::Bool;
+            return JsonToken::Bool;
         if (m_false.compare(0,m_false.size(), data, 0, length) == 0)
-            return JsonType::Bool;
-        return JsonType::Ascii;
+            return JsonToken::Bool;
+        return JsonToken::Ascii;
     }
 private:
     std::string m_null;
@@ -72,16 +72,16 @@ struct JsonIntermediateToken
         : intermedia_set(false)
         , name_type_set(false)
         , data_type_set(false)
-        , name_type(JsonType::Error)
-        , data_type(JsonType::Error)
+        , name_type(JsonToken::Error)
+        , data_type(JsonToken::Error)
     { }
 
     void clear() {
         intermedia_set = false;
         name_type_set = false;
         data_type_set = false;
-        name_type = JsonType::Error;
-        data_type = JsonType::Error;
+        name_type = JsonToken::Error;
+        data_type = JsonToken::Error;
         name.clear();
         data.clear();
     }
@@ -89,8 +89,8 @@ struct JsonIntermediateToken
     bool intermedia_set;
     bool name_type_set;
     bool data_type_set;
-    JsonType::Type name_type;
-    JsonType::Type data_type;
+    JsonToken::Type name_type;
+    JsonToken::Type data_type;
     std::string name;
     std::string data;
 };
@@ -115,7 +115,7 @@ struct JsonTokenizerPrivate
         , current_data_start(0)
         , token_state(FindingName)
         , property_state(NoStartFound)
-        , property_type(JsonType::Error)
+        , property_type(JsonToken::Error)
         , is_escaped(false)
         , allow_ascii_properties(false)
         , allow_new_lines(false)
@@ -138,7 +138,7 @@ struct JsonTokenizerPrivate
     void resetForNewValue()
     {
         property_state = NoStartFound;
-        property_type = JsonType::Error;
+        property_type = JsonToken::Error;
         current_data_start = 0;
     }
 
@@ -166,7 +166,7 @@ struct JsonTokenizerPrivate
 
     JsonTokenizer::Error findAsciiEnd(const JsonData &json_data, size_t *chars_ahead)
     {
-        assert(property_type == JsonType::Ascii);
+        assert(property_type == JsonToken::Ascii);
         for (size_t end = cursor_index; end < json_data.size; end++) {
             char ascii_code = *(json_data.data + end);
             if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
@@ -205,7 +205,7 @@ struct JsonTokenizerPrivate
         return JsonTokenizer::NeedMoreData;
     }
 
-    JsonTokenizer::Error findStartOfNextValue(JsonType::Type *type,
+    JsonTokenizer::Error findStartOfNextValue(JsonToken::Type *type,
             const JsonData &json_data,
             size_t *chars_ahead)
     {
@@ -219,23 +219,23 @@ struct JsonTokenizerPrivate
                 case '\0':
                     break;
                 case '"':
-                    *type = JsonType::String;
+                    *type = JsonToken::String;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '{':
-                    *type = JsonType::ObjectStart;
+                    *type = JsonToken::ObjectStart;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '}':
-                    *type = JsonType::ObjectEnd;
+                    *type = JsonToken::ObjectEnd;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '[':
-                    *type = JsonType::ArrayStart;
+                    *type = JsonToken::ArrayStart;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case ']':
-                    *type = JsonType::ArrayEnd;
+                    *type = JsonToken::ArrayEnd;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 case '-':
@@ -250,14 +250,14 @@ struct JsonTokenizerPrivate
                 case '7':
                 case '8':
                 case '9':
-                    *type = JsonType::Number;
+                    *type = JsonToken::Number;
                     *chars_ahead = current_pos - cursor_index;
                     return JsonTokenizer::NoError;
                 default:
                     char ascii_code = *(json_data.data + current_pos);
                     if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
                             (ascii_code >= '^' && ascii_code <= 'z')) {
-                        *type = JsonType::Ascii;
+                        *type = JsonToken::Ascii;
                         *chars_ahead = current_pos - cursor_index;;
                         return JsonTokenizer::NoError;
                     } else {
@@ -337,7 +337,7 @@ struct JsonTokenizerPrivate
         current_data_start = 0;
     }
 
-    JsonTokenizer::Error populateFromData(const char **data, int *length, JsonType::Type *type, const JsonData &json_data)
+    JsonTokenizer::Error populateFromData(const char **data, int *length, JsonToken::Type *type, const JsonData &json_data)
     {
         size_t diff = 0;
         JsonTokenizer::Error error = JsonTokenizer::NoError;
@@ -346,7 +346,7 @@ struct JsonTokenizerPrivate
         if (property_state == NoStartFound) {
             JsonTokenizer::Error error = findStartOfNextValue(type, json_data, &diff);
             if (error != JsonTokenizer::NoError) {
-                *type = JsonType::Error;
+                *type = JsonToken::Error;
                 return error;
             }
 
@@ -356,8 +356,8 @@ struct JsonTokenizerPrivate
             property_type = *type;
 
 
-            if (*type == JsonType::ObjectStart || *type == JsonType::ObjectEnd
-                    || *type == JsonType::ArrayStart || *type == JsonType::ArrayEnd) {
+            if (*type == JsonToken::ObjectStart || *type == JsonToken::ObjectEnd
+                    || *type == JsonToken::ArrayStart || *type == JsonToken::ArrayEnd) {
                 *length = 1;
                 property_state = FoundEnd;
             } else {
@@ -367,13 +367,13 @@ struct JsonTokenizerPrivate
 
         if (property_state == FindingEnd) {
             switch (*type) {
-            case JsonType::String:
+            case JsonToken::String:
                 error = findStringEnd(json_data, &diff);
                 break;
-            case JsonType::Ascii:
+            case JsonToken::Ascii:
                 error = findAsciiEnd(json_data, &diff);
                 break;
-            case JsonType::Number:
+            case JsonToken::Number:
                 error = findNumberEnd(json_data, &diff);
                 break;
             default:
@@ -398,7 +398,7 @@ struct JsonTokenizerPrivate
             size_t diff = 0;
             const char *data;
             int data_length;
-            JsonType::Type type;
+            JsonToken::Type type;
             JsonTokenizer::Error error;
             switch (token_state) {
                 case FindingName:
@@ -424,27 +424,27 @@ struct JsonTokenizerPrivate
                     }
 
                     switch (type) {
-                        case JsonType::ObjectEnd:
-                        case JsonType::ArrayEnd:
+                        case JsonToken::ObjectEnd:
+                        case JsonToken::ArrayEnd:
                             if (expecting_prop_or_annonymous_data) {
                                 return JsonTokenizer::ExpectedDataToken;
                             }
-                        case JsonType::ObjectStart:
-                        case JsonType::ArrayStart:
+                        case JsonToken::ObjectStart:
+                        case JsonToken::ArrayStart:
                             next_token->name = "";
                             next_token->name_length = 0;
-                            next_token->name_type = JsonType::String;
+                            next_token->name_type = JsonToken::String;
                             next_token->data = data;
                             next_token->data_length = data_length;
                             next_token->data_type = type;
                             expecting_prop_or_annonymous_data = false;
-                            if (type == JsonType::ObjectStart || type == JsonType::ArrayStart)
+                            if (type == JsonToken::ObjectStart || type == JsonToken::ArrayStart)
                                 token_state = FindingName;
                             else
                                 token_state = FindingTokenEnd;
                             return JsonTokenizer::NoError;
 
-                        case JsonType::String:
+                        case JsonToken::String:
                             next_token->name = data + 1;
                             next_token->name_length = data_length - 2;
                             break;
@@ -457,7 +457,7 @@ struct JsonTokenizerPrivate
                     if (error != JsonTokenizer::NoError)
                         return error;
 
-                    if (type == JsonType::Ascii) {
+                    if (type == JsonToken::Ascii) {
                         next_token->name_type = ascii_state.type(next_token->name, next_token->name_length);
                     } else {
                         next_token->name_type = type;
@@ -486,11 +486,11 @@ struct JsonTokenizerPrivate
                         next_token->data_length = next_token->name_length;
                         next_token->name_length = 0;
                         next_token->data_type = next_token->name_type;
-                        next_token->name_type = JsonType::String;
+                        next_token->name_type = JsonToken::String;
                         return JsonTokenizer::NoError;
                     } else {
-                        if (next_token->name_type != JsonType::String) {
-                            if (!allow_ascii_properties || next_token->name_type != JsonType::Ascii) {
+                        if (next_token->name_type != JsonToken::String) {
+                            if (!allow_ascii_properties || next_token->name_type != JsonToken::Ascii) {
                                 return JsonTokenizer::IlligalPropertyName;
                             }
                         }
@@ -527,29 +527,29 @@ struct JsonTokenizerPrivate
                         type = intermediate_token.data_type;
                     }
 
-                    if (type == JsonType::String) {
+                    if (type == JsonToken::String) {
                         next_token->data = data + 1;
                         next_token->data_length = data_length - 2;
                     } else {
                         next_token->data = data;
                         next_token->data_length = data_length;
                     }
-                    if (type == JsonType::Ascii) {
+                    if (type == JsonToken::Ascii) {
                         next_token->data_type = ascii_state.type(next_token->data, next_token->data_length);
                     } else {
                         next_token->data_type = type;
                     }
-                    if (type == JsonType::Ascii && !allow_ascii_properties) {
+                    if (type == JsonToken::Ascii && !allow_ascii_properties) {
                         return JsonTokenizer::IlligalDataValue;
                     }
-                    if (type == JsonType::ObjectStart || type == JsonType::ArrayStart)
+                    if (type == JsonToken::ObjectStart || type == JsonToken::ArrayStart)
                         token_state = FindingName;
 
                     if (error != JsonTokenizer::NoError)
                         return error;
 
-                    if (next_token->data_type == JsonType::ObjectStart
-                            || next_token->data_type == JsonType::ArrayStart) {
+                    if (next_token->data_type == JsonToken::ObjectStart
+                            || next_token->data_type == JsonToken::ArrayStart) {
                         return JsonTokenizer::NoError;
                     }
                     token_state = FindingTokenEnd;
@@ -572,7 +572,7 @@ struct JsonTokenizerPrivate
     size_t current_data_start;
     InTokenState token_state;
     InPropertyState property_state;
-    JsonType::Type property_type;
+    JsonToken::Type property_type;
     AsciiState ascii_state;
     bool is_escaped;
     bool allow_ascii_properties;

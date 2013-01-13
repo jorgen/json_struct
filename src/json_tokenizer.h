@@ -27,7 +27,8 @@
 
 class JsonTokenizerPrivate;
 
-namespace JsonType {
+struct JsonToken
+{
     enum Type {
         Error = 0,
         String = 1,
@@ -40,14 +41,11 @@ namespace JsonType {
         Bool = 8,
         Null = 9
     };
-}
 
-struct JsonToken
-{
-    JsonType::Type name_type;
+    Type name_type;
     const char *name;
     size_t name_length;
-    JsonType::Type data_type;
+    Type data_type;
     const char *data;
     size_t data_length;
 };
