@@ -83,31 +83,85 @@ JsonNode *JsonNode::nodeAt(const std::string &path) const
 
 StringNode *JsonNode::asStringNode()
 {
+    if (m_type == String)
+        return static_cast<StringNode *>(this);
+    return nullptr;
+}
+
+const StringNode *JsonNode::asStringNode() const
+{
+    if (m_type == String)
+        return static_cast<const StringNode *>(this);
     return nullptr;
 }
 
 NumberNode *JsonNode::asNumberNode()
 {
+    if (m_type == Number)
+        return static_cast<NumberNode *>(this);
+    return nullptr;
+}
+
+const NumberNode *JsonNode::asNumberNode() const
+{
+    if (m_type == Number)
+        return static_cast<const NumberNode*>(this);
     return nullptr;
 }
 
 BooleanNode *JsonNode::asBooleanNode()
 {
+    if (m_type == Bool)
+        return static_cast<BooleanNode *>(this);
+    return nullptr;
+}
+
+const BooleanNode *JsonNode::asBooleanNode() const
+{
+    if (m_type == Bool)
+        return static_cast<const BooleanNode *>(this);
     return nullptr;
 }
 
 NullNode *JsonNode::asNullNode()
 {
+    if (m_type == Null)
+        return static_cast<NullNode *>(this);
+    return nullptr;
+}
+
+const NullNode *JsonNode::asNullNode() const
+{
+    if (m_type == Null)
+        return static_cast<const NullNode *>(this);
     return nullptr;
 }
 
 ArrayNode *JsonNode::asArrayNode()
 {
+    if (m_type == Array)
+        return static_cast<ArrayNode *>(this);
+    return nullptr;
+}
+
+const ArrayNode *JsonNode::asArrayNode() const
+{
+    if (m_type == Array)
+        return static_cast<const ArrayNode *>(this);
     return nullptr;
 }
 
 ObjectNode *JsonNode::asObjectNode()
 {
+    if (m_type == Object)
+        return static_cast<ObjectNode *>(this);
+    return nullptr;
+}
+
+const ObjectNode *JsonNode::asObjectNode() const
+{
+    if (m_type == Object)
+        return static_cast<const ObjectNode *>(this);
     return nullptr;
 }
 
@@ -154,11 +208,6 @@ JsonNode *ObjectNode::node(const std::string &child_node) const
     return it->second;
 }
 
-ObjectNode *ObjectNode::asObjectNode()
-{
-    return this;
-}
-
 void ObjectNode::insertNode(const std::string &name, JsonNode *node, bool replace)
 {
     std::pair<std::map<std::string, JsonNode *>::iterator, bool>ret;
@@ -196,11 +245,6 @@ void StringNode::setString(const std::string &string)
     m_string = string;
 }
 
-StringNode *StringNode::asStringNode()
-{
-    return this;
-}
-
 NumberNode::NumberNode(JsonToken *token)
     : JsonNode(Number)
 {
@@ -212,11 +256,6 @@ NumberNode::NumberNode(JsonToken *token)
     }
 }
 
-NumberNode *NumberNode::asNumberNode()
-{
-    return this;
-}
-
 BooleanNode::BooleanNode(JsonToken *token)
     : JsonNode(Bool)
 {
@@ -226,19 +265,9 @@ BooleanNode::BooleanNode(JsonToken *token)
         m_boolean = false;
 }
 
-BooleanNode * BooleanNode::asBooleanNode()
-{
-    return this;
-}
-
 NullNode::NullNode()
     : JsonNode(Null)
 { }
-
-NullNode *NullNode::asNullNode()
-{
-    return this;
-}
 
 ArrayNode::ArrayNode()
     : JsonNode(Array)
@@ -295,7 +324,3 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
-ArrayNode *ArrayNode::asArrayNode()
-{
-    return this;
-}

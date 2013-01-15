@@ -63,12 +63,18 @@ public:
     ArrayNode *arrayNodeAt(const std::string &path) const;
     ObjectNode *objectNodeAt(const std::string &path) const;
 
-    virtual StringNode *asStringNode();
-    virtual NumberNode *asNumberNode();
-    virtual BooleanNode *asBooleanNode();
-    virtual NullNode *asNullNode();
-    virtual ArrayNode *asArrayNode();
-    virtual ObjectNode *asObjectNode();
+    StringNode *asStringNode();
+    const StringNode *asStringNode() const;
+    NumberNode *asNumberNode();
+    const NumberNode *asNumberNode() const;
+    BooleanNode *asBooleanNode();
+    const BooleanNode *asBooleanNode() const;
+    NullNode *asNullNode();
+    const NullNode *asNullNode() const;
+    ArrayNode *asArrayNode();
+    const ArrayNode *asArrayNode() const;
+    ObjectNode *asObjectNode();
+    const ObjectNode *asObjectNode() const;
 protected:
     JsonNode::Type m_type;
 };
@@ -86,7 +92,6 @@ public:
     void insertNode(const std::string &name, JsonNode *node, bool replace = false);
     JsonNode *take(const std::string &name);
 
-    ObjectNode *asObjectNode();
 private:
     std::map<std::string, JsonNode *> m_map;
 };
@@ -99,7 +104,6 @@ public:
     const std::string &string() const;
     void setString(const std::string &string);
 
-    StringNode *asStringNode();
 protected:
     std::string m_string;
 };
@@ -115,7 +119,6 @@ public:
     void setNumber(double number)
     { m_number = number; }
 
-    NumberNode *asNumberNode();
 protected:
     double m_number;
 };
@@ -131,7 +134,6 @@ public:
     void setBoolean(bool boolean)
     { m_boolean = boolean; }
 
-    BooleanNode *asBooleanNode();
 protected:
     bool m_boolean;
 };
@@ -141,7 +143,6 @@ class NullNode : public JsonNode
 public:
     NullNode();
 
-    NullNode *asNullNode();
 };
 
 class ArrayNode : public JsonNode
@@ -158,7 +159,6 @@ public:
 
     size_t size();
 
-    ArrayNode *asArrayNode();
 private:
     std::vector<JsonNode *> m_vector;
 };
