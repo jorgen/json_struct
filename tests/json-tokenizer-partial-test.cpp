@@ -36,7 +36,7 @@ const char json_data_partial_1_2[] =
 
 static int check_json_partial_1()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -45,23 +45,23 @@ static int check_json_partial_1()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -75,7 +75,7 @@ const char json_data_partial_2_2[] =
 
 static int check_json_partial_2()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -84,24 +84,24 @@ static int check_json_partial_2()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     std::string foo(token.name, token.name_length);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -115,7 +115,7 @@ const char json_data_partial_3_2[] =
 
 static int check_json_partial_3()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -124,23 +124,23 @@ static int check_json_partial_3()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -154,7 +154,7 @@ const char json_data_partial_4_2[] =
 
 static int check_json_partial_4()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -163,23 +163,23 @@ static int check_json_partial_4()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -193,7 +193,7 @@ const char json_data_partial_5_2[] =
 
 static int check_json_partial_5()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -202,23 +202,23 @@ static int check_json_partial_5()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -232,7 +232,7 @@ const char json_data_partial_6_2[] =
 
 static int check_json_partial_6()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -241,23 +241,23 @@ static int check_json_partial_6()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "color", JsonToken::Bool, "true") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -270,7 +270,7 @@ const char json_data_partial_7_2[] =
 
 static int check_json_partial_7()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -279,23 +279,23 @@ static int check_json_partial_7()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "color", JsonToken::Bool, "true") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
@@ -312,7 +312,7 @@ const char json_data_partial_8_2[] =
 
 static int check_json_partial_8()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -321,39 +321,39 @@ static int check_json_partial_8()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "array", JsonToken::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::String, "one") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::String, "two") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::String, "three") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::ArrayEnd, "]") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }

@@ -50,13 +50,7 @@ struct JsonToken
     size_t data_length;
 };
 
-typedef void (*ReleaseDataCallback)(const char *data, void *user_handle);
-
-class JsonTokenizer
-{
-public:
-
-    enum Error {
+enum class JsonError {
         NoError,
         InvalidToken,
         NeedMoreData,
@@ -66,7 +60,13 @@ public:
         IlligalPropertyName,
         IlligalDataValue,
         EncounteredIlligalChar
-    };
+};
+
+typedef void (*ReleaseDataCallback)(const char *data, void *user_handle);
+
+class JsonTokenizer
+{
+public:
 
     JsonTokenizer(ReleaseDataCallback release_data_callback = 0);
     ~JsonTokenizer();
@@ -75,7 +75,7 @@ public:
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
 
-    JsonTokenizer::Error nextToken(JsonToken *next_token);
+    JsonError nextToken(JsonToken *next_token);
 
 private:
     JsonTokenizerPrivate *m_private;

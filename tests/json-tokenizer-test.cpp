@@ -58,7 +58,7 @@ const char json_data[] =
 
 static int check_json_with_string_and_ascii()
 {
-    JsonTokenizer::Error error;
+    JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
@@ -66,139 +66,139 @@ static int check_json_with_string_and_ascii()
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "color", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "weather", JsonToken::String, "clear") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "weather1", JsonToken::String, "clear1") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ToBeTrue", JsonToken::Bool, "true") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "HeresANull", JsonToken::Null, "null") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsFalse", JsonToken::Bool, "false") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "EscapedString", JsonToken::String, "contains \\\"") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsANumber", JsonToken::Number, "3.14") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsAnObject", JsonToken::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsASubType", JsonToken::String, "red") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "AnotherProp", JsonToken::String, "prop") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsAnotherObject", JsonToken::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsAnotherASubType", JsonToken::String, "blue") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsAnArray", JsonToken::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::Number, "12.4") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::Number, "3") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::Number, "43.2") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ArrayEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "ThisIsAnObjectArray", JsonToken::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "Test1", JsonToken::String, "Test2") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "Test3", JsonToken::String, "Test4") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::String, "", JsonToken::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "Test5", JsonToken::Bool, "true") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert((assert_token(token, JsonToken::Ascii, "Test7", JsonToken::Bool, "false") == 0));
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ArrayEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NoError);
+    assert(error == JsonError::NoError);
     assert(token.data_type == JsonToken::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonTokenizer::NeedMoreData);
+    assert(error == JsonError::NeedMoreData);
 
     return 0;
 }
