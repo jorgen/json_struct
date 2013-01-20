@@ -27,4 +27,5 @@ tests/json-tokenizer-test
 *.swo
 tests/json-tokenizer-fail-test
 tests/json-tokenizer-partial-test
+tests/json-tree-test
 

@@ -1,6 +1,6 @@
-noinst_LTLIBRARIES = libjson_tokenizer.la
+noinst_LTLIBRARIES = libjson_tools.la
 
-libjson_tokenizer_la_SOURCES =			\
+libjson_tools_la_SOURCES =			\
 	json_tokenizer.h			\
 	json_tokenizer.cpp			\
 	json_tree.h				\

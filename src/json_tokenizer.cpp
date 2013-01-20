@@ -539,9 +539,10 @@ struct JsonTokenizerPrivate
                     } else {
                         next_token->data_type = type;
                     }
-                    if (type == JsonToken::Ascii && !allow_ascii_properties) {
+
+                    if (next_token->data_type  == JsonToken::Ascii && !allow_ascii_properties) 
                         return JsonError::IlligalDataValue;
-                    }
+
                     if (type == JsonToken::ObjectStart || type == JsonToken::ArrayStart)
                         token_state = FindingName;
 

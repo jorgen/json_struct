@@ -1,5 +1,5 @@
 /*
- * Copyright © 2nullptr12 Jørgen Lind
+ * Copyright © 2013 Jørgen Lind
 
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -22,11 +22,15 @@
 
 #include "json_tree.h"
 
+#include <stdio.h>
 #include <assert.h>
 
 JsonNode::JsonNode(JsonNode::Type type)
     : m_type(type)
 { }
+JsonNode::~JsonNode()
+{
+}
 
 StringNode *JsonNode::stringNodeAt(const std::string &path) const
 {
@@ -172,7 +176,7 @@ ObjectNode::ObjectNode()
 
 ObjectNode::~ObjectNode()
 {
-    for (std::map<std::string, JsonNode *>::iterator it = m_map.begin();
+    for (auto it = m_map.begin();
             it != m_map.end(); it++) {
        delete it->second;
     }
@@ -186,14 +190,14 @@ JsonNode *ObjectNode::nodeAt(const std::string &path) const
         return nullptr;
 
     if (first_dot == std::string::npos) {
-        std::map<std::string, JsonNode *>::const_iterator it = m_map.find(path);
+        auto it = m_map.find(path);
         if (it == m_map.end())
             return nullptr;
         else return it->second;
     }
 
     std::string first_node(path.substr(0,first_dot));
-    std::map<std::string, JsonNode *>::const_iterator it = m_map.find(first_node);
+    auto it = m_map.find(first_node);
     if (it == m_map.end())
         return nullptr;
     JsonNode *child_node = it->second;
@@ -202,7 +206,7 @@ JsonNode *ObjectNode::nodeAt(const std::string &path) const
 
 JsonNode *ObjectNode::node(const std::string &child_node) const
 {
-    std::map<std::string, JsonNode *>::const_iterator it = m_map.find(child_node);
+    auto it = m_map.find(child_node);
     if (it == m_map.end())
         return nullptr;
     return it->second;
@@ -210,8 +214,7 @@ JsonNode *ObjectNode::node(const std::string &child_node) const
 
 void ObjectNode::insertNode(const std::string &name, JsonNode *node, bool replace)
 {
-    std::pair<std::map<std::string, JsonNode *>::iterator, bool>ret;
-    ret = m_map.insert(std::pair<std::string, JsonNode *>(name, node));
+    auto ret = m_map.insert(std::pair<std::string, JsonNode *>(name, node));
     if (ret.second == false && replace) {
         delete ret.first->second;
         m_map.erase(ret.first);
@@ -222,7 +225,7 @@ void ObjectNode::insertNode(const std::string &name, JsonNode *node, bool replac
 
 JsonNode *ObjectNode::take(const std::string &name)
 {
-    std::map<std::string, JsonNode *>::iterator it = m_map.find(name);
+    auto it = m_map.find(name);
     if (it == m_map.end())
         return nullptr;
     JsonNode *child_node = it->second;
@@ -230,8 +233,83 @@ JsonNode *ObjectNode::take(const std::string &name)
     return child_node;
 }
 
+JsonNodeError ObjectNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from)
+{
+    //TODO: make this coincide with ArrayNode::fill and make it shorter
+    if (continue_from && continue_from != this) {
+        for (auto it = m_map.begin(); it != m_map.end() && continue_from; it++) {
+            switch ((*it).second->type()) {
+                case Object:
+                    {
+                        JsonNodeError ret = (*it).second->asObjectNode()->fill(tokenizer, continue_from);
+                        if (ret.error == JsonError::NoError) {
+                            continue_from = nullptr;
+                        } else if (ret.error != JsonError::NodeNotFound) {
+                            return ret;
+                        }
+                    }
+                    break;
+                case Array:
+                    {
+                        JsonNodeError ret = (*it).second->asArrayNode()->fill(tokenizer,continue_from);
+                        if (ret.error == JsonError::NoError) {
+                            continue_from = nullptr;
+                        } else if (ret.error != JsonError::NodeNotFound) {
+                            return ret;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    JsonToken token;
+    JsonError error;
+    while ((error = tokenizer->nextToken(&token)) == JsonError::NoError) {
+        if (token.data_type == JsonToken::ObjectEnd) {
+            return JsonNodeError();
+        }
+        auto created = JsonNode::create(&token, tokenizer);
+        if (created.second.error == JsonError::NeedMoreData) {
+            if (created.second.errorNode == nullptr)
+                created.second.errorNode = this;
+            return created.second;
+        }
+
+        if (created.first == 0) {
+            created.second.errorNode = this;
+            return created.second;
+        }
+        assert(token.name_length);
+        insertNode(std::string(token.name, token.name_length), created.first, true);
+    }
+    return JsonNodeError(error, this);
+}
+
+size_t ObjectNode::printSize(const JsonPrinterOption &option)
+{
+    size_t object_size = 2;
+    bool first = true;
+    const JsonPrinterOption incremented_option = option.increment();
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if (first) {
+            first = false;
+        } else {
+            object_size += 2;
+        }
+        object_size += incremented_option.depth() * incremented_option.shiftSize() + (*it).first.size() + 3 + (*it).second->printSize(incremented_option);
+        if (!option.ascii_name())
+            object_size += 2;
+    }
+    object_size += option.depth() * option.shiftSize() + 1;
+    return object_size;
+}
+
 StringNode::StringNode(JsonToken *token)
     : JsonNode(String)
+    , m_string(token->data, token->data_length)
 {
 }
 
@@ -245,6 +323,11 @@ void StringNode::setString(const std::string &string)
     m_string = string;
 }
 
+size_t StringNode::printSize(const JsonPrinterOption &option)
+{
+    return m_string.size() + 2;
+}
+
 NumberNode::NumberNode(JsonToken *token)
     : JsonNode(Number)
 {
@@ -256,6 +339,13 @@ NumberNode::NumberNode(JsonToken *token)
     }
 }
 
+size_t NumberNode::printSize(const JsonPrinterOption &option)
+{
+    char buff[20];
+    size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
+    assert(size > 0);
+    return size;
+}
 BooleanNode::BooleanNode(JsonToken *token)
     : JsonNode(Bool)
 {
@@ -265,9 +355,19 @@ BooleanNode::BooleanNode(JsonToken *token)
         m_boolean = false;
 }
 
-NullNode::NullNode()
+size_t BooleanNode::printSize(const JsonPrinterOption &option)
+{
+    return m_boolean ? 4 : 5;
+}
+
+NullNode::NullNode(JsonToken *token)
     : JsonNode(Null)
 { }
+
+size_t NullNode::printSize(const JsonPrinterOption &option)
+{
+    return 4;
+}
 
 ArrayNode::ArrayNode()
     : JsonNode(Array)
@@ -276,8 +376,7 @@ ArrayNode::ArrayNode()
 
 ArrayNode::~ArrayNode()
 {
-    for (std::vector<JsonNode *>::iterator it = m_vector.begin();
-            it != m_vector.end(); it++) {
+    for (auto it = m_vector.begin(); it != m_vector.end(); it++) {
         delete *it;
     }
 }
@@ -289,7 +388,7 @@ void ArrayNode::insert(JsonNode *node, int index)
         return;
     }
 
-    std::vector<JsonNode *>::iterator it = m_vector.begin();
+    auto it = m_vector.begin();
     m_vector.insert(it + index, node);
 }
 
@@ -303,7 +402,7 @@ JsonNode *ArrayNode::index(int index)
     if (index >= m_vector.size()) {
         return nullptr;
     }
-    std::vector<JsonNode *>::iterator it = m_vector.begin();
+    auto it = m_vector.begin();
     return *(it+index);
 }
 
@@ -313,7 +412,7 @@ JsonNode *ArrayNode::take(int index)
         return nullptr;
     }
 
-    std::vector<JsonNode *>::iterator it = m_vector.begin();
+    auto it = m_vector.begin();
     JsonNode *return_node = *(it + index);
     m_vector.erase(it+index);
     return return_node;
@@ -324,3 +423,122 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
+JsonNodeError ArrayNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from)
+{
+    if (continue_from && continue_from != this) {
+        for (auto it = m_vector.begin(); it != m_vector.end() && continue_from; it++) {
+            switch ((*it)->type()) {
+                case Object:
+                    {
+                        JsonNodeError ret = (*it)->asObjectNode()->fill(tokenizer, continue_from);
+                        if (ret.error == JsonError::NoError) {
+                            continue_from = nullptr;
+                        } else if (ret.error != JsonError::NodeNotFound) {
+                            return ret;
+                        }
+                    }
+                    break;
+                case Array:
+                    {
+                        JsonNodeError ret = (*it)->asArrayNode()->fill(tokenizer,continue_from);
+                        if (ret.error == JsonError::NoError) {
+                            continue_from = nullptr;
+                        } else if (ret.error != JsonError::NodeNotFound) {
+                            return ret;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    JsonToken token;
+    JsonError error;
+    while ((error = tokenizer->nextToken(&token)) == JsonError::NoError) {
+        if (token.data_type == JsonToken::ArrayEnd) {
+            return JsonNodeError();
+        }
+        auto created = JsonNode::create(&token, tokenizer);
+        if (created.second.error == JsonError::NeedMoreData) {
+            if (created.second.errorNode == nullptr)
+                created.second.errorNode = this;
+            return created.second;
+        }
+
+        if (created.first == 0) {
+            created.second.errorNode = this;
+            return created.second;
+        }
+
+        m_vector.push_back(created.first);
+    }
+    return JsonNodeError(error, this);
+}
+
+size_t ArrayNode::printSize(const JsonPrinterOption &option)
+{
+    size_t return_size = 2;
+
+    bool first = true;
+    const JsonPrinterOption incremented_option(option.increment());
+    for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
+        if (first) {
+            first = false;
+        } else {
+            return_size += 2;
+        }
+
+        return_size += incremented_option.depth() * incremented_option.shiftSize() + (*it)->printSize(incremented_option);
+    }
+    return_size += option.depth() * option.shiftSize() + 1;
+    return return_size;
+}
+
+std::pair<JsonNode *, JsonNodeError> JsonNode::create(JsonToken *token, JsonTokenizer *tokenizer, JsonNode *continue_from)
+{
+    std::pair<JsonNode *, JsonNodeError> ret(nullptr, JsonError::NoError);
+    switch (token->data_type) {
+        case JsonToken::ArrayStart:
+            {
+                ArrayNode *return_node = new ArrayNode();
+                ret.first = return_node;
+                ret.second = return_node->fill(tokenizer);
+            }
+            break;
+        case JsonToken::ObjectStart:
+            {
+                ObjectNode *return_node = new ObjectNode();
+                ret.first = return_node;
+                ret.second = return_node->fill(tokenizer);
+            }
+            break;
+        case JsonToken::String:
+        case JsonToken::Ascii:
+            ret.first = new StringNode(token);
+            break;
+        case JsonToken::Number:
+            ret.first = new NumberNode(token);
+            break;
+        case JsonToken::Bool:
+            ret.first = new BooleanNode(token);
+            break;
+        case JsonToken::Null:
+            ret.first = new NullNode(token);
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
+std::pair<JsonNode *, JsonNodeError> JsonNode::create(JsonTokenizer *tokenizer, JsonNode *continue_from)
+{
+    JsonToken token;
+    auto token_error = tokenizer->nextToken(&token);
+    if (token_error != JsonError::NoError) {
+        return std::pair<JsonNode *, JsonNodeError>(nullptr, token_error);
+    }
+    return JsonNode::create(&token, tokenizer, continue_from);
+}

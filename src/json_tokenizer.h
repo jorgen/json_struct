@@ -58,8 +58,12 @@ enum class JsonError {
         ExpectedDelimiter,
         ExpectedDataToken,
         IlligalPropertyName,
+        IlligalPropertyType,
         IlligalDataValue,
-        EncounteredIlligalChar
+        EncounteredIlligalChar,
+        CouldNotCreateJsonNode,
+        NodeNotFound,
+        UnknownError
 };
 
 typedef void (*ReleaseDataCallback)(const char *data, void *user_handle);
@@ -71,7 +75,7 @@ public:
     JsonTokenizer(ReleaseDataCallback release_data_callback = 0);
     ~JsonTokenizer();
 
-    void addData(const char *data, size_t size, void *user_handle);
+    void addData(const char *data, size_t size, void *user_handle = 0);
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
 
