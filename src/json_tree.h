@@ -213,11 +213,11 @@ public:
     ArrayNode();
     ~ArrayNode();
 
-    void insert(JsonNode *node, int index);
+    void insert(JsonNode *node, size_t index);
     void append(JsonNode *node);
 
-    JsonNode *index(int index);
-    JsonNode *take(int index);
+    JsonNode *index(size_t index);
+    JsonNode *take(size_t index);
 
     size_t size();
 

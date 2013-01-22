@@ -381,7 +381,7 @@ ArrayNode::~ArrayNode()
     }
 }
 
-void ArrayNode::insert(JsonNode *node, int index)
+void ArrayNode::insert(JsonNode *node, size_t index)
 {
     if (index >= m_vector.size()) {
         m_vector.push_back(node);
@@ -397,7 +397,7 @@ void ArrayNode::append(JsonNode *node)
     m_vector.push_back(node);
 }
 
-JsonNode *ArrayNode::index(int index)
+JsonNode *ArrayNode::index(size_t index)
 {
     if (index >= m_vector.size()) {
         return nullptr;
@@ -406,7 +406,7 @@ JsonNode *ArrayNode::index(int index)
     return *(it+index);
 }
 
-JsonNode *ArrayNode::take(int index)
+JsonNode *ArrayNode::take(size_t index)
 {
     if (index >= m_vector.size()) {
         return nullptr;

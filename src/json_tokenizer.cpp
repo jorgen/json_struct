@@ -62,7 +62,7 @@ struct JsonData
     {}
 
     const char *data;
-    int size;
+    size_t size;
     void *user_handle;
 };
 
@@ -95,8 +95,9 @@ struct JsonIntermediateToken
     std::string data;
 };
 
-struct JsonTokenizerPrivate
+class JsonTokenizerPrivate
 {
+public:
     enum InTokenState {
         FindingName,
         FindingDelimiter,
@@ -622,7 +623,6 @@ JsonError JsonTokenizer::nextToken(JsonToken *next_token)
         m_private->resetForNewToken();
 
     JsonError error = JsonError::NeedMoreData;
-    int trying = 0;
     while (error == JsonError::NeedMoreData && m_private->data_list.size()) {
         const JsonData &json_data = m_private->data_list.front();
         error = m_private->populateNextTokenFromData(next_token, json_data);

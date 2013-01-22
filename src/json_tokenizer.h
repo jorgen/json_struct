@@ -30,16 +30,16 @@ class JsonTokenizerPrivate;
 struct JsonToken
 {
     enum Type {
-        Error = 0,
-        String = 1,
-        Ascii = 2,
-        Number = 3,
-        ObjectStart = 4,
-        ObjectEnd = 5,
-        ArrayStart = 6,
-        ArrayEnd = 7,
-        Bool = 8,
-        Null = 9
+        Error,
+        String,
+        Ascii,
+        Number,
+        ObjectStart,
+        ObjectEnd,
+        ArrayStart,
+        ArrayEnd,
+        Bool,
+        Null
     };
 
     Type name_type;
