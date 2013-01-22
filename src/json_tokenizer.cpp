@@ -111,7 +111,7 @@ public:
         FoundEnd
     };
 
-    JsonTokenizerPrivate(ReleaseDataCallback release_data_callback)
+    JsonTokenizerPrivate()
         : cursor_index(0)
         , current_data_start(0)
         , token_state(FindingName)
@@ -122,7 +122,6 @@ public:
         , allow_new_lines(false)
         , expecting_prop_or_annonymous_data(false)
         , continue_after_need_more_data(false)
-        , release_data_callback(release_data_callback)
     {
     }
 
@@ -330,8 +329,8 @@ public:
     void releaseFirstJsonData()
     {
         const JsonData &json_data = data_list.front();
-        if (release_data_callback) {
-            release_data_callback(json_data.data, json_data.user_handle);
+        for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
+            (*it)(json_data.data);
         }
         data_list.pop_front();
         cursor_index = 0;
@@ -572,6 +571,7 @@ public:
     }
 
     std::list<JsonData> data_list;
+    std::list<std::function<void(const char *)>> release_callback_list;
     size_t cursor_index;
     size_t current_data_start;
     InTokenState token_state;
@@ -584,23 +584,16 @@ public:
     bool expecting_prop_or_annonymous_data;
     bool continue_after_need_more_data;
     JsonIntermediateToken intermediate_token;
-    ReleaseDataCallback release_data_callback;
 };
 
-JsonTokenizer::JsonTokenizer(ReleaseDataCallback release_data_callback)
-    : m_private(new JsonTokenizerPrivate(release_data_callback))
+JsonTokenizer::JsonTokenizer()
+    : m_private(new JsonTokenizerPrivate())
 {
 }
 
 JsonTokenizer::~JsonTokenizer()
 {
     delete m_private;
-}
-
-void JsonTokenizer::addData(const char *data, size_t data_size, void *user_handle)
-{
-    JsonData json_data(data, data_size, user_handle);
-    m_private->data_list.push_back(json_data);
 }
 
 void JsonTokenizer::allowAsciiType(bool allow)
@@ -611,6 +604,22 @@ void JsonTokenizer::allowAsciiType(bool allow)
 void JsonTokenizer::allowNewLineAsTokenDelimiter(bool allow)
 {
     m_private->allow_new_lines = allow;
+}
+
+void JsonTokenizer::addData(const char *data, size_t data_size, void *user_handle)
+{
+    JsonData json_data(data, data_size, user_handle);
+    m_private->data_list.push_back(json_data);
+}
+
+int JsonTokenizer::registered_buffers() const
+{
+    return m_private->data_list.size();
+}
+
+void JsonTokenizer::registerRelaseCallback(std::function<void(const char *)> function)
+{
+    m_private->release_callback_list.push_back(function);
 }
 
 JsonError JsonTokenizer::nextToken(JsonToken *next_token)

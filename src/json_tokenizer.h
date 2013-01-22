@@ -24,6 +24,7 @@
 #define JSON_TOKENIZER_H
 
 #include <stddef.h>
+#include <functional>
 
 class JsonTokenizerPrivate;
 
@@ -66,18 +67,19 @@ enum class JsonError {
         UnknownError
 };
 
-typedef void (*ReleaseDataCallback)(const char *data, void *user_handle);
-
 class JsonTokenizer
 {
 public:
 
-    JsonTokenizer(ReleaseDataCallback release_data_callback = 0);
+    JsonTokenizer();
     ~JsonTokenizer();
 
-    void addData(const char *data, size_t size, void *user_handle = 0);
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
+
+    void addData(const char *data, size_t size, void *user_handle = 0);
+    int registered_buffers() const;
+    void registerRelaseCallback(std::function<void(const char *)> callback);
 
     JsonError nextToken(JsonToken *next_token);
 

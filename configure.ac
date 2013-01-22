@@ -29,15 +29,15 @@ CXXFLAGS="-Wall -Wextra -Wno-unused-parameter -g -Wstrict-prototypes -Wmissing-p
 
 AC_LANG([C++])
 AC_PROG_CXX
-
 AX_CXX_COMPILE_STDCXX_11([ext])
 
 # Initialize libtool
 LT_PREREQ([2.2])
 LT_INIT
 
-if test "x$GCC" = "xyes"; then
-	GCC_CFLAGS="-Wall -Wextra -Wno-unused-parameter -g -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden"
+if test "x$compiler" = "xclang++"; then
+    CXXFLAGS="$CXXFLAGS -stdlib=libc++"
+    LDFLAGS="$LDFLAGS -stdlib=libc++"
 fi
 
 AC_SUBST(GCC_CFLAGS)
