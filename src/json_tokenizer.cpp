@@ -402,6 +402,7 @@ struct JsonTokenizerPrivate
             JsonError error;
             switch (token_state) {
                 case FindingName:
+                    type = intermediate_token.name_type;
                     error = populateFromData(&data, &data_length, &type, json_data);
                     if (error == JsonError::NeedMoreData) {
                         if (property_state > NoStartFound) {
@@ -498,6 +499,7 @@ struct JsonTokenizerPrivate
                     break;
 
                 case FindingData:
+                    type = intermediate_token.data_type;
                     error = populateFromData(&data, &data_length, &type, json_data);
                     if (error == JsonError::NeedMoreData) {
                         if (intermediate_token.intermedia_set == false) {
