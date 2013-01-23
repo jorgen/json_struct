@@ -288,22 +288,22 @@ JsonNodeError ObjectNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from
     return JsonNodeError(error, this);
 }
 
-size_t ObjectNode::printSize(const JsonPrinterOption &option)
+size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
 {
     size_t object_size = 2;
     bool first = true;
-    const JsonPrinterOption incremented_option = option.increment();
+    int inc_depth = depth + 1;
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if (first) {
             first = false;
         } else {
             object_size += 2;
         }
-        object_size += incremented_option.depth() * incremented_option.shiftSize() + (*it).first.size() + 3 + (*it).second->printSize(incremented_option);
+        object_size += inc_depth * option.shiftSize() + (*it).first.size() + 3 + (*it).second->printSize(option, inc_depth);
         if (!option.ascii_name())
             object_size += 2;
     }
-    object_size += option.depth() * option.shiftSize() + 1;
+    object_size += depth * option.shiftSize() + 1;
     return object_size;
 }
 
@@ -323,7 +323,7 @@ void StringNode::setString(const std::string &string)
     m_string = string;
 }
 
-size_t StringNode::printSize(const JsonPrinterOption &option)
+size_t StringNode::printSize(const JsonPrinterOption &option, int depth)
 {
     return m_string.size() + 2;
 }
@@ -339,7 +339,7 @@ NumberNode::NumberNode(JsonToken *token)
     }
 }
 
-size_t NumberNode::printSize(const JsonPrinterOption &option)
+size_t NumberNode::printSize(const JsonPrinterOption &option, int depth)
 {
     char buff[20];
     size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
@@ -355,7 +355,7 @@ BooleanNode::BooleanNode(JsonToken *token)
         m_boolean = false;
 }
 
-size_t BooleanNode::printSize(const JsonPrinterOption &option)
+size_t BooleanNode::printSize(const JsonPrinterOption &option, int depth)
 {
     return m_boolean ? 4 : 5;
 }
@@ -364,7 +364,7 @@ NullNode::NullNode(JsonToken *token)
     : JsonNode(Null)
 { }
 
-size_t NullNode::printSize(const JsonPrinterOption &option)
+size_t NullNode::printSize(const JsonPrinterOption &option, int depth)
 {
     return 4;
 }
@@ -477,12 +477,12 @@ JsonNodeError ArrayNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from)
     return JsonNodeError(error, this);
 }
 
-size_t ArrayNode::printSize(const JsonPrinterOption &option)
+size_t ArrayNode::printSize(const JsonPrinterOption &option, int depth)
 {
     size_t return_size = 2;
 
     bool first = true;
-    const JsonPrinterOption incremented_option(option.increment());
+    int inc_depth = depth + 1;
     for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
         if (first) {
             first = false;
@@ -490,9 +490,9 @@ size_t ArrayNode::printSize(const JsonPrinterOption &option)
             return_size += 2;
         }
 
-        return_size += incremented_option.depth() * incremented_option.shiftSize() + (*it)->printSize(incremented_option);
+        return_size += inc_depth * option.shiftSize() + (*it)->printSize(option, inc_depth);
     }
-    return_size += option.depth() * option.shiftSize() + 1;
+    return_size += depth * option.shiftSize() + 1;
     return return_size;
 }
 

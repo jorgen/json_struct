@@ -56,26 +56,16 @@ public:
 class JsonPrinterOption {
 public:
     JsonPrinterOption(bool pretty = false, bool ascii_name = false)
-        : m_depth(0)
-        , m_shift_size(4)
+        : m_shift_size(4)
         , m_pretty(pretty)
         , m_ascii_name(ascii_name)
     { }
 
-    int depth() const { return m_depth; }
     short shiftSize() const { return m_shift_size; }
     bool pretty() const { return m_pretty; }
     bool ascii_name() const { return m_ascii_name; }
 
-    JsonPrinterOption increment() const
-    {
-        JsonPrinterOption return_op(*this);
-        return_op.m_depth++;
-        return return_op;
-    }
-
 private:
-    int m_depth;
     short m_shift_size;
     bool m_pretty;
     bool m_ascii_name;
@@ -128,7 +118,7 @@ public:
     static std::pair<JsonNode *, JsonNodeError> create(JsonTokenizer *tokenizer,
                                                        JsonNode *continue_from = nullptr);
 
-    virtual size_t printSize(const JsonPrinterOption &option) = 0;
+    virtual size_t printSize(const JsonPrinterOption &option, int depth = 0) = 0;
     //virtual size_t print(char *target, size_t buffer_size, const JsonPrinterOption &option) = 0;
 protected:
     JsonNode::Type m_type;
@@ -149,7 +139,7 @@ public:
 
     JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 private:
     std::map<std::string, JsonNode *> m_map;
 };
@@ -162,7 +152,7 @@ public:
     const std::string &string() const;
     void setString(const std::string &string);
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 protected:
     std::string m_string;
 };
@@ -178,7 +168,7 @@ public:
     void setNumber(double number)
     { m_number = number; }
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 protected:
     double m_number;
 };
@@ -194,7 +184,7 @@ public:
     void setBoolean(bool boolean)
     { m_boolean = boolean; }
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 protected:
     bool m_boolean;
 };
@@ -204,7 +194,7 @@ class NullNode : public JsonNode
 public:
     NullNode(JsonToken *token);
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 };
 
 class ArrayNode : public JsonNode
@@ -223,7 +213,7 @@ public:
 
     JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
 
-    virtual size_t printSize(const JsonPrinterOption &option);
+    virtual size_t printSize(const JsonPrinterOption &option, int depth);
 private:
     std::vector<JsonNode *> m_vector;
 };
