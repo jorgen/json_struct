@@ -55,15 +55,13 @@ private:
 
 struct JsonData
 {
-    JsonData(const char *data, size_t size, void *user_handle)
+    JsonData(const char *data, size_t size)
         : data(data)
         , size(size)
-        , user_handle(user_handle)
     {}
 
     const char *data;
     size_t size;
-    void *user_handle;
 };
 
 struct JsonIntermediateToken
@@ -606,10 +604,10 @@ void JsonTokenizer::allowNewLineAsTokenDelimiter(bool allow)
     m_private->allow_new_lines = allow;
 }
 
-void JsonTokenizer::addData(const char *data, size_t data_size, void *user_handle)
+void JsonTokenizer::addData(const char *data, size_t data_size)
 {
-    JsonData json_data(data, data_size, user_handle);
-    m_private->data_list.push_back(json_data);
+    m_private->data_list.push_back(JsonData(data, data_size));
+
 }
 
 int JsonTokenizer::registered_buffers() const

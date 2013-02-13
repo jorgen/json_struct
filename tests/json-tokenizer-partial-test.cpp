@@ -40,8 +40,8 @@ static int check_json_partial_1()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_1_1, sizeof(json_data_partial_1_1), 0);
-    tokenizer.addData(json_data_partial_1_2, sizeof(json_data_partial_1_2), 0);
+    tokenizer.addData(json_data_partial_1_1, sizeof(json_data_partial_1_1));
+    tokenizer.addData(json_data_partial_1_2, sizeof(json_data_partial_1_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -79,8 +79,8 @@ static int check_json_partial_2()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_2_1, sizeof(json_data_partial_2_1), 0);
-    tokenizer.addData(json_data_partial_2_2, sizeof(json_data_partial_2_2), 0);
+    tokenizer.addData(json_data_partial_2_1, sizeof(json_data_partial_2_1));
+    tokenizer.addData(json_data_partial_2_2, sizeof(json_data_partial_2_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -119,8 +119,8 @@ static int check_json_partial_3()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_3_1, sizeof(json_data_partial_3_1), 0);
-    tokenizer.addData(json_data_partial_3_2, sizeof(json_data_partial_3_2), 0);
+    tokenizer.addData(json_data_partial_3_1, sizeof(json_data_partial_3_1));
+    tokenizer.addData(json_data_partial_3_2, sizeof(json_data_partial_3_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -158,8 +158,8 @@ static int check_json_partial_4()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_4_1, sizeof(json_data_partial_4_1), 0);
-    tokenizer.addData(json_data_partial_4_2, sizeof(json_data_partial_4_2), 0);
+    tokenizer.addData(json_data_partial_4_1, sizeof(json_data_partial_4_1));
+    tokenizer.addData(json_data_partial_4_2, sizeof(json_data_partial_4_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -197,8 +197,8 @@ static int check_json_partial_5()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_5_1, sizeof(json_data_partial_5_1), 0);
-    tokenizer.addData(json_data_partial_5_2, sizeof(json_data_partial_5_2), 0);
+    tokenizer.addData(json_data_partial_5_1, sizeof(json_data_partial_5_1));
+    tokenizer.addData(json_data_partial_5_2, sizeof(json_data_partial_5_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -236,8 +236,8 @@ static int check_json_partial_6()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_6_1, sizeof(json_data_partial_6_1), 0);
-    tokenizer.addData(json_data_partial_6_2, sizeof(json_data_partial_6_2), 0);
+    tokenizer.addData(json_data_partial_6_1, sizeof(json_data_partial_6_1));
+    tokenizer.addData(json_data_partial_6_2, sizeof(json_data_partial_6_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -274,8 +274,8 @@ static int check_json_partial_7()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_7_1, sizeof(json_data_partial_7_1), 0);
-    tokenizer.addData(json_data_partial_7_2, sizeof(json_data_partial_7_2), 0);
+    tokenizer.addData(json_data_partial_7_1, sizeof(json_data_partial_7_1));
+    tokenizer.addData(json_data_partial_7_2, sizeof(json_data_partial_7_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -316,8 +316,8 @@ static int check_json_partial_8()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1), 0);
-    tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2), 0);
+    tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
+    tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);

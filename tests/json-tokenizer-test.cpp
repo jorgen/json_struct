@@ -62,7 +62,7 @@ static int check_json_with_string_and_ascii()
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data, sizeof(json_data), 0);
+    tokenizer.addData(json_data, sizeof(json_data));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);

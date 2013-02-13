@@ -53,7 +53,7 @@ const char json_data[] = u8R"(
 static int check_json_tree_nodes()
 {
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_data, sizeof(json_data), 0);
+    tokenizer.addData(json_data, sizeof(json_data));
     auto created = JsonNode::create(&tokenizer);
     JsonNode *root = created.first;
     assert(root);
@@ -117,9 +117,6 @@ static int check_json_tree_nodes()
 
     NullNode *null_null_node = root->nullNodeAt("NoNullNodeHere");
     assert(!null_null_node);
-
-    size_t root_size = root->printSize(JsonPrinterOption(true));
-    fprintf(stderr, "size of root is %zu and size of data %zu\n", root_size, sizeof(json_data));
 
     return 0;
 }

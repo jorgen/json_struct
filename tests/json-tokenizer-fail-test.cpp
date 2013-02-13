@@ -37,7 +37,7 @@ static int check_fail_json_with_ascii_property()
 {
     JsonError error;
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_with_ascii_property, sizeof(json_with_ascii_property), 0);
+    tokenizer.addData(json_with_ascii_property, sizeof(json_with_ascii_property));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -64,7 +64,7 @@ static int check_fail_json_with_ascii_data()
 {
     JsonError error;
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_with_ascii_data, sizeof(json_with_ascii_data), 0);
+    tokenizer.addData(json_with_ascii_data, sizeof(json_with_ascii_data));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -91,7 +91,7 @@ static int check_fail_json_with_new_line_seperator()
 {
     JsonError error;
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_with_new_line_seperator, sizeof(json_with_new_line_seperator), 0);
+    tokenizer.addData(json_with_new_line_seperator, sizeof(json_with_new_line_seperator));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -118,7 +118,7 @@ static int check_fail_json_with_comma_before_obj_end()
 {
     JsonError error;
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_with_comma_before_obj_end, sizeof(json_with_comma_before_obj_end), 0);
+    tokenizer.addData(json_with_comma_before_obj_end, sizeof(json_with_comma_before_obj_end));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
@@ -149,7 +149,7 @@ static int check_fail_json_with_illigal_chars()
 {
     JsonError error;
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_with_illigal_chars, sizeof(json_with_illigal_chars), 0);
+    tokenizer.addData(json_with_illigal_chars, sizeof(json_with_illigal_chars));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);

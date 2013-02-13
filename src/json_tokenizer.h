@@ -77,7 +77,7 @@ public:
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
 
-    void addData(const char *data, size_t size, void *user_handle = 0);
+    void addData(const char *data, size_t size);
     int registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
