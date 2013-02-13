@@ -25,6 +25,62 @@
 #include <stdio.h>
 #include <assert.h>
 
+bool JsonOutBuffer::append(const char *data, size_t size)
+{
+    if (end + size > this->size)
+        return false;
+
+    memcpy(buffer + end, data, size);
+    end += size;
+    return true;
+}
+
+JsonOutBufferHandler::JsonOutBufferHandler(char *buffer, size_t size)
+{
+    m_buffers.push_back({buffer,size,0});
+}
+
+void JsonOutBufferHandler::appendBuffer(char *buffer, size_t size)
+{
+    m_buffers.push_back({buffer,size,0});
+}
+
+void JsonOutBufferHandler::markCurrentPrintBufferFull()
+{
+    m_finished_buffers.push_back(m_buffers.front());
+    m_buffers.pop_front();
+    if (m_buffers.size() == 0) {
+        for (auto it = m_request_buffer_callbacks.begin(); it != m_request_buffer_callbacks.end(); ++it) {
+            (*it)(this);
+        }
+    }
+}
+
+bool JsonOutBufferHandler::canFit(size_t amount)
+{
+    while (m_buffers.size()) {
+        if (currentPrintBuffer().canFit(amount))
+            return true;
+        markCurrentPrintBufferFull();
+    }
+    return false;
+}
+
+bool JsonOutBufferHandler::write(const char *data, size_t size)
+{
+    if (!canFit(size))
+        return false;
+    currentPrintBuffer().append(data,size);
+    return true;
+}
+
+const JsonOutBuffer &JsonOutBufferHandler::firstFinishedBuffer() const
+{
+    if (m_finished_buffers.size())
+        return m_finished_buffers.front();
+    return m_buffers.front();
+}
+
 JsonNode::JsonNode(JsonNode::Type type)
     : m_type(type)
 { }
@@ -307,6 +363,61 @@ size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
     return object_size;
 }
 
+bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    depth++;
+    if (option.pretty()) {
+        if (!buffers.write("{\n",2))
+            return false;
+    } else {
+        if (!buffers.write("{", 1))
+            return false;
+    }
+
+    int shift_width = option.shiftSize() * depth;
+
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        const std::string &property = (*it).first;
+        if (it != m_map.begin()) {
+            if (option.pretty()) {
+                if (!buffers.write(",\n",2))
+                    return false;
+            } else {
+                if (!buffers.write(",",1))
+                    return false;
+            }
+        }
+        if (option.pretty()) {
+            if (!buffers.write(
+                        std::string(' ', shift_width).c_str(),shift_width))
+                return false;
+        }
+        if (!buffers.write(property.c_str(), property.size()))
+            return false;
+        if (option.pretty()) {
+            const char delimiter[] = " : ";
+            if (!buffers.write(delimiter, sizeof(delimiter)-1))
+                return false;
+        } else {
+            const char delimiter[] = ":";
+            if (!buffers.write(delimiter, sizeof(delimiter)-1))
+                return false;
+        }
+        if (!(*it).second->print(buffers,option,depth))
+            return false;
+    }
+
+    if (option.pretty()) {
+        std::string before_close_bracket("\n");
+        before_close_bracket.append(std::string(' ',shift_width));
+        if (!buffers.write(before_close_bracket.c_str(), before_close_bracket.size()))
+            return false;
+    }
+    if (!buffers.write("}",1))
+        return false;
+    return true;
+}
+
 StringNode::StringNode(JsonToken *token)
     : JsonNode(String)
     , m_string(token->data, token->data_length)
@@ -325,7 +436,12 @@ void StringNode::setString(const std::string &string)
 
 size_t StringNode::printSize(const JsonPrinterOption &option, int depth)
 {
-    return m_string.size() + 2;
+    return m_string.size();
+}
+
+bool StringNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    return buffers.write(m_string.c_str(), m_string.size());
 }
 
 NumberNode::NumberNode(JsonToken *token)
@@ -346,6 +462,14 @@ size_t NumberNode::printSize(const JsonPrinterOption &option, int depth)
     assert(size > 0);
     return size;
 }
+
+bool NumberNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    char buff[20];
+    size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
+    return buffers.write(buff,size);
+}
+
 BooleanNode::BooleanNode(JsonToken *token)
     : JsonNode(Bool)
 {
@@ -360,6 +484,14 @@ size_t BooleanNode::printSize(const JsonPrinterOption &option, int depth)
     return m_boolean ? 4 : 5;
 }
 
+bool BooleanNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    if (m_boolean)
+        return buffers.write("true",4);
+    else
+        return buffers.write("false",5);
+}
+
 NullNode::NullNode(JsonToken *token)
     : JsonNode(Null)
 { }
@@ -367,6 +499,11 @@ NullNode::NullNode(JsonToken *token)
 size_t NullNode::printSize(const JsonPrinterOption &option, int depth)
 {
     return 4;
+}
+
+bool NullNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    return buffers.write("null",4);
 }
 
 ArrayNode::ArrayNode()
@@ -494,6 +631,45 @@ size_t ArrayNode::printSize(const JsonPrinterOption &option, int depth)
     }
     return_size += depth * option.shiftSize() + 1;
     return return_size;
+}
+
+bool ArrayNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+{
+    depth++;
+    if (option.pretty()) {
+        if (!buffers.write("[\n",2))
+            return false;
+    } else {
+        if (!buffers.write("[",1))
+            return false;
+    }
+
+    int shift_width = option.shiftSize() * depth;
+
+    for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
+        if (it != m_vector.begin()) {
+            if (option.pretty()) {
+                if (!buffers.write(",\n",2))
+                    return false;
+            } else {
+                if (!buffers.write(",",1))
+                    return false;
+            }
+        }
+        if (!(*it)->print(buffers,option,depth))
+            return false;
+    }
+
+    if (option.pretty()) {
+        std::string before_close_bracket("\n");
+        before_close_bracket.append(std::string(' ',shift_width));
+        if (!buffers.write(before_close_bracket.c_str(), before_close_bracket.size()))
+            return false;
+    }
+    if (!buffers.write("]",1))
+        return false;
+    return true;
+
 }
 
 std::pair<JsonNode *, JsonNodeError> JsonNode::create(JsonToken *token, JsonTokenizer *tokenizer, JsonNode *continue_from)

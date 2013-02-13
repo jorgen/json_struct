@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 
 class JsonNode;
 class ObjectNode;
@@ -53,7 +54,8 @@ public:
     JsonNode *errorNode;
 };
 
-class JsonPrinterOption {
+class JsonPrinterOption
+{
 public:
     JsonPrinterOption(bool pretty = false, bool ascii_name = false)
         : m_shift_size(4)
@@ -69,6 +71,40 @@ private:
     short m_shift_size;
     bool m_pretty;
     bool m_ascii_name;
+};
+
+class JsonOutBuffer
+{
+public:
+    bool canFit(size_t amount) const { return size - end >= amount; }
+    bool append(const char *data, size_t size);
+    char *buffer;
+    size_t size;
+    size_t end;
+};
+
+
+class JsonOutBufferHandler
+{
+public:
+    JsonOutBufferHandler(char *buffer, size_t size);
+
+    void appendBuffer(char *buffer, size_t size);
+
+    const JsonOutBuffer &currentPrintBuffer() const { return m_buffers.front(); }
+    JsonOutBuffer &currentPrintBuffer() { return m_buffers.front(); }
+    bool canFit(size_t amount);
+    bool write(const char *data, size_t size);
+    void markCurrentPrintBufferFull();
+
+    const JsonOutBuffer &firstFinishedBuffer() const;
+
+    size_t bufferSize() const { return m_buffers.size(); }
+
+private:
+    std::list<std::function<void(JsonOutBufferHandler *)>> m_request_buffer_callbacks;
+    std::list<JsonOutBuffer> m_buffers;
+    std::list<JsonOutBuffer> m_finished_buffers;
 };
 
 class JsonNode
@@ -119,7 +155,7 @@ public:
                                                        JsonNode *continue_from = nullptr);
 
     virtual size_t printSize(const JsonPrinterOption &option, int depth = 0) = 0;
-    //virtual size_t print(char *target, size_t buffer_size, const JsonPrinterOption &option) = 0;
+    virtual bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0) = 0;
 protected:
     JsonNode::Type m_type;
 };
@@ -139,7 +175,8 @@ public:
 
     JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 private:
     std::map<std::string, JsonNode *> m_map;
 };
@@ -152,7 +189,8 @@ public:
     const std::string &string() const;
     void setString(const std::string &string);
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 protected:
     std::string m_string;
 };
@@ -168,7 +206,8 @@ public:
     void setNumber(double number)
     { m_number = number; }
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 protected:
     double m_number;
 };
@@ -184,7 +223,8 @@ public:
     void setBoolean(bool boolean)
     { m_boolean = boolean; }
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 protected:
     bool m_boolean;
 };
@@ -194,7 +234,8 @@ class NullNode : public JsonNode
 public:
     NullNode(JsonToken *token);
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 };
 
 class ArrayNode : public JsonNode
@@ -213,7 +254,8 @@ public:
 
     JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth);
+    size_t printSize(const JsonPrinterOption &option, int depth);
+    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
 private:
     std::vector<JsonNode *> m_vector;
 };
