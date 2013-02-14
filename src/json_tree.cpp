@@ -346,21 +346,46 @@ JsonNodeError ObjectNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from
 
 size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
 {
-    size_t object_size = 2;
+    depth++;
+    size_t return_size = 0;
     bool first = true;
-    int inc_depth = depth + 1;
+    int shift_width = depth * option.shiftSize();
+
+    if (option.pretty()) {
+        return_size += 2;
+    } else {
+        return_size++;
+    }
+
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        const std::string &property = (*it).first;
         if (first) {
             first = false;
         } else {
-            object_size += 2;
+            if (option.pretty()) {
+                return_size+=2;
+            } else {
+                return_size++;
+            }
         }
-        object_size += inc_depth * option.shiftSize() + (*it).first.size() + 3 + (*it).second->printSize(option, inc_depth);
-        if (!option.ascii_name())
-            object_size += 2;
+        if (option.pretty()) {
+            return_size += shift_width;
+        }
+        return_size += property.size();
+
+        if (option.pretty()) {
+            return_size += 3;
+        } else {
+            return_size = 1;
+        }
+
+        return_size += (*it).second->printSize(option,depth);
     }
-    object_size += depth * option.shiftSize() + 1;
-    return object_size;
+    if (option.pretty()) {
+        return_size += 1 + (shift_width - option.shiftSize());
+    }
+    return_size += 1;
+    return return_size;
 }
 
 bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
@@ -382,14 +407,14 @@ bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
             if (option.pretty()) {
                 if (!buffers.write(",\n",2))
                     return false;
-            } else {
+           } else {
                 if (!buffers.write(",",1))
                     return false;
             }
         }
         if (option.pretty()) {
             if (!buffers.write(
-                        std::string(' ', shift_width).c_str(),shift_width))
+                        std::string(shift_width,' ').c_str(),shift_width))
                 return false;
         }
         if (!buffers.write(property.c_str(), property.size()))
@@ -409,7 +434,7 @@ bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
 
     if (option.pretty()) {
         std::string before_close_bracket("\n");
-        before_close_bracket.append(std::string(' ',shift_width));
+        before_close_bracket.append(std::string(shift_width - option.shiftSize(),' '));
         if (!buffers.write(before_close_bracket.c_str(), before_close_bracket.size()))
             return false;
     }
@@ -616,20 +641,39 @@ JsonNodeError ArrayNode::fill(JsonTokenizer *tokenizer, JsonNode *continue_from)
 
 size_t ArrayNode::printSize(const JsonPrinterOption &option, int depth)
 {
-    size_t return_size = 2;
+    depth++;
+    int shift_width = option.shiftSize() * depth;
+    size_t return_size = 0;
+
+    if (option.pretty()) {
+        return_size += 2;
+    }else {
+        return_size++;
+    }
 
     bool first = true;
-    int inc_depth = depth + 1;
     for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
         if (first) {
             first = false;
         } else {
-            return_size += 2;
+            if (option.pretty())
+                return_size += 2;
+            else
+                return_size++;
+        }
+        if (option.pretty()) {
+            return_size += shift_width;
         }
 
-        return_size += inc_depth * option.shiftSize() + (*it)->printSize(option, inc_depth);
+        return_size += (*it)->printSize(option, depth);
     }
-    return_size += depth * option.shiftSize() + 1;
+
+    if (option.pretty()) {
+        return_size += 1 + (shift_width - option.shiftSize());
+    }
+
+    return_size++;
+
     return return_size;
 }
 
@@ -656,14 +700,18 @@ bool ArrayNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &op
                     return false;
             }
         }
+        if (option.pretty()) {
+            if (!buffers.write(std::string(shift_width,' ').c_str(),shift_width))
+                return false;
+        }
         if (!(*it)->print(buffers,option,depth))
             return false;
     }
 
     if (option.pretty()) {
-        std::string before_close_bracket("\n");
-        before_close_bracket.append(std::string(' ',shift_width));
-        if (!buffers.write(before_close_bracket.c_str(), before_close_bracket.size()))
+        if (!buffers.write("\n",1))
+            return false;
+        if (!buffers.write(std::string(shift_width - option.shiftSize(),' ').c_str(),shift_width - option.shiftSize()))
             return false;
     }
     if (!buffers.write("]",1))
