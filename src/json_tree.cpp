@@ -371,7 +371,7 @@ size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
         if (option.pretty()) {
             return_size += shift_width;
         }
-        return_size += property.size();
+        return_size += property.size() + 2;
 
         if (option.pretty()) {
             return_size += 3;
@@ -417,7 +417,11 @@ bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
                         std::string(shift_width,' ').c_str(),shift_width))
                 return false;
         }
+        if (!buffers.write("\"",1))
+            return false;
         if (!buffers.write(property.c_str(), property.size()))
+            return false;
+        if (!buffers.write("\"",1))
             return false;
         if (option.pretty()) {
             const char delimiter[] = " : ";
@@ -461,12 +465,18 @@ void StringNode::setString(const std::string &string)
 
 size_t StringNode::printSize(const JsonPrinterOption &option, int depth)
 {
-    return m_string.size();
+    return m_string.size() + 2;
 }
 
 bool StringNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
 {
-    return buffers.write(m_string.c_str(), m_string.size());
+    if (!buffers.write("\"",1))
+        return false;
+    if (!buffers.write(m_string.c_str(), m_string.size()))
+        return false;
+    if (!buffers.write("\"",1))
+        return false;
+    return true;
 }
 
 NumberNode::NumberNode(JsonToken *token)
