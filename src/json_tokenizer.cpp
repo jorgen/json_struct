@@ -286,6 +286,7 @@ public:
                     *chars_ahead = end - cursor_index;
                     return JsonError::NoError;
                 case ' ':
+                case '\n':
                     break;
                 default:
                     return JsonError::ExpectedDelimiter;
