@@ -70,7 +70,6 @@ enum class JsonError {
 class JsonTokenizer
 {
 public:
-
     JsonTokenizer();
     ~JsonTokenizer();
 
@@ -78,11 +77,15 @@ public:
     void allowNewLineAsTokenDelimiter(bool allow);
 
     void addData(const char *data, size_t size);
-    int registered_buffers() const;
+    size_t registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
     JsonError nextToken(JsonToken *next_token);
 
+    JsonTokenizer(const JsonTokenizer &other);
+    JsonTokenizer(JsonTokenizer &&other);
+    JsonTokenizer &operator=(const JsonTokenizer &rhs);
+    JsonTokenizer &operator=(JsonTokenizer &&rhs);
 private:
     JsonTokenizerPrivate *m_private;
 };

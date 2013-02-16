@@ -589,9 +589,33 @@ JsonTokenizer::JsonTokenizer()
 {
 }
 
+JsonTokenizer::JsonTokenizer(const JsonTokenizer &other)
+    : m_private(new JsonTokenizerPrivate(*other.m_private))
+{
+}
+
+JsonTokenizer::JsonTokenizer(JsonTokenizer &&other)
+    : m_private(other.m_private)
+{
+    other.m_private = 0;
+}
+
 JsonTokenizer::~JsonTokenizer()
 {
     delete m_private;
+}
+
+JsonTokenizer &JsonTokenizer::operator=(const JsonTokenizer &rhs)
+{
+    *m_private = *rhs.m_private;
+    return *this;
+}
+
+JsonTokenizer &JsonTokenizer::operator=(JsonTokenizer &&rhs)
+{
+    m_private = rhs.m_private;
+    rhs.m_private = 0;
+    return *this;
 }
 
 void JsonTokenizer::allowAsciiType(bool allow)
@@ -607,10 +631,9 @@ void JsonTokenizer::allowNewLineAsTokenDelimiter(bool allow)
 void JsonTokenizer::addData(const char *data, size_t data_size)
 {
     m_private->data_list.push_back(JsonData(data, data_size));
-
 }
 
-int JsonTokenizer::registered_buffers() const
+size_t JsonTokenizer::registered_buffers() const
 {
     return m_private->data_list.size();
 }
