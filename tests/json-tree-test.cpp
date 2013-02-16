@@ -26,34 +26,14 @@
 
 #include "json_tree.h"
 
-#include <assert.h>
+#include "json-test-data.h"
 
-const char json_data[] = u8R"(
-{
-    "StringNode" : "Some test data",
-    "NumberNode" : 4676.4,
-    "NullNode" : null,
-    "BooleanTrue" : true,
-    "BooleanFalse" : false,
-    "Object" : {
-        "SomeSubObjectProp": "RED"
-    },
-    "Array" : [
-        "String",
-        null,
-        true,
-        {
-            "SomeOtherObjectProp" : "GREEN"
-        }
-    ],
-    "LastStringNode" : "More test data"
-}
-)";
+#include <assert.h>
 
 static int check_json_tree_nodes()
 {
     JsonTokenizer tokenizer;
-    tokenizer.addData(json_data, sizeof(json_data));
+    tokenizer.addData(json_data2, sizeof(json_data2));
     auto created = JsonNode::create(&tokenizer);
     JsonNode *root = created.first;
     assert(root);

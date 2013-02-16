@@ -26,43 +26,17 @@
 
 #include "json_tokenizer.h"
 #include "tokenizer-test-util.h"
-
-const char json_data[] =
-"{"
-"   \"foo\": \"bar\","
-"   \"color\" : \"red\"\n"
-"   weather: \"clear\"\n"
-"   weather1 : \"clear1\"\n"
-"   ToBeTrue: true,"
-"   HeresANull : null\n"
-"   ThisIsFalse: false,\n\n"
-"   EscapedString: \"contains \\\"\","
-"   ThisIsANumber: 3.14\n"
-"   ThisIsAnObject: {"
-"       ThisIsASubType: \"red\""
-"   },"
-"   AnotherProp: \"prop\"\n"
-"   ThisIsAnotherObject: {"
-"       ThisIsAnotherASubType: \"blue\""
-"   },"
-"   ThisIsAnArray: ["
-"       12.4,"
-"       3,"
-"       43.2"
-"   ]\n"
-"   ThisIsAnObjectArray: ["
-"       { Test1: \"Test2\", Test3: \"Test4\" },"
-"       { Test5: true, Test7: false }"
-"   ]"
-"}";
+#include "json-test-data.h"
 
 static int check_json_with_string_and_ascii()
 {
+
+    fprintf(stderr, "%s\n", json_data1);
     JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
-    tokenizer.addData(json_data, sizeof(json_data));
+    tokenizer.addData(json_data1, sizeof(json_data1));
 
     JsonToken token;
     error = tokenizer.nextToken(&token);
