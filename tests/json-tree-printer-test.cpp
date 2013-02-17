@@ -28,24 +28,39 @@
 
 #include "json-test-data.h"
 
-#include <assert.h>
-
-static int check_json_tree_nodes()
+static int check_json_tree_printer()
 {
     JsonTokenizer tokenizer;
     tokenizer.addData(json_data2, sizeof(json_data2));
     auto created = JsonNode::create(&tokenizer);
-    JsonNode *root = created.first;
-    assert(root);
-    assert(created.second.error == JsonError::NoError);
 
+    JsonNode *root = created.first;
+
+    check_json_tree_from_json_data2(root);
+
+    JsonPrinterOption printerOption(true);
+    char buffer[4096];
+    JsonOutBufferHandler buffer_handler(buffer,4096);
+    assert(root->print(buffer_handler, printerOption));
+
+    size_t printed_size = root->printSize(printerOption);
+    size_t actual_size = strlen(buffer);
+
+    assert(printed_size == actual_size);
+
+    delete root;
+
+    tokenizer = JsonTokenizer();
+    tokenizer.addData(buffer, actual_size);
+    created = JsonNode::create(&tokenizer);
+    root = created.first;
     check_json_tree_from_json_data2(root);
 
     return 0;
 }
 
-int main(int argc, char **argv)
+int main(int argc ,char **argv)
 {
-    check_json_tree_nodes();
+    check_json_tree_printer();
     return 0;
 }

@@ -30,8 +30,6 @@
 
 static int check_json_with_string_and_ascii()
 {
-
-    fprintf(stderr, "%s\n", json_data1);
     JsonError error;
     JsonTokenizer tokenizer;
     tokenizer.allowAsciiType(true);

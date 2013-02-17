@@ -28,4 +28,5 @@ tests/json-tokenizer-test
 tests/json-tokenizer-fail-test
 tests/json-tokenizer-partial-test
 tests/json-tree-test
+tests/json-tree-printer-test
 
