@@ -376,7 +376,7 @@ size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
         if (option.pretty()) {
             return_size += 3;
         } else {
-            return_size = 1;
+            return_size += 1;
         }
 
         return_size += (*it).second->printSize(option,depth);
@@ -425,11 +425,11 @@ bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
             return false;
         if (option.pretty()) {
             const char delimiter[] = " : ";
-            if (!buffers.write(delimiter, sizeof(delimiter)-1))
+            if (!buffers.write(delimiter, 3))
                 return false;
         } else {
             const char delimiter[] = ":";
-            if (!buffers.write(delimiter, sizeof(delimiter)-1))
+            if (!buffers.write(delimiter, 1))
                 return false;
         }
         if (!(*it).second->print(buffers,option,depth))
