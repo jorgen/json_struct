@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <string>
 
-static int assert_token(const JsonToken &token, JsonToken::Type name_type, std::string property, JsonToken::Type data_type, std::string data)
+static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::string property, JT::Token::Type data_type, std::string data)
 {
     if (token.name_type != name_type) {
         fprintf(stderr, "token.name_type is: %d, expected %d\n", token.name_type, name_type);

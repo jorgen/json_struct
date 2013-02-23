@@ -32,12 +32,12 @@
 
 static int check_json_tree_nodes()
 {
-    JsonTokenizer tokenizer;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_data2, sizeof(json_data2));
-    auto created = JsonNode::create(&tokenizer);
-    JsonNode *root = created.first;
+    auto created = JT::Node::create(&tokenizer);
+    JT::Node *root = created.first;
     assert(root);
-    assert(created.second == JsonError::NoError);
+    assert(created.second == JT::Error::NoError);
 
     check_json_tree_from_json_data2(root);
 

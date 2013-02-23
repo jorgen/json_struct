@@ -35,21 +35,21 @@ const char json_with_ascii_property[] =
 
 static int check_fail_json_with_ascii_property()
 {
-    JsonError error;
-    JsonTokenizer tokenizer;
+    JT::Error error;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_with_ascii_property, sizeof(json_with_ascii_property));
 
-    JsonToken token;
+    JT::Token token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(token.data_type == JsonToken::ObjectStart);
+    assert(error == JT::Error::NoError);
+    assert(token.data_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::IlligalPropertyName);
+    assert(error == JT::Error::IlligalPropertyName);
 
     return 0;
 }
@@ -62,21 +62,21 @@ const char json_with_ascii_data[] =
 
 static int check_fail_json_with_ascii_data()
 {
-    JsonError error;
-    JsonTokenizer tokenizer;
+    JT::Error error;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_with_ascii_data, sizeof(json_with_ascii_data));
 
-    JsonToken token;
+    JT::Token token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(token.data_type == JsonToken::ObjectStart);
+    assert(error == JT::Error::NoError);
+    assert(token.data_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::IlligalDataValue);
+    assert(error == JT::Error::IlligalDataValue);
 
     return 0;
 }
@@ -89,21 +89,21 @@ const char json_with_new_line_seperator[] =
 
 static int check_fail_json_with_new_line_seperator()
 {
-    JsonError error;
-    JsonTokenizer tokenizer;
+    JT::Error error;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_with_new_line_seperator, sizeof(json_with_new_line_seperator));
 
-    JsonToken token;
+    JT::Token token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(token.data_type == JsonToken::ObjectStart);
+    assert(error == JT::Error::NoError);
+    assert(token.data_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::InvalidToken);
+    assert(error == JT::Error::InvalidToken);
 
     return 0;
 }
@@ -116,25 +116,25 @@ const char json_with_comma_before_obj_end[] =
 
 static int check_fail_json_with_comma_before_obj_end()
 {
-    JsonError error;
-    JsonTokenizer tokenizer;
+    JT::Error error;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_with_comma_before_obj_end, sizeof(json_with_comma_before_obj_end));
 
-    JsonToken token;
+    JT::Token token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(token.data_type == JsonToken::ObjectStart);
+    assert(error == JT::Error::NoError);
+    assert(token.data_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"color", JsonToken::String, "red") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"color", JT::Token::String, "red") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::ExpectedDataToken);
+    assert(error == JT::Error::ExpectedDataToken);
 
     return 0;
 }
@@ -147,21 +147,21 @@ const char json_with_illigal_chars[] =
 
 static int check_fail_json_with_illigal_chars()
 {
-    JsonError error;
-    JsonTokenizer tokenizer;
+    JT::Error error;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_with_illigal_chars, sizeof(json_with_illigal_chars));
 
-    JsonToken token;
+    JT::Token token;
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(token.data_type == JsonToken::ObjectStart);
+    assert(error == JT::Error::NoError);
+    assert(token.data_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::NoError);
-    assert(assert_token(token,JsonToken::String,"foo", JsonToken::String, "bar") == 0);
+    assert(error == JT::Error::NoError);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);
-    assert(error == JsonError::EncounteredIlligalChar);
+    assert(error == JT::Error::EncounteredIlligalChar);
 
     return 0;
 }

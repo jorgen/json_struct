@@ -30,18 +30,18 @@
 
 static int check_json_tree_printer()
 {
-    JsonTokenizer tokenizer;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_data2, sizeof(json_data2));
-    auto created = JsonNode::create(&tokenizer);
+    auto created = JT::Node::create(&tokenizer);
 
-    JsonNode *root = created.first;
+    JT::Node *root = created.first;
 
     check_json_tree_from_json_data2(root);
 
-    JsonPrinterOption printerOption(false);
+    JT::PrinterOption printerOption(false);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JsonOutBufferHandler buffer_handler(buffer,4096);
+    JT::OutBufferHandler buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);
@@ -51,9 +51,9 @@ static int check_json_tree_printer()
 
     delete root;
 
-    tokenizer = JsonTokenizer();
+    tokenizer = JT::Tokenizer();
     tokenizer.addData(buffer, actual_size);
-    created = JsonNode::create(&tokenizer);
+    created = JT::Node::create(&tokenizer);
     root = created.first;
     check_json_tree_from_json_data2(root);
 
@@ -62,18 +62,18 @@ static int check_json_tree_printer()
 
 static int check_json_tree_printer_pretty()
 {
-    JsonTokenizer tokenizer;
+    JT::Tokenizer tokenizer;
     tokenizer.addData(json_data2, sizeof(json_data2));
-    auto created = JsonNode::create(&tokenizer);
+    auto created = JT::Node::create(&tokenizer);
 
-    JsonNode *root = created.first;
+    JT::Node *root = created.first;
 
     check_json_tree_from_json_data2(root);
 
-    JsonPrinterOption printerOption(true);
+    JT::PrinterOption printerOption(true);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JsonOutBufferHandler buffer_handler(buffer,4096);
+    JT::OutBufferHandler buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);
@@ -83,9 +83,9 @@ static int check_json_tree_printer_pretty()
 
     delete root;
 
-    tokenizer = JsonTokenizer();
+    tokenizer = JT::Tokenizer();
     tokenizer.addData(buffer, actual_size);
-    created = JsonNode::create(&tokenizer);
+    created = JT::Node::create(&tokenizer);
     root = created.first;
     check_json_tree_from_json_data2(root);
 

@@ -27,6 +27,8 @@
 
 #include "json_tree.h"
 
+int check_json_tree_from_json_data2(JT::Node *root);
+
 const char json_data1[] = u8R"(
 {
    "foo": "bar",
@@ -80,66 +82,66 @@ const char json_data2[] = u8R"(
 }
 )";
 
-static int check_json_tree_from_json_data2(JsonNode *root)
+int check_json_tree_from_json_data2(JT::Node *root)
 {
-    StringNode *string_node = root->stringNodeAt("StringNode");
+    JT::StringNode *string_node = root->stringNodeAt("StringNode");
     assert(string_node);
     assert(string_node->string() == "Some test data");
 
-    NumberNode *number_node = root->numberNodeAt("NumberNode");
+    JT::NumberNode *number_node = root->numberNodeAt("NumberNode");
     assert(number_node);
     assert(number_node->number() < 4676.41 && number_node->number() > 4676.39);
 
-    NullNode *null_node = root->nullNodeAt("NullNode");
+    JT::NullNode *null_node = root->nullNodeAt("NullNode");
     assert(null_node);
 
-    BooleanNode *boolean_true_node = root->booleanNodeAt("BooleanTrue");
+    JT::BooleanNode *boolean_true_node = root->booleanNodeAt("BooleanTrue");
     assert(boolean_true_node);
     assert(boolean_true_node->boolean());
 
-    BooleanNode *boolean_false_node = root->booleanNodeAt("BooleanFalse");
+    JT::BooleanNode *boolean_false_node = root->booleanNodeAt("BooleanFalse");
     assert(boolean_false_node);
     assert(!boolean_false_node->boolean());
 
-    ObjectNode *sub_object = root->objectNodeAt("Object");
+    JT::ObjectNode *sub_object = root->objectNodeAt("Object");
     assert(sub_object);
-    StringNode *sub_prop1 = sub_object->stringNodeAt("SomeSubObjectProp");
+    JT::StringNode *sub_prop1 = sub_object->stringNodeAt("SomeSubObjectProp");
     assert(sub_prop1);
     assert(sub_prop1->string() == "RED");
 
-    StringNode *some_sub_prop2 = root->stringNodeAt("Object.SomeSubObjectProp");
+    JT::StringNode *some_sub_prop2 = root->stringNodeAt("Object.SomeSubObjectProp");
     assert(some_sub_prop2);
     assert(some_sub_prop2 == sub_prop1);
 
-    ArrayNode *array_node = root->arrayNodeAt("Array");
+    JT::ArrayNode *array_node = root->arrayNodeAt("Array");
     assert(array_node);
 
-    StringNode *string_in_array = array_node->index(0)->asStringNode();
+    JT::StringNode *string_in_array = array_node->index(0)->asStringNode();
     assert(string_in_array);
     assert(string_in_array->string() == "String");
 
-    NullNode *null_in_array = array_node->index(1)->asNullNode();
+    JT::NullNode *null_in_array = array_node->index(1)->asNullNode();
     assert(null_in_array);
 
-    BooleanNode *true_in_array = array_node->index(2)->asBooleanNode();
+    JT::BooleanNode *true_in_array = array_node->index(2)->asBooleanNode();
     assert(true_in_array);
     assert(true_in_array->boolean());
 
-    ObjectNode *object_in_array = array_node->index(3)->asObjectNode();
+    JT::ObjectNode *object_in_array = array_node->index(3)->asObjectNode();
     assert(object_in_array);
 
-    StringNode *string_in_object_in_array = object_in_array->stringNodeAt("SomeOtherObjectProp");
+    JT::StringNode *string_in_object_in_array = object_in_array->stringNodeAt("SomeOtherObjectProp");
     assert(string_in_object_in_array);
     assert(string_in_object_in_array->string() == "GREEN");
 
-    StringNode *last_string_node = root->stringNodeAt("LastStringNode");
+    JT::StringNode *last_string_node = root->stringNodeAt("LastStringNode");
     assert(last_string_node);
     assert(last_string_node->string() == "More test data");
 
-    StringNode *non_existing_string_node = root->stringNodeAt("NON EXISTING STRING NODE");
+    JT::StringNode *non_existing_string_node = root->stringNodeAt("NON EXISTING STRING NODE");
     assert(!non_existing_string_node);
 
-    NullNode *null_null_node = root->nullNodeAt("NoNullNodeHere");
+    JT::NullNode *null_null_node = root->nullNodeAt("NoNullNodeHere");
     assert(!null_null_node);
 
     return 0;

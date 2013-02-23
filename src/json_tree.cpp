@@ -25,7 +25,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-bool JsonOutBuffer::append(const char *data, size_t size)
+namespace JT {
+
+bool OutBuffer::append(const char *data, size_t size)
 {
     if (end + size > this->size)
         return false;
@@ -35,17 +37,17 @@ bool JsonOutBuffer::append(const char *data, size_t size)
     return true;
 }
 
-JsonOutBufferHandler::JsonOutBufferHandler(char *buffer, size_t size)
+OutBufferHandler::OutBufferHandler(char *buffer, size_t size)
 {
     m_buffers.push_back({buffer,size,0});
 }
 
-void JsonOutBufferHandler::appendBuffer(char *buffer, size_t size)
+void OutBufferHandler::appendBuffer(char *buffer, size_t size)
 {
     m_buffers.push_back({buffer,size,0});
 }
 
-void JsonOutBufferHandler::markCurrentPrintBufferFull()
+void OutBufferHandler::markCurrentPrintBufferFull()
 {
     m_finished_buffers.push_back(m_buffers.front());
     m_buffers.pop_front();
@@ -56,7 +58,7 @@ void JsonOutBufferHandler::markCurrentPrintBufferFull()
     }
 }
 
-bool JsonOutBufferHandler::canFit(size_t amount)
+bool OutBufferHandler::canFit(size_t amount)
 {
     while (m_buffers.size()) {
         if (currentPrintBuffer().canFit(amount))
@@ -66,7 +68,7 @@ bool JsonOutBufferHandler::canFit(size_t amount)
     return false;
 }
 
-bool JsonOutBufferHandler::write(const char *data, size_t size)
+bool OutBufferHandler::write(const char *data, size_t size)
 {
     if (!canFit(size))
         return false;
@@ -74,151 +76,151 @@ bool JsonOutBufferHandler::write(const char *data, size_t size)
     return true;
 }
 
-const JsonOutBuffer &JsonOutBufferHandler::firstFinishedBuffer() const
+const OutBuffer &OutBufferHandler::firstFinishedBuffer() const
 {
     if (m_finished_buffers.size())
         return m_finished_buffers.front();
     return m_buffers.front();
 }
 
-JsonNode::JsonNode(JsonNode::Type type)
+Node::Node(Node::Type type)
     : m_type(type)
 { }
-JsonNode::~JsonNode()
+Node::~Node()
 {
 }
 
-StringNode *JsonNode::stringNodeAt(const std::string &path) const
+StringNode *Node::stringNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asStringNode();
     return nullptr;
 }
 
-NumberNode *JsonNode::numberNodeAt(const std::string &path) const
+NumberNode *Node::numberNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asNumberNode();
     return nullptr;
 }
 
-BooleanNode *JsonNode::booleanNodeAt(const std::string &path) const
+BooleanNode *Node::booleanNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asBooleanNode();
     return nullptr;
 }
 
-NullNode *JsonNode::nullNodeAt(const std::string &path) const
+NullNode *Node::nullNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asNullNode();
     return nullptr;
 }
 
-ArrayNode *JsonNode::arrayNodeAt(const std::string &path) const
+ArrayNode *Node::arrayNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asArrayNode();
     return nullptr;
 }
 
-ObjectNode *JsonNode::objectNodeAt(const std::string &path) const
+ObjectNode *Node::objectNodeAt(const std::string &path) const
 {
-    JsonNode *node = nodeAt(path);
+    Node *node = nodeAt(path);
     if (node)
         return node->asObjectNode();
     return nullptr;
 }
 
-JsonNode *JsonNode::nodeAt(const std::string &path) const
+Node *Node::nodeAt(const std::string &path) const
 {
     return nullptr;
 }
 
-StringNode *JsonNode::asStringNode()
+StringNode *Node::asStringNode()
 {
     if (m_type == String)
         return static_cast<StringNode *>(this);
     return nullptr;
 }
 
-const StringNode *JsonNode::asStringNode() const
+const StringNode *Node::asStringNode() const
 {
     if (m_type == String)
         return static_cast<const StringNode *>(this);
     return nullptr;
 }
 
-NumberNode *JsonNode::asNumberNode()
+NumberNode *Node::asNumberNode()
 {
     if (m_type == Number)
         return static_cast<NumberNode *>(this);
     return nullptr;
 }
 
-const NumberNode *JsonNode::asNumberNode() const
+const NumberNode *Node::asNumberNode() const
 {
     if (m_type == Number)
         return static_cast<const NumberNode*>(this);
     return nullptr;
 }
 
-BooleanNode *JsonNode::asBooleanNode()
+BooleanNode *Node::asBooleanNode()
 {
     if (m_type == Bool)
         return static_cast<BooleanNode *>(this);
     return nullptr;
 }
 
-const BooleanNode *JsonNode::asBooleanNode() const
+const BooleanNode *Node::asBooleanNode() const
 {
     if (m_type == Bool)
         return static_cast<const BooleanNode *>(this);
     return nullptr;
 }
 
-NullNode *JsonNode::asNullNode()
+NullNode *Node::asNullNode()
 {
     if (m_type == Null)
         return static_cast<NullNode *>(this);
     return nullptr;
 }
 
-const NullNode *JsonNode::asNullNode() const
+const NullNode *Node::asNullNode() const
 {
     if (m_type == Null)
         return static_cast<const NullNode *>(this);
     return nullptr;
 }
 
-ArrayNode *JsonNode::asArrayNode()
+ArrayNode *Node::asArrayNode()
 {
     if (m_type == Array)
         return static_cast<ArrayNode *>(this);
     return nullptr;
 }
 
-const ArrayNode *JsonNode::asArrayNode() const
+const ArrayNode *Node::asArrayNode() const
 {
     if (m_type == Array)
         return static_cast<const ArrayNode *>(this);
     return nullptr;
 }
 
-ObjectNode *JsonNode::asObjectNode()
+ObjectNode *Node::asObjectNode()
 {
     if (m_type == Object)
         return static_cast<ObjectNode *>(this);
     return nullptr;
 }
 
-const ObjectNode *JsonNode::asObjectNode() const
+const ObjectNode *Node::asObjectNode() const
 {
     if (m_type == Object)
         return static_cast<const ObjectNode *>(this);
@@ -226,7 +228,7 @@ const ObjectNode *JsonNode::asObjectNode() const
 }
 
 ObjectNode::ObjectNode()
-    : JsonNode(JsonNode::Object)
+    : Node(Node::Object)
 {
 }
 
@@ -238,7 +240,7 @@ ObjectNode::~ObjectNode()
     }
 }
 
-JsonNode *ObjectNode::nodeAt(const std::string &path) const
+Node *ObjectNode::nodeAt(const std::string &path) const
 {
     size_t first_dot = path.find('.');
 
@@ -256,11 +258,11 @@ JsonNode *ObjectNode::nodeAt(const std::string &path) const
     auto it = m_map.find(first_node);
     if (it == m_map.end())
         return nullptr;
-    JsonNode *child_node = it->second;
+    Node *child_node = it->second;
     return child_node->nodeAt(path.substr(first_dot+1));
 }
 
-JsonNode *ObjectNode::node(const std::string &child_node) const
+Node *ObjectNode::node(const std::string &child_node) const
 {
     auto it = m_map.find(child_node);
     if (it == m_map.end())
@@ -268,37 +270,37 @@ JsonNode *ObjectNode::node(const std::string &child_node) const
     return it->second;
 }
 
-void ObjectNode::insertNode(const std::string &name, JsonNode *node, bool replace)
+void ObjectNode::insertNode(const std::string &name, Node *node, bool replace)
 {
-    auto ret = m_map.insert(std::pair<std::string, JsonNode *>(name, node));
+    auto ret = m_map.insert(std::pair<std::string, Node *>(name, node));
     if (ret.second == false && replace) {
         delete ret.first->second;
         m_map.erase(ret.first);
-        ret = m_map.insert(std::pair<std::string, JsonNode *>(name, node));
+        ret = m_map.insert(std::pair<std::string, Node *>(name, node));
         assert(ret.second == true);
     }
 }
 
-JsonNode *ObjectNode::take(const std::string &name)
+Node *ObjectNode::take(const std::string &name)
 {
     auto it = m_map.find(name);
     if (it == m_map.end())
         return nullptr;
-    JsonNode *child_node = it->second;
+    Node *child_node = it->second;
     m_map.erase(it);
     return child_node;
 }
 
-JsonError ObjectNode::fill(JsonTokenizer *tokenizer)
+Error ObjectNode::fill(Tokenizer *tokenizer)
 {
-    JsonToken token;
-    JsonError error;
-    while ((error = tokenizer->nextToken(&token)) == JsonError::NoError) {
-        if (token.data_type == JsonToken::ObjectEnd) {
-            return JsonError::NoError;
+    Token token;
+    Error error;
+    while ((error = tokenizer->nextToken(&token)) == Error::NoError) {
+        if (token.data_type == Token::ObjectEnd) {
+            return Error::NoError;
         }
-        auto created = JsonNode::create(&token, tokenizer);
-        if (created.second != JsonError::NoError) {
+        auto created = Node::create(&token, tokenizer);
+        if (created.second != Error::NoError) {
             return created.second;
         }
 
@@ -308,7 +310,7 @@ JsonError ObjectNode::fill(JsonTokenizer *tokenizer)
     return error;
 }
 
-size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
+size_t ObjectNode::printSize(const PrinterOption &option, int depth)
 {
     depth++;
     size_t return_size = 0;
@@ -352,7 +354,7 @@ size_t ObjectNode::printSize(const JsonPrinterOption &option, int depth)
     return return_size;
 }
 
-bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool ObjectNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     depth++;
     if (option.pretty()) {
@@ -411,8 +413,8 @@ bool ObjectNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
     return true;
 }
 
-StringNode::StringNode(JsonToken *token)
-    : JsonNode(String)
+StringNode::StringNode(Token *token)
+    : Node(String)
     , m_string(token->data, token->data_length)
 {
 }
@@ -427,12 +429,12 @@ void StringNode::setString(const std::string &string)
     m_string = string;
 }
 
-size_t StringNode::printSize(const JsonPrinterOption &option, int depth)
+size_t StringNode::printSize(const PrinterOption &option, int depth)
 {
     return m_string.size() + 2;
 }
 
-bool StringNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool StringNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     if (!buffers.write("\"",1))
         return false;
@@ -443,8 +445,8 @@ bool StringNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &o
     return true;
 }
 
-NumberNode::NumberNode(JsonToken *token)
-    : JsonNode(Number)
+NumberNode::NumberNode(Token *token)
+    : Node(Number)
 {
     std::string null_terminated(token->data, token->data_length);
     char **success = 0;
@@ -454,7 +456,7 @@ NumberNode::NumberNode(JsonToken *token)
     }
 }
 
-size_t NumberNode::printSize(const JsonPrinterOption &option, int depth)
+size_t NumberNode::printSize(const PrinterOption &option, int depth)
 {
     char buff[20];
     size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
@@ -462,15 +464,15 @@ size_t NumberNode::printSize(const JsonPrinterOption &option, int depth)
     return size;
 }
 
-bool NumberNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool NumberNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     char buff[20];
     size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
     return buffers.write(buff,size);
 }
 
-BooleanNode::BooleanNode(JsonToken *token)
-    : JsonNode(Bool)
+BooleanNode::BooleanNode(Token *token)
+    : Node(Bool)
 {
     if (*token->data == 't' || *token->data == 'T')
         m_boolean = true;
@@ -478,12 +480,12 @@ BooleanNode::BooleanNode(JsonToken *token)
         m_boolean = false;
 }
 
-size_t BooleanNode::printSize(const JsonPrinterOption &option, int depth)
+size_t BooleanNode::printSize(const PrinterOption &option, int depth)
 {
     return m_boolean ? 4 : 5;
 }
 
-bool BooleanNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool BooleanNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     if (m_boolean)
         return buffers.write("true",4);
@@ -491,22 +493,22 @@ bool BooleanNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &
         return buffers.write("false",5);
 }
 
-NullNode::NullNode(JsonToken *token)
-    : JsonNode(Null)
+NullNode::NullNode(Token *token)
+    : Node(Null)
 { }
 
-size_t NullNode::printSize(const JsonPrinterOption &option, int depth)
+size_t NullNode::printSize(const PrinterOption &option, int depth)
 {
     return 4;
 }
 
-bool NullNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool NullNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     return buffers.write("null",4);
 }
 
 ArrayNode::ArrayNode()
-    : JsonNode(Array)
+    : Node(Array)
 {
 }
 
@@ -517,7 +519,7 @@ ArrayNode::~ArrayNode()
     }
 }
 
-void ArrayNode::insert(JsonNode *node, size_t index)
+void ArrayNode::insert(Node *node, size_t index)
 {
     if (index >= m_vector.size()) {
         m_vector.push_back(node);
@@ -528,12 +530,12 @@ void ArrayNode::insert(JsonNode *node, size_t index)
     m_vector.insert(it + index, node);
 }
 
-void ArrayNode::append(JsonNode *node)
+void ArrayNode::append(Node *node)
 {
     m_vector.push_back(node);
 }
 
-JsonNode *ArrayNode::index(size_t index)
+Node *ArrayNode::index(size_t index)
 {
     if (index >= m_vector.size()) {
         return nullptr;
@@ -542,14 +544,14 @@ JsonNode *ArrayNode::index(size_t index)
     return *(it+index);
 }
 
-JsonNode *ArrayNode::take(size_t index)
+Node *ArrayNode::take(size_t index)
 {
     if (index >= m_vector.size()) {
         return nullptr;
     }
 
     auto it = m_vector.begin();
-    JsonNode *return_node = *(it + index);
+    Node *return_node = *(it + index);
     m_vector.erase(it+index);
     return return_node;
 }
@@ -559,17 +561,17 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
-JsonError ArrayNode::fill(JsonTokenizer *tokenizer)
+Error ArrayNode::fill(Tokenizer *tokenizer)
 {
-    JsonToken token;
-    JsonError error;
-    while ((error = tokenizer->nextToken(&token)) == JsonError::NoError) {
-        if (token.data_type == JsonToken::ArrayEnd) {
-            return JsonError::NoError;
+    Token token;
+    Error error;
+    while ((error = tokenizer->nextToken(&token)) == Error::NoError) {
+        if (token.data_type == Token::ArrayEnd) {
+            return Error::NoError;
         }
-        auto created = JsonNode::create(&token, tokenizer);
+        auto created = Node::create(&token, tokenizer);
 
-        if (created.second != JsonError::NoError)
+        if (created.second != Error::NoError)
             return created.second;
 
         m_vector.push_back(created.first);
@@ -578,7 +580,7 @@ JsonError ArrayNode::fill(JsonTokenizer *tokenizer)
     return error;
 }
 
-size_t ArrayNode::printSize(const JsonPrinterOption &option, int depth)
+size_t ArrayNode::printSize(const PrinterOption &option, int depth)
 {
     depth++;
     int shift_width = option.shiftSize() * depth;
@@ -616,7 +618,7 @@ size_t ArrayNode::printSize(const JsonPrinterOption &option, int depth)
     return return_size;
 }
 
-bool ArrayNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth)
+bool ArrayNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
 {
     depth++;
     if (option.pretty()) {
@@ -659,35 +661,35 @@ bool ArrayNode::print(JsonOutBufferHandler &buffers, const JsonPrinterOption &op
 
 }
 
-std::pair<JsonNode *, JsonError> JsonNode::create(JsonToken *token, JsonTokenizer *tokenizer)
+std::pair<Node *, Error> Node::create(Token *token, Tokenizer *tokenizer)
 {
-    std::pair<JsonNode *, JsonError> ret(nullptr, JsonError::NoError);
+    std::pair<Node *, Error> ret(nullptr, Error::NoError);
     switch (token->data_type) {
-        case JsonToken::ArrayStart:
+        case Token::ArrayStart:
             {
                 ArrayNode *return_node = new ArrayNode();
                 ret.first = return_node;
                 ret.second = return_node->fill(tokenizer);
             }
             break;
-        case JsonToken::ObjectStart:
+        case Token::ObjectStart:
             {
                 ObjectNode *return_node = new ObjectNode();
                 ret.first = return_node;
                 ret.second = return_node->fill(tokenizer);
             }
             break;
-        case JsonToken::String:
-        case JsonToken::Ascii:
+        case Token::String:
+        case Token::Ascii:
             ret.first = new StringNode(token);
             break;
-        case JsonToken::Number:
+        case Token::Number:
             ret.first = new NumberNode(token);
             break;
-        case JsonToken::Bool:
+        case Token::Bool:
             ret.first = new BooleanNode(token);
             break;
-        case JsonToken::Null:
+        case Token::Null:
             ret.first = new NullNode(token);
             break;
         default:
@@ -696,12 +698,14 @@ std::pair<JsonNode *, JsonError> JsonNode::create(JsonToken *token, JsonTokenize
     return ret;
 }
 
-std::pair<JsonNode *, JsonError> JsonNode::create(JsonTokenizer *tokenizer)
+std::pair<Node *, Error> Node::create(Tokenizer *tokenizer)
 {
-    JsonToken token;
+    Token token;
     auto token_error = tokenizer->nextToken(&token);
-    if (token_error != JsonError::NoError) {
-        return std::pair<JsonNode *, JsonError>(nullptr, token_error);
+    if (token_error != Error::NoError) {
+        return std::pair<Node *, Error>(nullptr, token_error);
     }
-    return JsonNode::create(&token, tokenizer);
+    return Node::create(&token, tokenizer);
 }
+
+} //namespace JT

@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+namespace JT {
+
 class AsciiState
 {
 public:
@@ -38,14 +40,14 @@ public:
         , m_true("true")
         , m_false("false")
     { }
-    JsonToken::Type type(const char *data, int length) {
+    Token::Type type(const char *data, int length) {
         if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
-            return JsonToken::Null;
+            return Token::Null;
         if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
-            return JsonToken::Bool;
+            return Token::Bool;
         if (m_false.compare(0,m_false.size(), data, 0, length) == 0)
-            return JsonToken::Bool;
-        return JsonToken::Ascii;
+            return Token::Bool;
+        return Token::Ascii;
     }
 private:
     std::string m_null;
@@ -53,9 +55,9 @@ private:
     std::string m_false;
 };
 
-struct JsonData
+struct Data
 {
-    JsonData(const char *data, size_t size)
+    Data(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
@@ -64,22 +66,22 @@ struct JsonData
     size_t size;
 };
 
-struct JsonIntermediateToken
+struct IntermediateToken
 {
-    JsonIntermediateToken()
+    IntermediateToken()
         : intermedia_set(false)
         , name_type_set(false)
         , data_type_set(false)
-        , name_type(JsonToken::Error)
-        , data_type(JsonToken::Error)
+        , name_type(Token::Error)
+        , data_type(Token::Error)
     { }
 
     void clear() {
         intermedia_set = false;
         name_type_set = false;
         data_type_set = false;
-        name_type = JsonToken::Error;
-        data_type = JsonToken::Error;
+        name_type = Token::Error;
+        data_type = Token::Error;
         name.clear();
         data.clear();
     }
@@ -87,13 +89,13 @@ struct JsonIntermediateToken
     bool intermedia_set;
     bool name_type_set;
     bool data_type_set;
-    JsonToken::Type name_type;
-    JsonToken::Type data_type;
+    Token::Type name_type;
+    Token::Type data_type;
     std::string name;
     std::string data;
 };
 
-class JsonTokenizerPrivate
+class TokenizerPrivate
 {
 public:
     enum InTokenState {
@@ -109,12 +111,12 @@ public:
         FoundEnd
     };
 
-    JsonTokenizerPrivate()
+    TokenizerPrivate()
         : cursor_index(0)
         , current_data_start(0)
         , token_state(FindingName)
         , property_state(NoStartFound)
-        , property_type(JsonToken::Error)
+        , property_type(Token::Error)
         , is_escaped(false)
         , allow_ascii_properties(false)
         , allow_new_lines(false)
@@ -123,7 +125,7 @@ public:
     {
     }
 
-    ~JsonTokenizerPrivate()
+    ~TokenizerPrivate()
     {
     }
 
@@ -136,11 +138,11 @@ public:
     void resetForNewValue()
     {
         property_state = NoStartFound;
-        property_type = JsonToken::Error;
+        property_type = Token::Error;
         current_data_start = 0;
     }
 
-    JsonError findStringEnd(const JsonData &json_data, size_t *chars_ahead)
+    Error findStringEnd(const Data &json_data, size_t *chars_ahead)
     {
         for (size_t end = cursor_index; end < json_data.size; end++) {
             if (is_escaped) {
@@ -153,18 +155,18 @@ public:
                     break;
                 case '"':
                     *chars_ahead = end + 1 - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
 
                 default:
                     break;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    JsonError findAsciiEnd(const JsonData &json_data, size_t *chars_ahead)
+    Error findAsciiEnd(const Data &json_data, size_t *chars_ahead)
     {
-        assert(property_type == JsonToken::Ascii);
+        assert(property_type == Token::Ascii);
         for (size_t end = cursor_index; end < json_data.size; end++) {
             char ascii_code = *(json_data.data + end);
             if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
@@ -173,16 +175,16 @@ public:
                 continue;
             } else if (ascii_code == '\0') {
                 *chars_ahead = end - cursor_index;
-                return JsonError::NeedMoreData;
+                return Error::NeedMoreData;
             } else {
                 *chars_ahead = end - cursor_index;
-                return JsonError::NoError;
+                return Error::NoError;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    JsonError findNumberEnd(const JsonData &json_data, size_t *chars_ahead)
+    Error findNumberEnd(const Data &json_data, size_t *chars_ahead)
     {
         for (size_t end = cursor_index; end < json_data.size; end++) {
             char number_code = *(json_data.data + end);
@@ -197,14 +199,14 @@ public:
                     continue;
                 default:
                     *chars_ahead = end - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    JsonError findStartOfNextValue(JsonToken::Type *type,
-            const JsonData &json_data,
+    Error findStartOfNextValue(Token::Type *type,
+            const Data &json_data,
             size_t *chars_ahead)
     {
 
@@ -217,25 +219,25 @@ public:
                 case '\0':
                     break;
                 case '"':
-                    *type = JsonToken::String;
+                    *type = Token::String;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case '{':
-                    *type = JsonToken::ObjectStart;
+                    *type = Token::ObjectStart;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case '}':
-                    *type = JsonToken::ObjectEnd;
+                    *type = Token::ObjectEnd;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case '[':
-                    *type = JsonToken::ArrayStart;
+                    *type = Token::ArrayStart;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case ']':
-                    *type = JsonToken::ArrayEnd;
+                    *type = Token::ArrayEnd;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case '-':
                 case '+':
                 case '0':
@@ -248,86 +250,86 @@ public:
                 case '7':
                 case '8':
                 case '9':
-                    *type = JsonToken::Number;
+                    *type = Token::Number;
                     *chars_ahead = current_pos - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 default:
                     char ascii_code = *(json_data.data + current_pos);
                     if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
                             (ascii_code >= '^' && ascii_code <= 'z')) {
-                        *type = JsonToken::Ascii;
+                        *type = Token::Ascii;
                         *chars_ahead = current_pos - cursor_index;;
-                        return JsonError::NoError;
+                        return Error::NoError;
                     } else {
                         *chars_ahead = current_pos - cursor_index;
-                        return JsonError::EncounteredIlligalChar;
+                        return Error::EncounteredIlligalChar;
                     }
                     break;
             }
 
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    JsonError findDelimiter(const JsonData &json_data, size_t *chars_ahead)
+    Error findDelimiter(const Data &json_data, size_t *chars_ahead)
     {
         for (size_t end = cursor_index; end < json_data.size; end++) {
             switch(*(json_data.data + end)) {
                 case ':':
                     token_state = FindingData;
                     *chars_ahead = end + 1 - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case ',':
                     token_state = FindingName;
                     *chars_ahead = end + 1 - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case ']':
                     token_state = FindingName;
                     *chars_ahead = end - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case ' ':
                 case '\n':
                     break;
                 default:
-                    return JsonError::ExpectedDelimiter;
+                    return Error::ExpectedDelimiter;
                     break;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    JsonError findTokenEnd(const JsonData &json_data, size_t *chars_ahead)
+    Error findTokenEnd(const Data &json_data, size_t *chars_ahead)
     {
         for (size_t end = cursor_index; end < json_data.size; end++) {
             switch(*(json_data.data + end)) {
                 case ',':
                     expecting_prop_or_annonymous_data = true;
                     *chars_ahead = end + 1 - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case '\n':
                     if (allow_new_lines) {
                         *chars_ahead = end + 1 - cursor_index;
-                        return JsonError::NoError;
+                        return Error::NoError;
                     }
                     break;
                 case ']':
                 case '}':
                     *chars_ahead = end - cursor_index;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case ' ':
                 case '\0':
                     break;
                 default:
                     *chars_ahead = end + 1 - cursor_index;
-                    return JsonError::InvalidToken;
+                    return Error::InvalidToken;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    void releaseFirstJsonData()
+    void releaseFirstData()
     {
-        const JsonData &json_data = data_list.front();
+        const Data &json_data = data_list.front();
         for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
             (*it)(json_data.data);
         }
@@ -336,16 +338,16 @@ public:
         current_data_start = 0;
     }
 
-    JsonError populateFromData(const char **data, int *length, JsonToken::Type *type, const JsonData &json_data)
+    Error populateFromData(const char **data, int *length, Token::Type *type, const Data &json_data)
     {
         size_t diff = 0;
-        JsonError error = JsonError::NoError;
+        Error error = Error::NoError;
         *length = 0;
         *data = json_data.data + cursor_index;
         if (property_state == NoStartFound) {
-            JsonError error = findStartOfNextValue(type, json_data, &diff);
-            if (error != JsonError::NoError) {
-                *type = JsonToken::Error;
+            Error error = findStartOfNextValue(type, json_data, &diff);
+            if (error != Error::NoError) {
+                *type = Token::Error;
                 return error;
             }
 
@@ -355,8 +357,8 @@ public:
             property_type = *type;
 
 
-            if (*type == JsonToken::ObjectStart || *type == JsonToken::ObjectEnd
-                    || *type == JsonToken::ArrayStart || *type == JsonToken::ArrayEnd) {
+            if (*type == Token::ObjectStart || *type == Token::ObjectEnd
+                    || *type == Token::ArrayStart || *type == Token::ArrayEnd) {
                 *length = 1;
                 property_state = FoundEnd;
             } else {
@@ -366,20 +368,20 @@ public:
 
         if (property_state == FindingEnd) {
             switch (*type) {
-            case JsonToken::String:
+            case Token::String:
                 error = findStringEnd(json_data, &diff);
                 break;
-            case JsonToken::Ascii:
+            case Token::Ascii:
                 error = findAsciiEnd(json_data, &diff);
                 break;
-            case JsonToken::Number:
+            case Token::Number:
                 error = findNumberEnd(json_data, &diff);
                 break;
             default:
-                return JsonError::InvalidToken;
+                return Error::InvalidToken;
             }
 
-            if (error != JsonError::NoError) {
+            if (error != Error::NoError) {
                 return error;
             }
 
@@ -388,22 +390,22 @@ public:
             property_state = FoundEnd;
         }
 
-        return JsonError::NoError;
+        return Error::NoError;
     }
 
-    JsonError populateNextTokenFromData(JsonToken *next_token, const JsonData &json_data)
+    Error populateNextTokenFromData(Token *next_token, const Data &json_data)
     {
         while (cursor_index < json_data.size) {
             size_t diff = 0;
             const char *data;
             int data_length;
-            JsonToken::Type type;
-            JsonError error;
+            Token::Type type;
+            Error error;
             switch (token_state) {
                 case FindingName:
                     type = intermediate_token.name_type;
                     error = populateFromData(&data, &data_length, &type, json_data);
-                    if (error == JsonError::NeedMoreData) {
+                    if (error == Error::NeedMoreData) {
                         if (property_state > NoStartFound) {
                             intermediate_token.intermedia_set = true;
                             size_t to_null = strnlen(data , json_data.size - current_data_start);
@@ -424,27 +426,27 @@ public:
                     }
 
                     switch (type) {
-                        case JsonToken::ObjectEnd:
-                        case JsonToken::ArrayEnd:
+                        case Token::ObjectEnd:
+                        case Token::ArrayEnd:
                             if (expecting_prop_or_annonymous_data) {
-                                return JsonError::ExpectedDataToken;
+                                return Error::ExpectedDataToken;
                             }
-                        case JsonToken::ObjectStart:
-                        case JsonToken::ArrayStart:
+                        case Token::ObjectStart:
+                        case Token::ArrayStart:
                             next_token->name = "";
                             next_token->name_length = 0;
-                            next_token->name_type = JsonToken::String;
+                            next_token->name_type = Token::String;
                             next_token->data = data;
                             next_token->data_length = data_length;
                             next_token->data_type = type;
                             expecting_prop_or_annonymous_data = false;
-                            if (type == JsonToken::ObjectStart || type == JsonToken::ArrayStart)
+                            if (type == Token::ObjectStart || type == Token::ArrayStart)
                                 token_state = FindingName;
                             else
                                 token_state = FindingTokenEnd;
-                            return JsonError::NoError;
+                            return Error::NoError;
 
-                        case JsonToken::String:
+                        case Token::String:
                             next_token->name = data + 1;
                             next_token->name_length = data_length - 2;
                             break;
@@ -454,10 +456,10 @@ public:
                             break;
                     }
 
-                    if (error != JsonError::NoError)
+                    if (error != Error::NoError)
                         return error;
 
-                    if (type == JsonToken::Ascii) {
+                    if (type == Token::Ascii) {
                         next_token->name_type = ascii_state.type(next_token->name, next_token->name_length);
                     } else {
                         next_token->name_type = type;
@@ -468,13 +470,13 @@ public:
 
                 case FindingDelimiter:
                     error = findDelimiter(json_data, &diff);
-                    if (error != JsonError::NoError) {
+                    if (error != Error::NoError) {
                         if (intermediate_token.intermedia_set == false) {
                             intermediate_token.name.append(next_token->name, next_token->name_length);
                             intermediate_token.name_type = next_token->name_type;
                             intermediate_token.intermedia_set = true;
                         }
-                        return JsonError::NeedMoreData;
+                        return Error::NeedMoreData;
                     }
                     cursor_index += diff;
                     resetForNewValue();
@@ -486,12 +488,12 @@ public:
                         next_token->data_length = next_token->name_length;
                         next_token->name_length = 0;
                         next_token->data_type = next_token->name_type;
-                        next_token->name_type = JsonToken::String;
-                        return JsonError::NoError;
+                        next_token->name_type = Token::String;
+                        return Error::NoError;
                     } else {
-                        if (next_token->name_type != JsonToken::String) {
-                            if (!allow_ascii_properties || next_token->name_type != JsonToken::Ascii) {
-                                return JsonError::IlligalPropertyName;
+                        if (next_token->name_type != Token::String) {
+                            if (!allow_ascii_properties || next_token->name_type != Token::Ascii) {
+                                return Error::IlligalPropertyName;
                             }
                         }
                     }
@@ -500,7 +502,7 @@ public:
                 case FindingData:
                     type = intermediate_token.data_type;
                     error = populateFromData(&data, &data_length, &type, json_data);
-                    if (error == JsonError::NeedMoreData) {
+                    if (error == Error::NeedMoreData) {
                         if (intermediate_token.intermedia_set == false) {
                             intermediate_token.name.append(next_token->name, next_token->name_length);
                             intermediate_token.name_type = next_token->name_type;
@@ -528,37 +530,37 @@ public:
                         type = intermediate_token.data_type;
                     }
 
-                    if (type == JsonToken::String) {
+                    if (type == Token::String) {
                         next_token->data = data + 1;
                         next_token->data_length = data_length - 2;
                     } else {
                         next_token->data = data;
                         next_token->data_length = data_length;
                     }
-                    if (type == JsonToken::Ascii) {
+                    if (type == Token::Ascii) {
                         next_token->data_type = ascii_state.type(next_token->data, next_token->data_length);
                     } else {
                         next_token->data_type = type;
                     }
 
-                    if (next_token->data_type  == JsonToken::Ascii && !allow_ascii_properties) 
-                        return JsonError::IlligalDataValue;
+                    if (next_token->data_type  == Token::Ascii && !allow_ascii_properties) 
+                        return Error::IlligalDataValue;
 
-                    if (type == JsonToken::ObjectStart || type == JsonToken::ArrayStart)
+                    if (type == Token::ObjectStart || type == Token::ArrayStart)
                         token_state = FindingName;
 
-                    if (error != JsonError::NoError)
+                    if (error != Error::NoError)
                         return error;
 
-                    if (next_token->data_type == JsonToken::ObjectStart
-                            || next_token->data_type == JsonToken::ArrayStart) {
-                        return JsonError::NoError;
+                    if (next_token->data_type == Token::ObjectStart
+                            || next_token->data_type == Token::ArrayStart) {
+                        return Error::NoError;
                     }
                     token_state = FindingTokenEnd;
-                    return JsonError::NoError;
+                    return Error::NoError;
                 case FindingTokenEnd:
                     error = findTokenEnd(json_data, &diff);
-                    if (error != JsonError::NoError) {
+                    if (error != Error::NoError) {
                         return error;
                     }
                     cursor_index += diff;
@@ -566,104 +568,104 @@ public:
                     break;
             }
         }
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
-    std::list<JsonData> data_list;
+    std::list<Data> data_list;
     std::list<std::function<void(const char *)>> release_callback_list;
     size_t cursor_index;
     size_t current_data_start;
     InTokenState token_state;
     InPropertyState property_state;
-    JsonToken::Type property_type;
+    Token::Type property_type;
     AsciiState ascii_state;
     bool is_escaped;
     bool allow_ascii_properties;
     bool allow_new_lines;
     bool expecting_prop_or_annonymous_data;
     bool continue_after_need_more_data;
-    JsonIntermediateToken intermediate_token;
+    IntermediateToken intermediate_token;
 };
 
-JsonTokenizer::JsonTokenizer()
-    : m_private(new JsonTokenizerPrivate())
+Tokenizer::Tokenizer()
+    : m_private(new TokenizerPrivate())
 {
 }
 
-JsonTokenizer::JsonTokenizer(const JsonTokenizer &other)
-    : m_private(new JsonTokenizerPrivate(*other.m_private))
+Tokenizer::Tokenizer(const Tokenizer &other)
+    : m_private(new TokenizerPrivate(*other.m_private))
 {
 }
 
-JsonTokenizer::JsonTokenizer(JsonTokenizer &&other)
+Tokenizer::Tokenizer(Tokenizer &&other)
     : m_private(other.m_private)
 {
     other.m_private = 0;
 }
 
-JsonTokenizer::~JsonTokenizer()
+Tokenizer::~Tokenizer()
 {
     delete m_private;
 }
 
-JsonTokenizer &JsonTokenizer::operator=(const JsonTokenizer &rhs)
+Tokenizer &Tokenizer::operator=(const Tokenizer &rhs)
 {
     *m_private = *rhs.m_private;
     return *this;
 }
 
-JsonTokenizer &JsonTokenizer::operator=(JsonTokenizer &&rhs)
+Tokenizer &Tokenizer::operator=(Tokenizer &&rhs)
 {
     m_private = rhs.m_private;
     rhs.m_private = 0;
     return *this;
 }
 
-void JsonTokenizer::allowAsciiType(bool allow)
+void Tokenizer::allowAsciiType(bool allow)
 {
     m_private->allow_ascii_properties = allow;
 }
 
-void JsonTokenizer::allowNewLineAsTokenDelimiter(bool allow)
+void Tokenizer::allowNewLineAsTokenDelimiter(bool allow)
 {
     m_private->allow_new_lines = allow;
 }
 
-void JsonTokenizer::addData(const char *data, size_t data_size)
+void Tokenizer::addData(const char *data, size_t data_size)
 {
-    m_private->data_list.push_back(JsonData(data, data_size));
+    m_private->data_list.push_back(Data(data, data_size));
 }
 
-size_t JsonTokenizer::registered_buffers() const
+size_t Tokenizer::registered_buffers() const
 {
     return m_private->data_list.size();
 }
 
-void JsonTokenizer::registerRelaseCallback(std::function<void(const char *)> function)
+void Tokenizer::registerRelaseCallback(std::function<void(const char *)> function)
 {
     m_private->release_callback_list.push_back(function);
 }
 
-JsonError JsonTokenizer::nextToken(JsonToken *next_token)
+Error Tokenizer::nextToken(Token *next_token)
 {
     if (!m_private->data_list.size()) {
-        return JsonError::NeedMoreData;
+        return Error::NeedMoreData;
     }
 
     if (!m_private->continue_after_need_more_data)
         m_private->resetForNewToken();
 
-    JsonError error = JsonError::NeedMoreData;
-    while (error == JsonError::NeedMoreData && m_private->data_list.size()) {
-        const JsonData &json_data = m_private->data_list.front();
+    Error error = Error::NeedMoreData;
+    while (error == Error::NeedMoreData && m_private->data_list.size()) {
+        const Data &json_data = m_private->data_list.front();
         error = m_private->populateNextTokenFromData(next_token, json_data);
 
-        if (error != JsonError::NoError) {
-            m_private->releaseFirstJsonData();
+        if (error != Error::NoError) {
+            m_private->releaseFirstData();
         }
     }
 
-    m_private->continue_after_need_more_data = error == JsonError::NeedMoreData;
+    m_private->continue_after_need_more_data = error == Error::NeedMoreData;
 
     if (next_token->name_length) {
         std::string name(next_token->name, next_token->name_length);
@@ -671,3 +673,5 @@ JsonError JsonTokenizer::nextToken(JsonToken *next_token)
 
     return error;
 }
+
+} //namespace

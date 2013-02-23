@@ -30,19 +30,21 @@
 #include <map>
 #include <list>
 
-class JsonNode;
+namespace JT {
+
+class Node;
 class ObjectNode;
 class StringNode;
 class NumberNode;
 class BooleanNode;
 class NullNode;
 class ArrayNode;
-class JsonPrinter;
+class Printer;
 
-class JsonPrinterOption
+class PrinterOption
 {
 public:
-    JsonPrinterOption(bool pretty = false, bool ascii_name = false)
+    PrinterOption(bool pretty = false, bool ascii_name = false)
         : m_shift_size(4)
         , m_pretty(pretty)
         , m_ascii_name(ascii_name)
@@ -58,7 +60,7 @@ private:
     bool m_ascii_name;
 };
 
-class JsonOutBuffer
+class OutBuffer
 {
 public:
     bool canFit(size_t amount) const { return size - end >= amount; }
@@ -68,31 +70,30 @@ public:
     size_t end;
 };
 
-
-class JsonOutBufferHandler
+class OutBufferHandler
 {
 public:
-    JsonOutBufferHandler(char *buffer, size_t size);
+    OutBufferHandler(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
 
-    const JsonOutBuffer &currentPrintBuffer() const { return m_buffers.front(); }
-    JsonOutBuffer &currentPrintBuffer() { return m_buffers.front(); }
+    const OutBuffer &currentPrintBuffer() const { return m_buffers.front(); }
+    OutBuffer &currentPrintBuffer() { return m_buffers.front(); }
     bool canFit(size_t amount);
     bool write(const char *data, size_t size);
     void markCurrentPrintBufferFull();
 
-    const JsonOutBuffer &firstFinishedBuffer() const;
+    const OutBuffer &firstFinishedBuffer() const;
 
     size_t bufferSize() const { return m_buffers.size(); }
 
 private:
-    std::list<std::function<void(JsonOutBufferHandler *)>> m_request_buffer_callbacks;
-    std::list<JsonOutBuffer> m_buffers;
-    std::list<JsonOutBuffer> m_finished_buffers;
+    std::list<std::function<void(OutBufferHandler *)>> m_request_buffer_callbacks;
+    std::list<OutBuffer> m_buffers;
+    std::list<OutBuffer> m_finished_buffers;
 };
 
-class JsonNode
+class Node
 {
 public:
     enum Type {
@@ -105,13 +106,13 @@ public:
         Array
     };
 
-    JsonNode(JsonNode::Type type);
-    virtual ~JsonNode();
+    Node(Node::Type type);
+    virtual ~Node();
 
-    JsonNode::Type type() const
+    Node::Type type() const
     { return m_type; };
 
-    virtual JsonNode *nodeAt(const std::string &path) const;
+    virtual Node *nodeAt(const std::string &path) const;
 
     StringNode *stringNodeAt(const std::string &path) const;
     NumberNode *numberNodeAt(const std::string &path) const;
@@ -133,55 +134,55 @@ public:
     ObjectNode *asObjectNode();
     const ObjectNode *asObjectNode() const;
 
-    static std::pair<JsonNode *, JsonError> create(JsonToken *from_token,
-                                                       JsonTokenizer *tokenizer);
-    static std::pair<JsonNode *, JsonError> create(JsonTokenizer *tokenizer);
+    static std::pair<Node *, Error> create(Token *from_token,
+                                                       Tokenizer *tokenizer);
+    static std::pair<Node *, Error> create(Tokenizer *tokenizer);
 
-    virtual size_t printSize(const JsonPrinterOption &option, int depth = 0) = 0;
-    virtual bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0) = 0;
+    virtual size_t printSize(const PrinterOption &option, int depth = 0) = 0;
+    virtual bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
-    JsonNode::Type m_type;
+    Node::Type m_type;
 };
 
-class ObjectNode : public JsonNode
+class ObjectNode : public Node
 {
 public:
     ObjectNode();
     ~ObjectNode();
 
-    JsonNode *nodeAt(const std::string &path) const;
+    Node *nodeAt(const std::string &path) const;
 
-    JsonNode *node(const std::string &child_node) const;
+    Node *node(const std::string &child_node) const;
 
-    void insertNode(const std::string &name, JsonNode *node, bool replace = false);
-    JsonNode *take(const std::string &name);
+    void insertNode(const std::string &name, Node *node, bool replace = false);
+    Node *take(const std::string &name);
 
-    JsonError fill(JsonTokenizer *tokenizer);
+    Error fill(Tokenizer *tokenizer);
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 private:
-    std::map<std::string, JsonNode *> m_map;
+    std::map<std::string, Node *> m_map;
 };
 
-class StringNode : public JsonNode
+class StringNode : public Node
 {
 public:
-    StringNode(JsonToken *token);
+    StringNode(Token *token);
 
     const std::string &string() const;
     void setString(const std::string &string);
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     std::string m_string;
 };
 
-class NumberNode : public JsonNode
+class NumberNode : public Node
 {
 public:
-    NumberNode(JsonToken *token);
+    NumberNode(Token *token);
 
     double number() const
     { return m_number; }
@@ -189,16 +190,16 @@ public:
     void setNumber(double number)
     { m_number = number; }
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     double m_number;
 };
 
-class BooleanNode : public JsonNode
+class BooleanNode : public Node
 {
 public:
-    BooleanNode(JsonToken *token);
+    BooleanNode(Token *token);
 
     bool boolean() const
     { return m_boolean; }
@@ -206,41 +207,43 @@ public:
     void setBoolean(bool boolean)
     { m_boolean = boolean; }
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     bool m_boolean;
 };
 
-class NullNode : public JsonNode
+class NullNode : public Node
 {
 public:
-    NullNode(JsonToken *token);
+    NullNode(Token *token);
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 };
 
-class ArrayNode : public JsonNode
+class ArrayNode : public Node
 {
 public:
     ArrayNode();
     ~ArrayNode();
 
-    void insert(JsonNode *node, size_t index);
-    void append(JsonNode *node);
+    void insert(Node *node, size_t index);
+    void append(Node *node);
 
-    JsonNode *index(size_t index);
-    JsonNode *take(size_t index);
+    Node *index(size_t index);
+    Node *take(size_t index);
 
     size_t size();
 
-    JsonError fill(JsonTokenizer *tokenizer);
+    Error fill(Tokenizer *tokenizer);
 
-    size_t printSize(const JsonPrinterOption &option, int depth);
-    bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
+    size_t printSize(const PrinterOption &option, int depth);
+    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
 private:
-    std::vector<JsonNode *> m_vector;
+    std::vector<Node *> m_vector;
 };
+
+} // Namespace
 
 #endif //JSON_TREE_H

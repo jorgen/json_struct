@@ -26,9 +26,11 @@
 #include <stddef.h>
 #include <functional>
 
-class JsonTokenizerPrivate;
+namespace JT {
 
-struct JsonToken
+class TokenizerPrivate;
+
+struct Token
 {
     enum Type {
         Error,
@@ -51,7 +53,7 @@ struct JsonToken
     size_t data_length;
 };
 
-enum class JsonError {
+enum class Error {
         NoError,
         InvalidToken,
         NeedMoreData,
@@ -62,16 +64,16 @@ enum class JsonError {
         IlligalPropertyType,
         IlligalDataValue,
         EncounteredIlligalChar,
-        CouldNotCreateJsonNode,
+        CouldNotCreateNode,
         NodeNotFound,
         UnknownError
 };
 
-class JsonTokenizer
+class Tokenizer
 {
 public:
-    JsonTokenizer();
-    ~JsonTokenizer();
+    Tokenizer();
+    ~Tokenizer();
 
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
@@ -80,14 +82,15 @@ public:
     size_t registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
-    JsonError nextToken(JsonToken *next_token);
+    Error nextToken(Token *next_token);
 
-    JsonTokenizer(const JsonTokenizer &other);
-    JsonTokenizer(JsonTokenizer &&other);
-    JsonTokenizer &operator=(const JsonTokenizer &rhs);
-    JsonTokenizer &operator=(JsonTokenizer &&rhs);
+    Tokenizer(const Tokenizer &other);
+    Tokenizer(Tokenizer &&other);
+    Tokenizer &operator=(const Tokenizer &rhs);
+    Tokenizer &operator=(Tokenizer &&rhs);
 private:
-    JsonTokenizerPrivate *m_private;
+    TokenizerPrivate *m_private;
 };
 
+} //Namespace
 #endif //JSON_TOKENIZER_H
