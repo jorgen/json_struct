@@ -39,21 +39,6 @@ class NullNode;
 class ArrayNode;
 class JsonPrinter;
 
-class JsonNodeError
-{
-public:
-    JsonNodeError()
-        : error(JsonError::NoError)
-        , errorNode(nullptr)
-    {}
-    JsonNodeError(JsonError error, JsonNode *errorNode = nullptr)
-        : error(error)
-        , errorNode(errorNode)
-    { }
-    JsonError error;
-    JsonNode *errorNode;
-};
-
 class JsonPrinterOption
 {
 public:
@@ -148,11 +133,9 @@ public:
     ObjectNode *asObjectNode();
     const ObjectNode *asObjectNode() const;
 
-    static std::pair<JsonNode *, JsonNodeError> create(JsonToken *from_token,
-                                                       JsonTokenizer *tokenizer,
-                                                       JsonNode *continue_from = nullptr);
-    static std::pair<JsonNode *, JsonNodeError> create(JsonTokenizer *tokenizer,
-                                                       JsonNode *continue_from = nullptr);
+    static std::pair<JsonNode *, JsonError> create(JsonToken *from_token,
+                                                       JsonTokenizer *tokenizer);
+    static std::pair<JsonNode *, JsonError> create(JsonTokenizer *tokenizer);
 
     virtual size_t printSize(const JsonPrinterOption &option, int depth = 0) = 0;
     virtual bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0) = 0;
@@ -173,7 +156,7 @@ public:
     void insertNode(const std::string &name, JsonNode *node, bool replace = false);
     JsonNode *take(const std::string &name);
 
-    JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
+    JsonError fill(JsonTokenizer *tokenizer);
 
     size_t printSize(const JsonPrinterOption &option, int depth);
     bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);
@@ -252,7 +235,7 @@ public:
 
     size_t size();
 
-    JsonNodeError fill(JsonTokenizer *tokenizer, JsonNode *continue_from = nullptr);
+    JsonError fill(JsonTokenizer *tokenizer);
 
     size_t printSize(const JsonPrinterOption &option, int depth);
     bool print(JsonOutBufferHandler &buffers, const JsonPrinterOption &option , int depth = 0);

@@ -37,7 +37,7 @@ static int check_json_tree_nodes()
     auto created = JsonNode::create(&tokenizer);
     JsonNode *root = created.first;
     assert(root);
-    assert(created.second.error == JsonError::NoError);
+    assert(created.second == JsonError::NoError);
 
     check_json_tree_from_json_data2(root);
 
