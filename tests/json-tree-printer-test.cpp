@@ -41,7 +41,7 @@ static int check_json_tree_printer()
     JT::PrinterOption printerOption(false);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JT::OutBufferHandler buffer_handler(buffer,4096);
+    JT::PrintHandler buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);
@@ -73,7 +73,7 @@ static int check_json_tree_printer_pretty()
     JT::PrinterOption printerOption(true);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JT::OutBufferHandler buffer_handler(buffer,4096);
+    JT::PrintHandler buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);

@@ -60,7 +60,7 @@ private:
     bool m_ascii_name;
 };
 
-class OutBuffer
+class PrintBuffer
 {
 public:
     bool canFit(size_t amount) const { return size - end >= amount; }
@@ -70,27 +70,25 @@ public:
     size_t end;
 };
 
-class OutBufferHandler
+class PrintHandler
 {
 public:
-    OutBufferHandler(char *buffer, size_t size);
+    PrintHandler(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
 
-    const OutBuffer &currentPrintBuffer() const { return m_buffers.front(); }
-    OutBuffer &currentPrintBuffer() { return m_buffers.front(); }
+    const PrintBuffer &currentPrintBuffer() const { return m_buffers.front(); }
+    PrintBuffer &currentPrintBuffer() { return m_buffers.front(); }
     bool canFit(size_t amount);
     bool write(const char *data, size_t size);
     void markCurrentPrintBufferFull();
 
-    const OutBuffer &firstFinishedBuffer() const;
-
-    size_t bufferSize() const { return m_buffers.size(); }
+    const PrintBuffer &firstFinishedBuffer() const;
 
 private:
-    std::list<std::function<void(OutBufferHandler *)>> m_request_buffer_callbacks;
-    std::list<OutBuffer> m_buffers;
-    std::list<OutBuffer> m_finished_buffers;
+    std::list<std::function<void(PrintHandler *)>> m_request_buffer_callbacks;
+    std::list<PrintBuffer> m_buffers;
+    std::list<PrintBuffer> m_finished_buffers;
 };
 
 class Node
@@ -139,7 +137,7 @@ public:
     static std::pair<Node *, Error> create(Tokenizer *tokenizer);
 
     virtual size_t printSize(const PrinterOption &option, int depth = 0) = 0;
-    virtual bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
+    virtual bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
     Node::Type m_type;
 };
@@ -160,7 +158,7 @@ public:
     Error fill(Tokenizer *tokenizer);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 private:
     std::map<std::string, Node *> m_map;
 };
@@ -174,7 +172,7 @@ public:
     void setString(const std::string &string);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     std::string m_string;
 };
@@ -191,7 +189,7 @@ public:
     { m_number = number; }
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     double m_number;
 };
@@ -208,7 +206,7 @@ public:
     { m_boolean = boolean; }
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 protected:
     bool m_boolean;
 };
@@ -219,7 +217,7 @@ public:
     NullNode(Token *token);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 };
 
 class ArrayNode : public Node
@@ -239,7 +237,7 @@ public:
     Error fill(Tokenizer *tokenizer);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(OutBufferHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 private:
     std::vector<Node *> m_vector;
 };

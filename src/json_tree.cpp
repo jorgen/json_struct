@@ -27,7 +27,7 @@
 
 namespace JT {
 
-bool OutBuffer::append(const char *data, size_t size)
+bool PrintBuffer::append(const char *data, size_t size)
 {
     if (end + size > this->size)
         return false;
@@ -37,17 +37,17 @@ bool OutBuffer::append(const char *data, size_t size)
     return true;
 }
 
-OutBufferHandler::OutBufferHandler(char *buffer, size_t size)
+PrintHandler::PrintHandler(char *buffer, size_t size)
 {
     m_buffers.push_back({buffer,size,0});
 }
 
-void OutBufferHandler::appendBuffer(char *buffer, size_t size)
+void PrintHandler::appendBuffer(char *buffer, size_t size)
 {
     m_buffers.push_back({buffer,size,0});
 }
 
-void OutBufferHandler::markCurrentPrintBufferFull()
+void PrintHandler::markCurrentPrintBufferFull()
 {
     m_finished_buffers.push_back(m_buffers.front());
     m_buffers.pop_front();
@@ -58,7 +58,7 @@ void OutBufferHandler::markCurrentPrintBufferFull()
     }
 }
 
-bool OutBufferHandler::canFit(size_t amount)
+bool PrintHandler::canFit(size_t amount)
 {
     while (m_buffers.size()) {
         if (currentPrintBuffer().canFit(amount))
@@ -68,7 +68,7 @@ bool OutBufferHandler::canFit(size_t amount)
     return false;
 }
 
-bool OutBufferHandler::write(const char *data, size_t size)
+bool PrintHandler::write(const char *data, size_t size)
 {
     if (!canFit(size))
         return false;
@@ -76,7 +76,7 @@ bool OutBufferHandler::write(const char *data, size_t size)
     return true;
 }
 
-const OutBuffer &OutBufferHandler::firstFinishedBuffer() const
+const PrintBuffer &PrintHandler::firstFinishedBuffer() const
 {
     if (m_finished_buffers.size())
         return m_finished_buffers.front();
@@ -354,7 +354,7 @@ size_t ObjectNode::printSize(const PrinterOption &option, int depth)
     return return_size;
 }
 
-bool ObjectNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     depth++;
     if (option.pretty()) {
@@ -434,7 +434,7 @@ size_t StringNode::printSize(const PrinterOption &option, int depth)
     return m_string.size() + 2;
 }
 
-bool StringNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool StringNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     if (!buffers.write("\"",1))
         return false;
@@ -464,7 +464,7 @@ size_t NumberNode::printSize(const PrinterOption &option, int depth)
     return size;
 }
 
-bool NumberNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool NumberNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     char buff[20];
     size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
@@ -485,7 +485,7 @@ size_t BooleanNode::printSize(const PrinterOption &option, int depth)
     return m_boolean ? 4 : 5;
 }
 
-bool BooleanNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool BooleanNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     if (m_boolean)
         return buffers.write("true",4);
@@ -502,7 +502,7 @@ size_t NullNode::printSize(const PrinterOption &option, int depth)
     return 4;
 }
 
-bool NullNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool NullNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     return buffers.write("null",4);
 }
@@ -618,7 +618,7 @@ size_t ArrayNode::printSize(const PrinterOption &option, int depth)
     return return_size;
 }
 
-bool ArrayNode::print(OutBufferHandler &buffers, const PrinterOption &option , int depth)
+bool ArrayNode::print(PrintHandler &buffers, const PrinterOption &option , int depth)
 {
     depth++;
     if (option.pretty()) {
