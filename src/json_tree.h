@@ -63,32 +63,31 @@ private:
 class PrintBuffer
 {
 public:
-    bool canFit(size_t amount) const { return size - end >= amount; }
+    bool canFit(size_t amount) const { return size - used >= amount; }
     bool append(const char *data, size_t size);
     char *buffer;
     size_t size;
-    size_t end;
+    size_t used;
 };
 
 class PrintHandler
 {
 public:
+    PrintHandler();
     PrintHandler(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
 
-    const PrintBuffer &currentPrintBuffer() const { return m_buffers.front(); }
-    PrintBuffer &currentPrintBuffer() { return m_buffers.front(); }
-    bool canFit(size_t amount);
+    bool canCurrentBufferFit(size_t amount);
     bool write(const char *data, size_t size);
     void markCurrentPrintBufferFull();
 
-    const PrintBuffer &firstFinishedBuffer() const;
-
+    void addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback);
+    const std::list<PrintBuffer> &printBuffers() const;
 private:
-    std::list<std::function<void(PrintHandler *)>> m_request_buffer_callbacks;
-    std::list<PrintBuffer> m_buffers;
-    std::list<PrintBuffer> m_finished_buffers;
+    std::list<std::function<void(PrintHandler *, size_t)>> m_request_buffer_callbacks;
+    std::list<PrintBuffer *> m_unused_buffers;
+    std::list<PrintBuffer> m_all_buffers;
 };
 
 class Node

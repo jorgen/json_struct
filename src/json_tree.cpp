@@ -29,58 +29,66 @@ namespace JT {
 
 bool PrintBuffer::append(const char *data, size_t size)
 {
-    if (end + size > this->size)
+    if (used + size > this->size)
         return false;
 
-    memcpy(buffer + end, data, size);
-    end += size;
+    memcpy(buffer + used, data, size);
+    used += size;
     return true;
+}
+
+PrintHandler::PrintHandler()
+{
 }
 
 PrintHandler::PrintHandler(char *buffer, size_t size)
 {
-    m_buffers.push_back({buffer,size,0});
+    appendBuffer(buffer,size);
 }
 
 void PrintHandler::appendBuffer(char *buffer, size_t size)
 {
-    m_buffers.push_back({buffer,size,0});
+    m_all_buffers.push_back({buffer,size,0});
+    m_unused_buffers.push_back(&m_all_buffers.back());
 }
 
 void PrintHandler::markCurrentPrintBufferFull()
 {
-    m_finished_buffers.push_back(m_buffers.front());
-    m_buffers.pop_front();
-    if (m_buffers.size() == 0) {
-        for (auto it = m_request_buffer_callbacks.begin(); it != m_request_buffer_callbacks.end(); ++it) {
-            (*it)(this);
-        }
+    m_unused_buffers.pop_front();
+    if (m_unused_buffers.size() == 0) {
     }
 }
 
-bool PrintHandler::canFit(size_t amount)
+bool PrintHandler::canCurrentBufferFit(size_t amount)
 {
-    while (m_buffers.size()) {
-        if (currentPrintBuffer().canFit(amount))
-            return true;
-        markCurrentPrintBufferFull();
-    }
-    return false;
+    return m_unused_buffers.front()->canFit(amount);
 }
 
 bool PrintHandler::write(const char *data, size_t size)
 {
-    if (!canFit(size))
+    while(m_unused_buffers.size() && !canCurrentBufferFit(size)) {
+        markCurrentPrintBufferFull();
+    }
+    if (!m_unused_buffers.size()) {
+        for (auto it = m_request_buffer_callbacks.begin(); it != m_request_buffer_callbacks.end(); ++it) {
+            //Ask for new buffer with atleast size
+            (*it)(this,size);
+        }
+    }
+    if (!canCurrentBufferFit(size))
         return false;
-    currentPrintBuffer().append(data,size);
+    m_unused_buffers.front()->append(data,size);
     return true;
 }
 
-const PrintBuffer &PrintHandler::firstFinishedBuffer() const
+void PrintHandler::addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback)
 {
-    if (m_finished_buffers.size())
-        return m_finished_buffers.front();
-    return m_buffers.front();
+    m_request_buffer_callbacks.push_back(callback);
+}
+
+const std::list<PrintBuffer> &PrintHandler::printBuffers() const
+{
+    return m_all_buffers;
 }
 
 Node::Node(Node::Type type)
