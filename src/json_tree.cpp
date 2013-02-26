@@ -122,10 +122,7 @@ std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) 
     tokenizer.addData(data, data_size);
     return build(&tokenizer);
 }
-std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
-{
-    return createNode(token,tokenizer);
-}
+
 std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
 {
     Token token;
@@ -135,6 +132,45 @@ std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
     }
     return build(&token, tokenizer);
 }
+
+std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
+{
+    if (create_root_if_needed) {
+        Node *root = nullptr;
+        auto first_node = createNode(token, tokenizer);
+        if (first_node.second != Error::NoError) {
+            delete first_node.first;
+            return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+        }
+
+        Token next_token;
+        Error error;
+        while ((error = tokenizer->nextToken(&next_token)) == Error::NoError) {
+            if (!root) {
+                root = new ObjectNode();
+                root->asObjectNode()->insertNode(std::string(token->name, token->name_length), first_node.first);
+            }
+            auto new_node = createNode(&next_token, tokenizer);
+            if (new_node.second != Error::NoError) {
+                delete root;
+                return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+            }
+            root->asObjectNode()->insertNode(std::string(next_token.name, next_token.name_length), new_node.first);
+        }
+        if (error == Error::NeedMoreData) {
+            if (!root)
+                root = first_node.first;;
+            return std::pair<Node *, Error>(root,Error::NoError);
+        }
+    } else {
+        if (token->data_type == Token::ArrayStart
+                || token->data_type == Token::ObjectStart) {
+            return createNode(token,tokenizer);
+        }
+    }
+    return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+}
+
 std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokenizer) const
 {
     std::pair<Node *, Error> ret(nullptr, Error::NoError);

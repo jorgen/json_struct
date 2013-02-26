@@ -34,8 +34,8 @@ static int check_json_tree_printer()
 {
     JT::TreeBuilder tree_builder;
     auto created = tree_builder.build(json_data2,sizeof(json_data2));
-
     JT::Node *root = created.first;
+    assert(root);
 
     check_json_tree_from_json_data2(root);
 
@@ -65,8 +65,8 @@ static int check_json_tree_printer_pretty()
 {
     JT::TreeBuilder tree_builder;
     auto created = tree_builder.build(json_data2,sizeof(json_data2));
-
     JT::Node *root = created.first;
+    assert(root);
 
     check_json_tree_from_json_data2(root);
 
@@ -97,6 +97,7 @@ static int check_multiple_print_buffers()
     JT::TreeBuilder tree_builder;
     auto created = tree_builder.build(json_data2,sizeof(json_data2));
     JT::Node *root = created.first;
+    assert(root);
 
     JT::PrinterOption printerOption(true);
     size_t printed_size = root->printSize(printerOption);
@@ -148,6 +149,7 @@ static int check_callback_print_buffers()
     JT::TreeBuilder tree_builder;
     auto created = tree_builder.build(json_data2,sizeof(json_data2));
     JT::Node *root = created.first;
+    assert(root);
 
     JT::PrinterOption printerOption(true);
     size_t printed_size = root->printSize(printerOption);

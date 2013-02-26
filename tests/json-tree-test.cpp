@@ -30,21 +30,76 @@
 
 #include <assert.h>
 
+const char json_data_no_root[] = u8R"(
+"foo" : "bar",
+"testArray" : [
+    3,
+    1,
+    4,
+    1,
+    5
+],
+"falseProp" : false
+)";
+
+const char json_data_no_root_fail[] = u8R"(
+"foo" : "bar",
+"testArray" : [
+    3,
+    1,
+    4
+    5
+],
+"falseProp" : false
+)";
 static int check_json_tree_nodes()
 {
     JT::TreeBuilder tree_builder;
     auto created = tree_builder.build(json_data2,sizeof(json_data2));
     JT::Node *root = created.first;
-    assert(root);
     assert(created.second == JT::Error::NoError);
+    assert(root);
 
     check_json_tree_from_json_data2(root);
 
     return 0;
 }
 
+static int check_json_tree_no_root()
+{
+    JT::TreeBuilder tree_builder;
+    auto created = tree_builder.build(json_data_no_root, sizeof(json_data_no_root));
+    JT::Node *root = created.first;
+    assert(created.second != JT::Error::NoError);
+    assert(!root);
+
+    tree_builder.create_root_if_needed = true;
+    created = tree_builder.build(json_data_no_root, sizeof(json_data_no_root));
+    root = created.first;
+    assert(created.second == JT::Error::NoError);
+    assert(root);
+
+    JT::StringNode *foo = root->stringNodeAt("foo");
+    assert(foo);
+    assert(foo->string() == "bar");
+
+    JT::ArrayNode *array = root->arrayNodeAt("testArray");
+    assert(array);
+
+    JT::BooleanNode *falseNode = root->booleanNodeAt("falseProp");
+    assert(falseNode);
+
+    created = tree_builder.build(json_data_no_root_fail, sizeof(json_data_no_root_fail));
+    root = created.first;
+    assert(created.second != JT::Error::NoError);
+    assert(!root);
+
+    return 0;
+};
+
 int main(int argc, char **argv)
 {
     check_json_tree_nodes();
+    check_json_tree_no_root();
     return 0;
 }

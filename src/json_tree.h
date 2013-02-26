@@ -101,11 +101,13 @@ public:
     virtual NullNode *createNullNode(Token *token) const;
 
     std::pair<Node *, Error> build(const char *data, size_t data_size) const;
-    std::pair<Node *, Error> build(Token *token, Tokenizer *tokenizer) const;
     std::pair<Node *, Error> build(Tokenizer *tokenizer) const;
+    std::pair<Node *, Error> build(Token *token, Tokenizer *tokenizer) const;
 
     std::pair<Node *, Error> createNode(Token *token, Tokenizer *tokenizer) const;
-private:
+
+    bool create_root_if_needed = false;
+    bool preserve_order_in_object = false;
 };
 
 class Node
