@@ -124,7 +124,7 @@ std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) 
 }
 std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
 {
-    return create(token,tokenizer);
+    return createNode(token,tokenizer);
 }
 std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
 {
@@ -135,7 +135,7 @@ std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
     }
     return build(&token, tokenizer);
 }
-std::pair<Node *, Error> TreeBuilder::create(Token *token, Tokenizer *tokenizer) const
+std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokenizer) const
 {
     std::pair<Node *, Error> ret(nullptr, Error::NoError);
     switch (token->data_type) {
@@ -388,7 +388,7 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
         if (token.data_type == Token::ObjectEnd) {
             return Error::NoError;
         }
-        auto created = builder.create(&token, tokenizer);
+        auto created = builder.createNode(&token, tokenizer);
         if (created.second != Error::NoError) {
             return created.second;
         }
@@ -658,7 +658,7 @@ Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
         if (token.data_type == Token::ArrayEnd) {
             return Error::NoError;
         }
-        auto created = builder.create(&token, tokenizer);
+        auto created = builder.createNode(&token, tokenizer);
 
         if (created.second != Error::NoError)
             return created.second;

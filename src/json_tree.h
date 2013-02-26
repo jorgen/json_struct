@@ -104,7 +104,7 @@ public:
     std::pair<Node *, Error> build(Token *token, Tokenizer *tokenizer) const;
     std::pair<Node *, Error> build(Tokenizer *tokenizer) const;
 
-    std::pair<Node *, Error> create(Token *token, Tokenizer *tokenizer) const;
+    std::pair<Node *, Error> createNode(Token *token, Tokenizer *tokenizer) const;
 private:
 };
 
