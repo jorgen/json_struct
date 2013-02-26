@@ -68,11 +68,6 @@ struct Data
 struct IntermediateToken
 {
     IntermediateToken()
-        : intermedia_set(false)
-        , name_type_set(false)
-        , data_type_set(false)
-        , name_type(Token::Error)
-        , data_type(Token::Error)
     { }
 
     void clear() {
@@ -85,11 +80,11 @@ struct IntermediateToken
         data.clear();
     }
 
-    bool intermedia_set;
-    bool name_type_set;
-    bool data_type_set;
-    Token::Type name_type;
-    Token::Type data_type;
+    bool intermedia_set = false;
+    bool name_type_set = false;
+    bool data_type_set = false;
+    Token::Type name_type = Token::Error;
+    Token::Type data_type = Token::Error;
     std::string name;
     std::string data;
 };
@@ -111,16 +106,6 @@ public:
     };
 
     TokenizerPrivate()
-        : cursor_index(0)
-        , current_data_start(0)
-        , token_state(FindingName)
-        , property_state(NoStartFound)
-        , property_type(Token::Error)
-        , is_escaped(false)
-        , allow_ascii_properties(false)
-        , allow_new_lines(false)
-        , expecting_prop_or_annonymous_data(false)
-        , continue_after_need_more_data(false)
     {
     }
 
@@ -572,16 +557,16 @@ public:
 
     std::list<Data> data_list;
     std::list<std::function<void(const char *)>> release_callback_list;
-    size_t cursor_index;
-    size_t current_data_start;
-    InTokenState token_state;
-    InPropertyState property_state;
-    Token::Type property_type;
-    bool is_escaped;
-    bool allow_ascii_properties;
-    bool allow_new_lines;
-    bool expecting_prop_or_annonymous_data;
-    bool continue_after_need_more_data;
+    size_t cursor_index = 0;
+    size_t current_data_start = 0;
+    InTokenState token_state = FindingName;
+    InPropertyState property_state = NoStartFound;
+    Token::Type property_type = Token::Error;
+    bool is_escaped = false;
+    bool allow_ascii_properties = false;
+    bool allow_new_lines = false;
+    bool expecting_prop_or_annonymous_data = false;
+    bool continue_after_need_more_data = false;
     IntermediateToken intermediate_token;
 };
 
