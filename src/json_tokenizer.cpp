@@ -32,15 +32,10 @@
 
 namespace JT {
 
-class AsciiState
+class AsciiTypeChecker
 {
 public:
-    AsciiState()
-        : m_null("null")
-        , m_true("true")
-        , m_false("false")
-    { }
-    Token::Type type(const char *data, int length) {
+    static Token::Type type(const char *data, int length) {
         if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
             return Token::Null;
         if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
@@ -50,10 +45,14 @@ public:
         return Token::Ascii;
     }
 private:
-    std::string m_null;
-    std::string m_true;
-    std::string m_false;
+    static const std::string m_null;
+    static const std::string m_true;
+    static const std::string m_false;
 };
+
+const std::string AsciiTypeChecker::m_null = "null";
+const std::string AsciiTypeChecker::m_true = "true";
+const std::string AsciiTypeChecker::m_false = "false";
 
 struct Data
 {
@@ -460,7 +459,7 @@ public:
                         return error;
 
                     if (type == Token::Ascii) {
-                        next_token->name_type = ascii_state.type(next_token->name, next_token->name_length);
+                        next_token->name_type = AsciiTypeChecker::type(next_token->name, next_token->name_length);
                     } else {
                         next_token->name_type = type;
                     }
@@ -538,12 +537,12 @@ public:
                         next_token->data_length = data_length;
                     }
                     if (type == Token::Ascii) {
-                        next_token->data_type = ascii_state.type(next_token->data, next_token->data_length);
+                        next_token->data_type = AsciiTypeChecker::type(next_token->data, next_token->data_length);
                     } else {
                         next_token->data_type = type;
                     }
 
-                    if (next_token->data_type  == Token::Ascii && !allow_ascii_properties) 
+                    if (next_token->data_type  == Token::Ascii && !allow_ascii_properties)
                         return Error::IlligalDataValue;
 
                     if (type == Token::ObjectStart || type == Token::ArrayStart)
@@ -578,7 +577,6 @@ public:
     InTokenState token_state;
     InPropertyState property_state;
     Token::Type property_type;
-    AsciiState ascii_state;
     bool is_escaped;
     bool allow_ascii_properties;
     bool allow_new_lines;
