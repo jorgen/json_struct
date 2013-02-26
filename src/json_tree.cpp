@@ -91,6 +91,81 @@ const std::list<PrintBuffer> &PrintHandler::printBuffers() const
     return m_all_buffers;
 }
 
+ObjectNode *TreeBuilder::createObjectNode(Token *token) const
+{
+    return new ObjectNode();
+}
+ArrayNode *TreeBuilder::createArrayNode(Token *token) const
+{
+    return new ArrayNode();
+}
+StringNode *TreeBuilder::createStringNode(Token *token) const
+{
+    return new StringNode(token);
+}
+NumberNode *TreeBuilder::createNumberNode(Token *token) const
+{
+    return new NumberNode(token);
+}
+BooleanNode *TreeBuilder::createBooleanNode(Token *token) const
+{
+    return new BooleanNode(token);
+}
+NullNode *TreeBuilder::createNullNode(Token *token) const
+{
+    return new NullNode(token);
+}
+
+std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
+{
+    return create(token,tokenizer);
+}
+std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
+{
+    Token token;
+    auto token_error = tokenizer->nextToken(&token);
+    if (token_error != Error::NoError) {
+        return std::pair<Node *, Error>(nullptr, token_error);
+    }
+    return build(&token, tokenizer);
+}
+std::pair<Node *, Error> TreeBuilder::create(Token *token, Tokenizer *tokenizer) const
+{
+    std::pair<Node *, Error> ret(nullptr, Error::NoError);
+    switch (token->data_type) {
+        case Token::ArrayStart:
+            {
+                ArrayNode *return_node = new ArrayNode();
+                ret.first = return_node;
+                ret.second = return_node->fill(tokenizer, *this);
+            }
+            break;
+        case Token::ObjectStart:
+            {
+                ObjectNode *return_node = new ObjectNode();
+                ret.first = return_node;
+                ret.second = return_node->fill(tokenizer, *this);
+            }
+            break;
+        case Token::String:
+        case Token::Ascii:
+            ret.first = new StringNode(token);
+            break;
+        case Token::Number:
+            ret.first = new NumberNode(token);
+            break;
+        case Token::Bool:
+            ret.first = new BooleanNode(token);
+            break;
+        case Token::Null:
+            ret.first = new NullNode(token);
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
 Node::Node(Node::Type type)
     : m_type(type)
 { }
@@ -299,7 +374,7 @@ Node *ObjectNode::take(const std::string &name)
     return child_node;
 }
 
-Error ObjectNode::fill(Tokenizer *tokenizer)
+Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
 {
     Token token;
     Error error;
@@ -307,7 +382,7 @@ Error ObjectNode::fill(Tokenizer *tokenizer)
         if (token.data_type == Token::ObjectEnd) {
             return Error::NoError;
         }
-        auto created = Node::create(&token, tokenizer);
+        auto created = builder.create(&token, tokenizer);
         if (created.second != Error::NoError) {
             return created.second;
         }
@@ -569,7 +644,7 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
-Error ArrayNode::fill(Tokenizer *tokenizer)
+Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
 {
     Token token;
     Error error;
@@ -577,7 +652,7 @@ Error ArrayNode::fill(Tokenizer *tokenizer)
         if (token.data_type == Token::ArrayEnd) {
             return Error::NoError;
         }
-        auto created = Node::create(&token, tokenizer);
+        auto created = builder.create(&token, tokenizer);
 
         if (created.second != Error::NoError)
             return created.second;
@@ -667,53 +742,6 @@ bool ArrayNode::print(PrintHandler &buffers, const PrinterOption &option , int d
         return false;
     return true;
 
-}
-
-std::pair<Node *, Error> Node::create(Token *token, Tokenizer *tokenizer)
-{
-    std::pair<Node *, Error> ret(nullptr, Error::NoError);
-    switch (token->data_type) {
-        case Token::ArrayStart:
-            {
-                ArrayNode *return_node = new ArrayNode();
-                ret.first = return_node;
-                ret.second = return_node->fill(tokenizer);
-            }
-            break;
-        case Token::ObjectStart:
-            {
-                ObjectNode *return_node = new ObjectNode();
-                ret.first = return_node;
-                ret.second = return_node->fill(tokenizer);
-            }
-            break;
-        case Token::String:
-        case Token::Ascii:
-            ret.first = new StringNode(token);
-            break;
-        case Token::Number:
-            ret.first = new NumberNode(token);
-            break;
-        case Token::Bool:
-            ret.first = new BooleanNode(token);
-            break;
-        case Token::Null:
-            ret.first = new NullNode(token);
-            break;
-        default:
-            break;
-    }
-    return ret;
-}
-
-std::pair<Node *, Error> Node::create(Tokenizer *tokenizer)
-{
-    Token token;
-    auto token_error = tokenizer->nextToken(&token);
-    if (token_error != Error::NoError) {
-        return std::pair<Node *, Error>(nullptr, token_error);
-    }
-    return Node::create(&token, tokenizer);
 }
 
 } //namespace JT

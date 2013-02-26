@@ -90,6 +90,23 @@ private:
     std::list<PrintBuffer> m_all_buffers;
 };
 
+class TreeBuilder
+{
+public:
+    virtual ObjectNode *createObjectNode(Token *token) const;
+    virtual ArrayNode *createArrayNode(Token *token) const;
+    virtual StringNode *createStringNode(Token *token) const;
+    virtual NumberNode *createNumberNode(Token *token) const;
+    virtual BooleanNode *createBooleanNode(Token *token) const;
+    virtual NullNode *createNullNode(Token *token) const;
+
+    std::pair<Node *, Error> build(Token *token, Tokenizer *tokenizer) const;
+    std::pair<Node *, Error> build(Tokenizer *tokenizer) const;
+
+    std::pair<Node *, Error> create(Token *token, Tokenizer *tokenizer) const;
+private:
+};
+
 class Node
 {
 public:
@@ -131,10 +148,6 @@ public:
     ObjectNode *asObjectNode();
     const ObjectNode *asObjectNode() const;
 
-    static std::pair<Node *, Error> create(Token *from_token,
-                                                       Tokenizer *tokenizer);
-    static std::pair<Node *, Error> create(Tokenizer *tokenizer);
-
     virtual size_t printSize(const PrinterOption &option, int depth = 0) = 0;
     virtual bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
@@ -154,7 +167,7 @@ public:
     void insertNode(const std::string &name, Node *node, bool replace = false);
     Node *take(const std::string &name);
 
-    Error fill(Tokenizer *tokenizer);
+    Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
     size_t printSize(const PrinterOption &option, int depth);
     bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
@@ -233,7 +246,7 @@ public:
 
     size_t size();
 
-    Error fill(Tokenizer *tokenizer);
+    Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
     size_t printSize(const PrinterOption &option, int depth);
     bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
