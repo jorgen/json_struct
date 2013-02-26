@@ -116,6 +116,12 @@ NullNode *TreeBuilder::createNullNode(Token *token) const
     return new NullNode(token);
 }
 
+std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) const
+{
+    Tokenizer tokenizer;
+    tokenizer.addData(data, data_size);
+    return build(&tokenizer);
+}
 std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
 {
     return create(token,tokenizer);

@@ -32,10 +32,8 @@
 
 static int check_json_tree_printer()
 {
-    JT::Tokenizer tokenizer;
-    tokenizer.addData(json_data2, sizeof(json_data2));
     JT::TreeBuilder tree_builder;
-    auto created = tree_builder.build(&tokenizer);
+    auto created = tree_builder.build(json_data2,sizeof(json_data2));
 
     JT::Node *root = created.first;
 
@@ -56,9 +54,7 @@ static int check_json_tree_printer()
 
     delete root;
 
-    tokenizer = JT::Tokenizer();
-    tokenizer.addData(buffer, actual_size);
-    created = tree_builder.build(&tokenizer);
+    created = tree_builder.build(buffer,actual_size);
     root = created.first;
     check_json_tree_from_json_data2(root);
 
@@ -67,10 +63,8 @@ static int check_json_tree_printer()
 
 static int check_json_tree_printer_pretty()
 {
-    JT::Tokenizer tokenizer;
-    tokenizer.addData(json_data2, sizeof(json_data2));
     JT::TreeBuilder tree_builder;
-    auto created = tree_builder.build(&tokenizer);
+    auto created = tree_builder.build(json_data2,sizeof(json_data2));
 
     JT::Node *root = created.first;
 
@@ -91,9 +85,7 @@ static int check_json_tree_printer_pretty()
 
     delete root;
 
-    tokenizer = JT::Tokenizer();
-    tokenizer.addData(buffer, actual_size);
-    created = tree_builder.build(&tokenizer);
+    created = tree_builder.build(buffer,actual_size);
     root = created.first;
     check_json_tree_from_json_data2(root);
 
@@ -102,10 +94,8 @@ static int check_json_tree_printer_pretty()
 
 static int check_multiple_print_buffers()
 {
-    JT::Tokenizer tokenizer;
-    tokenizer.addData(json_data2, sizeof(json_data2));
     JT::TreeBuilder tree_builder;
-    auto created = tree_builder.build(&tokenizer);
+    auto created = tree_builder.build(json_data2,sizeof(json_data2));
     JT::Node *root = created.first;
 
     JT::PrinterOption printerOption(true);
@@ -155,10 +145,8 @@ static void add_buffer_func(JT::PrintHandler *printHandler, size_t atleast)
 
 static int check_callback_print_buffers()
 {
-    JT::Tokenizer tokenizer;
-    tokenizer.addData(json_data2, sizeof(json_data2));
     JT::TreeBuilder tree_builder;
-    auto created = tree_builder.build(&tokenizer);
+    auto created = tree_builder.build(json_data2,sizeof(json_data2));
     JT::Node *root = created.first;
 
     JT::PrinterOption printerOption(true);
