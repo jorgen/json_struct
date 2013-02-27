@@ -650,10 +650,6 @@ Error Tokenizer::nextToken(Token *next_token)
 
     m_private->continue_after_need_more_data = error == Error::NeedMoreData;
 
-    if (next_token->name_length) {
-        std::string name(next_token->name, next_token->name_length);
-    }
-
     return error;
 }
 
