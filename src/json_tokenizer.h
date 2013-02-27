@@ -66,6 +66,7 @@ enum class Error {
         EncounteredIlligalChar,
         CouldNotCreateNode,
         NodeNotFound,
+        MissingPropertyName,
         UnknownError
 };
 

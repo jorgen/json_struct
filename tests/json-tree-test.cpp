@@ -94,6 +94,13 @@ static int check_json_tree_no_root()
     assert(created.second != JT::Error::NoError);
     assert(!root);
 
+    created = tree_builder.build(json_data2,sizeof(json_data2));
+    root = created.first;
+    assert(created.second == JT::Error::NoError);
+    assert(root);
+
+    check_json_tree_from_json_data2(root);
+
     return 0;
 };
 

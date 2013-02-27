@@ -135,25 +135,37 @@ std::pair<Node *, Error> TreeBuilder::build(Tokenizer *tokenizer) const
 
 std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) const
 {
+    std::pair<Node *, Error> return_pair(nullptr, Error::CouldNotCreateNode);
     if (create_root_if_needed) {
         Node *root = nullptr;
         auto first_node = createNode(token, tokenizer);
         if (first_node.second != Error::NoError) {
             delete first_node.first;
-            return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+            return return_pair;
         }
 
         Token next_token;
         Error error;
         while ((error = tokenizer->nextToken(&next_token)) == Error::NoError) {
             if (!root) {
+                if (!token->name_length) {
+                    return_pair.second = Error::MissingPropertyName;
+                    return return_pair;
+                }
                 root = new ObjectNode();
                 root->asObjectNode()->insertNode(std::string(token->name, token->name_length), first_node.first);
+            }
+            if (!next_token.name_length) {
+                delete root;
+                return_pair.second = Error::MissingPropertyName;
+                return return_pair;
             }
             auto new_node = createNode(&next_token, tokenizer);
             if (new_node.second != Error::NoError) {
                 delete root;
-                return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+                delete new_node.first;
+                return_pair.second = new_node.second;
+                return return_pair;
             }
             root->asObjectNode()->insertNode(std::string(next_token.name, next_token.name_length), new_node.first);
         }
@@ -161,6 +173,9 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
             if (!root)
                 root = first_node.first;;
             return std::pair<Node *, Error>(root,Error::NoError);
+        } else {
+            return_pair.second = error;
+            return return_pair;
         }
     } else {
         if (token->data_type == Token::ArrayStart
@@ -168,7 +183,7 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
             return createNode(token,tokenizer);
         }
     }
-    return std::pair<Node *, Error>(nullptr, Error::CouldNotCreateNode);
+    return return_pair;
 }
 
 std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokenizer) const
