@@ -528,9 +528,9 @@ bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 
     int shift_width = option.shiftSize() * depth;
 
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        const std::string &property = (*it).first;
-        if (it != m_map.begin()) {
+    for (auto it = m_order.begin(); it != m_order.end(); ++it) {
+        const std::string &property = (*it);
+        if (it != m_order.begin()) {
             if (option.pretty()) {
                 if (!buffers.write(",\n",2))
                     return false;
@@ -559,7 +559,8 @@ bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int 
             if (!buffers.write(delimiter, 1))
                 return false;
         }
-        if (!(*it).second->print(buffers,option,depth))
+        Node *print_node = node(property);
+        if (!print_node->print(buffers,option,depth))
             return false;
     }
 
