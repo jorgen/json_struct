@@ -413,11 +413,21 @@ Node *ObjectNode::node(const std::string &child_node) const
 void ObjectNode::insertNode(const std::string &name, Node *node, bool replace)
 {
     auto ret = m_map.insert(std::pair<std::string, Node *>(name, node));
+    if (ret.second) {
+        m_order.push_back(name);
+    }
     if (ret.second == false && replace) {
         delete ret.first->second;
         m_map.erase(ret.first);
         ret = m_map.insert(std::pair<std::string, Node *>(name, node));
         assert(ret.second == true);
+        for (auto it = m_order.begin(); it != m_order.end(); ++it) {
+            if ((*it) == name){
+                m_order.erase(it);
+                break;
+            }
+        }
+        m_order.push_back(name);
     }
 }
 
@@ -428,6 +438,12 @@ Node *ObjectNode::take(const std::string &name)
         return nullptr;
     Node *child_node = it->second;
     m_map.erase(it);
+    for (auto it = m_order.begin(); it != m_order.end(); ++it) {
+        if ((*it) == name){
+            m_order.erase(it);
+            break;
+        }
+    }
     return child_node;
 }
 
@@ -448,6 +464,11 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
         insertNode(std::string(token.name, token.name_length), created.first, true);
     }
     return error;
+}
+
+const std::vector<std::string> &ObjectNode::keys() const
+{
+    return m_order;
 }
 
 size_t ObjectNode::printSize(const PrinterOption &option, int depth)

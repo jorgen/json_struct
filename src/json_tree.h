@@ -107,7 +107,6 @@ public:
     std::pair<Node *, Error> createNode(Token *token, Tokenizer *tokenizer) const;
 
     bool create_root_if_needed = false;
-    bool preserve_order_in_object = false;
 };
 
 class Node
@@ -174,8 +173,11 @@ public:
 
     size_t printSize(const PrinterOption &option, int depth);
     bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+
+    const std::vector<std::string> &keys() const;
 private:
     std::map<std::string, Node *> m_map;
+    std::vector<std::string> m_order;
 };
 
 class StringNode : public Node
