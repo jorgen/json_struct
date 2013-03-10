@@ -41,55 +41,6 @@ class NullNode;
 class ArrayNode;
 class Printer;
 
-class PrinterOption
-{
-public:
-    PrinterOption(bool pretty = false, bool ascii_name = false)
-        : m_shift_size(4)
-        , m_pretty(pretty)
-        , m_ascii_name(ascii_name)
-    { }
-
-    short shiftSize() const { return m_shift_size; }
-    bool pretty() const { return m_pretty; }
-    bool ascii_name() const { return m_ascii_name; }
-
-private:
-    short m_shift_size;
-    bool m_pretty;
-    bool m_ascii_name;
-};
-
-class PrintBuffer
-{
-public:
-    bool canFit(size_t amount) const { return size - used >= amount; }
-    bool append(const char *data, size_t size);
-    char *buffer;
-    size_t size;
-    size_t used;
-};
-
-class PrintHandler
-{
-public:
-    PrintHandler();
-    PrintHandler(char *buffer, size_t size);
-
-    void appendBuffer(char *buffer, size_t size);
-
-    bool canCurrentBufferFit(size_t amount);
-    bool write(const char *data, size_t size);
-    void markCurrentPrintBufferFull();
-
-    void addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback);
-    const std::list<PrintBuffer> &printBuffers() const;
-private:
-    std::list<std::function<void(PrintHandler *, size_t)>> m_request_buffer_callbacks;
-    std::list<PrintBuffer *> m_unused_buffers;
-    std::list<PrintBuffer> m_all_buffers;
-};
-
 class TreeBuilder
 {
 public:
@@ -174,10 +125,24 @@ public:
     size_t printSize(const PrinterOption &option, int depth);
     bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
 
-    const std::vector<std::string> &keys() const;
+    class Iterator {
+    public:
+        std::pair<std::string, Node *> &operator*() const;
+        Iterator &operator++();
+        Iterator operator++(int);
+        Iterator &operator--();
+        Iterator operator--(int);
+        bool operator==(const Iterator &other) const;
+        bool operator!=(const Iterator &other) const;
+    private:
+        Iterator();
+        std::vector<std::pair<std::string, Node *>>::iterator m_it;
+    };
+    Iterator begin() const;
+    Iterator end() const;
 private:
-    std::map<std::string, Node *> m_map;
-    std::vector<std::string> m_order;
+    Node *findNode(const std::string name) const;
+    std::vector<std::pair<std::string, Node *>> m_data;
 };
 
 class StringNode : public Node

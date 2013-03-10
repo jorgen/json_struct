@@ -27,70 +27,6 @@
 
 namespace JT {
 
-bool PrintBuffer::append(const char *data, size_t size)
-{
-    if (used + size > this->size)
-        return false;
-
-    memcpy(buffer + used, data, size);
-    used += size;
-    return true;
-}
-
-PrintHandler::PrintHandler()
-{
-}
-
-PrintHandler::PrintHandler(char *buffer, size_t size)
-{
-    appendBuffer(buffer,size);
-}
-
-void PrintHandler::appendBuffer(char *buffer, size_t size)
-{
-    m_all_buffers.push_back({buffer,size,0});
-    m_unused_buffers.push_back(&m_all_buffers.back());
-}
-
-void PrintHandler::markCurrentPrintBufferFull()
-{
-    m_unused_buffers.pop_front();
-    if (m_unused_buffers.size() == 0) {
-    }
-}
-
-bool PrintHandler::canCurrentBufferFit(size_t amount)
-{
-    return m_unused_buffers.front()->canFit(amount);
-}
-
-bool PrintHandler::write(const char *data, size_t size)
-{
-    while(m_unused_buffers.size() && !canCurrentBufferFit(size)) {
-        markCurrentPrintBufferFull();
-    }
-    if (!m_unused_buffers.size()) {
-        for (auto it = m_request_buffer_callbacks.begin(); it != m_request_buffer_callbacks.end(); ++it) {
-            //Ask for new buffer with atleast size
-            (*it)(this,size);
-        }
-    }
-    if (!canCurrentBufferFit(size))
-        return false;
-    m_unused_buffers.front()->append(data,size);
-    return true;
-}
-
-void PrintHandler::addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback)
-{
-    m_request_buffer_callbacks.push_back(callback);
-}
-
-const std::list<PrintBuffer> &PrintHandler::printBuffers() const
-{
-    return m_all_buffers;
-}
-
 ObjectNode *TreeBuilder::createObjectNode(Token *token) const
 {
     return new ObjectNode();
@@ -374,8 +310,8 @@ ObjectNode::ObjectNode()
 
 ObjectNode::~ObjectNode()
 {
-    for (auto it = m_map.begin();
-            it != m_map.end(); it++) {
+    for (auto it = m_data.begin();
+            it != m_data.end(); it++) {
        delete it->second;
     }
 }
@@ -388,63 +324,44 @@ Node *ObjectNode::nodeAt(const std::string &path) const
         return nullptr;
 
     if (first_dot == std::string::npos) {
-        auto it = m_map.find(path);
-        if (it == m_map.end())
-            return nullptr;
-        else return it->second;
+        return findNode(path);
     }
 
     std::string first_node(path.substr(0,first_dot));
-    auto it = m_map.find(first_node);
-    if (it == m_map.end())
+    Node *child_node = findNode(first_node);
+    if (!child_node)
         return nullptr;
-    Node *child_node = it->second;
     return child_node->nodeAt(path.substr(first_dot+1));
 }
 
 Node *ObjectNode::node(const std::string &child_node) const
 {
-    auto it = m_map.find(child_node);
-    if (it == m_map.end())
-        return nullptr;
-    return it->second;
+    return findNode(child_node);
 }
 
 void ObjectNode::insertNode(const std::string &name, Node *node, bool replace)
 {
-    auto ret = m_map.insert(std::pair<std::string, Node *>(name, node));
-    if (ret.second) {
-        m_order.push_back(name);
-    }
-    if (ret.second == false && replace) {
-        delete ret.first->second;
-        m_map.erase(ret.first);
-        ret = m_map.insert(std::pair<std::string, Node *>(name, node));
-        assert(ret.second == true);
-        for (auto it = m_order.begin(); it != m_order.end(); ++it) {
-            if ((*it) == name){
-                m_order.erase(it);
-                break;
+    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
+        if ((*it).first == name) {
+            if (replace) {
+                (*it).second = node;
             }
+            return;
         }
-        m_order.push_back(name);
     }
+    m_data.push_back(std::pair<std::string,Node *>(name,node));
 }
 
 Node *ObjectNode::take(const std::string &name)
 {
-    auto it = m_map.find(name);
-    if (it == m_map.end())
-        return nullptr;
-    Node *child_node = it->second;
-    m_map.erase(it);
-    for (auto it = m_order.begin(); it != m_order.end(); ++it) {
-        if ((*it) == name){
-            m_order.erase(it);
-            break;
+    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
+        if ((*it).first == name) {
+            Node *return_node = (*it).second;
+            m_data.erase(it);
+            return return_node;
         }
     }
-    return child_node;
+    return nullptr;
 }
 
 Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
@@ -466,11 +383,6 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
     return error;
 }
 
-const std::vector<std::string> &ObjectNode::keys() const
-{
-    return m_order;
-}
-
 size_t ObjectNode::printSize(const PrinterOption &option, int depth)
 {
     depth++;
@@ -484,7 +396,7 @@ size_t ObjectNode::printSize(const PrinterOption &option, int depth)
         return_size++;
     }
 
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
         const std::string &property = (*it).first;
         if (first) {
             first = false;
@@ -528,9 +440,9 @@ bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 
     int shift_width = option.shiftSize() * depth;
 
-    for (auto it = m_order.begin(); it != m_order.end(); ++it) {
-        const std::string &property = (*it);
-        if (it != m_order.begin()) {
+    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
+        const std::string &property = (*it).first;
+        if (it != m_data.begin()) {
             if (option.pretty()) {
                 if (!buffers.write(",\n",2))
                     return false;
@@ -575,6 +487,53 @@ bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int 
     return true;
 }
 
+std::pair<std::string, Node *> &ObjectNode::Iterator::operator*() const
+{
+    return *(const_cast<ObjectNode::Iterator *>(this)->m_it);
+}
+ObjectNode::Iterator &ObjectNode::Iterator::operator++()
+{
+    ++m_it;
+    return *this;
+}
+ObjectNode::Iterator ObjectNode::Iterator::operator++(int)
+{
+    ObjectNode::Iterator self = *this;
+    m_it++;
+    return self;
+}
+ObjectNode::Iterator &ObjectNode::Iterator::operator--()
+{
+    --m_it;
+    return *this;
+}
+ObjectNode::Iterator ObjectNode::Iterator::operator--(int)
+{
+    ObjectNode::Iterator self = *this;
+    m_it--;
+    return self;
+}
+bool ObjectNode::Iterator::operator==(const Iterator &other) const
+{
+    return m_it == other.m_it;
+}
+bool ObjectNode::Iterator::operator!=(const Iterator &other) const
+{
+    return m_it != other.m_it;
+}
+
+ObjectNode::Iterator::Iterator()
+{
+}
+
+Node *ObjectNode::findNode(const std::string name) const
+{
+    for(auto it = m_data.begin(); it != m_data.end(); ++it) {
+        if ((*it).first == name)
+            return (*it).second;
+    }
+    return nullptr;
+}
 StringNode::StringNode(Token *token)
     : Node(String)
     , m_string(token->data, token->data_length)

@@ -25,6 +25,7 @@
 
 #include <stddef.h>
 #include <functional>
+#include <list>
 
 namespace JT {
 
@@ -91,6 +92,51 @@ public:
     Tokenizer &operator=(Tokenizer &&rhs);
 private:
     TokenizerPrivate *m_private;
+};
+
+class PrinterOption
+{
+public:
+    PrinterOption(bool pretty = false, bool ascii_name = false);
+
+    short shiftSize() const { return m_shift_size; }
+    bool pretty() const { return m_pretty; }
+    bool ascii_name() const { return m_ascii_name; }
+
+private:
+    short m_shift_size;
+    bool m_pretty;
+    bool m_ascii_name;
+};
+
+class PrintBuffer
+{
+public:
+    bool canFit(size_t amount) const { return size - used >= amount; }
+    bool append(const char *data, size_t size);
+    char *buffer;
+    size_t size;
+    size_t used;
+};
+
+class PrintHandler
+{
+public:
+    PrintHandler();
+    PrintHandler(char *buffer, size_t size);
+
+    void appendBuffer(char *buffer, size_t size);
+
+    bool canCurrentBufferFit(size_t amount);
+    bool write(const char *data, size_t size);
+    void markCurrentPrintBufferFull();
+
+    void addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback);
+    const std::list<PrintBuffer> &printBuffers() const;
+private:
+    std::list<std::function<void(PrintHandler *, size_t)>> m_request_buffer_callbacks;
+    std::list<PrintBuffer *> m_unused_buffers;
+    std::list<PrintBuffer> m_all_buffers;
 };
 
 } //Namespace
