@@ -54,17 +54,6 @@ const std::string AsciiTypeChecker::m_null = "null";
 const std::string AsciiTypeChecker::m_true = "true";
 const std::string AsciiTypeChecker::m_false = "false";
 
-struct Data
-{
-    Data(const char *data, size_t size)
-        : data(data)
-        , size(size)
-    {}
-
-    const char *data;
-    size_t size;
-};
-
 struct IntermediateToken
 {
     IntermediateToken()
@@ -128,7 +117,7 @@ public:
 
     Error findStringEnd(const Data &json_data, size_t *chars_ahead)
     {
-        for (size_t end = cursor_index; end < json_data.size; end++) {
+        for (size_t end = cursor_index; end < json_data.content_size; end++) {
             if (is_escaped) {
                 is_escaped = false;
                 continue;
@@ -151,7 +140,7 @@ public:
     Error findAsciiEnd(const Data &json_data, size_t *chars_ahead)
     {
         assert(property_type == Token::Ascii);
-        for (size_t end = cursor_index; end < json_data.size; end++) {
+        for (size_t end = cursor_index; end < json_data.content_size; end++) {
             char ascii_code = *(json_data.data + end);
             if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
                     (ascii_code >= '^' && ascii_code <= 'z') ||
@@ -170,7 +159,7 @@ public:
 
     Error findNumberEnd(const Data &json_data, size_t *chars_ahead)
     {
-        for (size_t end = cursor_index; end < json_data.size; end++) {
+        for (size_t end = cursor_index; end < json_data.content_size; end++) {
             char number_code = *(json_data.data + end);
             if ((number_code >= '0' && number_code <= '9'))
                 continue;
@@ -196,7 +185,7 @@ public:
 
         assert(property_state == NoStartFound);
 
-        for (size_t current_pos  = cursor_index; current_pos < json_data.size; current_pos++) {
+        for (size_t current_pos  = cursor_index; current_pos < json_data.content_size; current_pos++) {
             switch (*(json_data.data + current_pos)) {
                 case ' ':
                 case '\n':
@@ -257,7 +246,7 @@ public:
 
     Error findDelimiter(const Data &json_data, size_t *chars_ahead)
     {
-        for (size_t end = cursor_index; end < json_data.size; end++) {
+        for (size_t end = cursor_index; end < json_data.content_size; end++) {
             switch(*(json_data.data + end)) {
                 case ':':
                     token_state = FindingData;
@@ -284,7 +273,7 @@ public:
 
     Error findTokenEnd(const Data &json_data, size_t *chars_ahead)
     {
-        for (size_t end = cursor_index; end < json_data.size; end++) {
+        for (size_t end = cursor_index; end < json_data.content_size; end++) {
             switch(*(json_data.data + end)) {
                 case ',':
                     expecting_prop_or_annonymous_data = true;
@@ -379,7 +368,7 @@ public:
 
     Error populateNextTokenFromData(Token *next_token, const Data &json_data)
     {
-        while (cursor_index < json_data.size) {
+        while (cursor_index < json_data.content_size) {
             size_t diff = 0;
             const char *data;
             int data_length;
@@ -392,7 +381,7 @@ public:
                     if (error == Error::NeedMoreData) {
                         if (property_state > NoStartFound) {
                             intermediate_token.intermedia_set = true;
-                            size_t to_null = strnlen(data , json_data.size - current_data_start);
+                            size_t to_null = strnlen(data , json_data.content_size - current_data_start);
                             intermediate_token.name.append(data , to_null);
                             if (!intermediate_token.name_type_set) {
                                 intermediate_token.name_type = type;
@@ -493,7 +482,7 @@ public:
                             intermediate_token.intermedia_set = true;
                         }
                         if (property_state > NoStartFound) {
-                            size_t data_length = strnlen(data , json_data.size - current_data_start);
+                            size_t data_length = strnlen(data , json_data.content_size - current_data_start);
                             intermediate_token.data.append(data, data_length);
                             if (!intermediate_token.data_type_set) {
                                 intermediate_token.data_type = type;

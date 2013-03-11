@@ -31,6 +31,17 @@ namespace JT {
 
 class TokenizerPrivate;
 
+struct Data
+{
+    Data(const char *data, size_t content_size)
+        : data(data)
+        , content_size(content_size)
+    {}
+
+    const char *data;
+    size_t content_size;
+};
+
 struct Token
 {
     enum Type {
