@@ -33,11 +33,13 @@ class TokenizerPrivate;
 
 struct Data
 {
-    Data(const char *data, size_t content_size)
-        : data(data)
+    Data(const char *data, size_t content_size, bool temporary)
+        : temporary(temporary)
+        , data(data)
         , content_size(content_size)
     {}
 
+    bool temporary;
     const char *data;
     size_t content_size;
 };
@@ -57,12 +59,11 @@ struct Token
         Null
     };
 
+    Token();
     Type name_type;
-    const char *name;
-    size_t name_length;
+    Data name;
     Type data_type;
-    const char *data;
-    size_t data_length;
+    Data data;
 };
 
 enum class Error {
@@ -91,7 +92,7 @@ public:
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
 
-    void addData(const char *data, size_t size);
+    void addData(const char *data, size_t size, bool temporary = true);
     size_t registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 

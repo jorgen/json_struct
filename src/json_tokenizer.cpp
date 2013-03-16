@@ -406,11 +406,9 @@ public:
                             }
                         case Token::ObjectStart:
                         case Token::ArrayStart:
-                            next_token->name = "";
-                            next_token->name_length = 0;
+                            next_token->name = Data("",0,false);
                             next_token->name_type = Token::String;
-                            next_token->data = data;
-                            next_token->data_length = data_length;
+                            next_token->data = Data(data, data_length, json_data.temporary);
                             next_token->data_type = type;
                             expecting_prop_or_annonymous_data = false;
                             if (type == Token::ObjectStart || type == Token::ArrayStart)
@@ -420,12 +418,10 @@ public:
                             return Error::NoError;
 
                         case Token::String:
-                            next_token->name = data + 1;
-                            next_token->name_length = data_length - 2;
+                            next_token->name = Data(data + 1, data_length -2, json_data.temporary);
                             break;
                         default:
-                            next_token->name = data;
-                            next_token->name_length = data_length;
+                            next_token->name = Data(data, data_length, json_data.temporary);
                             break;
                     }
 
@@ -433,7 +429,9 @@ public:
                         return error;
 
                     if (type == Token::Ascii) {
-                        next_token->name_type = AsciiTypeChecker::type(next_token->name, next_token->name_length);
+                        next_token->name_type =
+                            AsciiTypeChecker::type(next_token->name.data,
+                                                   next_token->name.content_size);
                     } else {
                         next_token->name_type = type;
                     }
@@ -445,7 +443,7 @@ public:
                     error = findDelimiter(json_data, &diff);
                     if (error != Error::NoError) {
                         if (intermediate_token.intermedia_set == false) {
-                            intermediate_token.name.append(next_token->name, next_token->name_length);
+                            intermediate_token.name.append(next_token->name.data, next_token->name.content_size);
                             intermediate_token.name_type = next_token->name_type;
                             intermediate_token.intermedia_set = true;
                         }
@@ -457,10 +455,9 @@ public:
                     if (token_state == FindingName) {
                         //anonymous data object
                         next_token->data = next_token->name;
-                        next_token->name = 0;
-                        next_token->data_length = next_token->name_length;
-                        next_token->name_length = 0;
                         next_token->data_type = next_token->name_type;
+                        next_token->name.data = 0;
+                        next_token->name.content_size = 0;
                         next_token->name_type = Token::String;
                         return Error::NoError;
                     } else {
@@ -477,7 +474,7 @@ public:
                     error = populateFromData(&data, &data_length, &type, json_data);
                     if (error == Error::NeedMoreData) {
                         if (intermediate_token.intermedia_set == false) {
-                            intermediate_token.name.append(next_token->name, next_token->name_length);
+                            intermediate_token.name.append(next_token->name.data, next_token->name.content_size);
                             intermediate_token.name_type = next_token->name_type;
                             intermediate_token.intermedia_set = true;
                         }
@@ -504,14 +501,14 @@ public:
                     }
 
                     if (type == Token::String) {
-                        next_token->data = data + 1;
-                        next_token->data_length = data_length - 2;
+                        next_token->data.data = data + 1;
+                        next_token->data.content_size = data_length - 2;
                     } else {
-                        next_token->data = data;
-                        next_token->data_length = data_length;
+                        next_token->data.data = data;
+                        next_token->data.content_size = data_length;
                     }
                     if (type == Token::Ascii) {
-                        next_token->data_type = AsciiTypeChecker::type(next_token->data, next_token->data_length);
+                        next_token->data_type = AsciiTypeChecker::type(next_token->data.data, next_token->data.content_size);
                     } else {
                         next_token->data_type = type;
                     }
@@ -559,6 +556,15 @@ public:
     IntermediateToken intermediate_token;
 };
 
+Token::Token()
+    : name_type(String)
+    , name("", 0, false)
+    , data_type(String)
+    , data("", 0, false)
+{
+
+}
+
 Tokenizer::Tokenizer()
     : m_private(new TokenizerPrivate())
 {
@@ -603,9 +609,9 @@ void Tokenizer::allowNewLineAsTokenDelimiter(bool allow)
     m_private->allow_new_lines = allow;
 }
 
-void Tokenizer::addData(const char *data, size_t data_size)
+void Tokenizer::addData(const char *data, size_t data_size, bool temporary)
 {
-    m_private->data_list.push_back(Data(data, data_size));
+    m_private->data_list.push_back(Data(data, data_size, temporary));
 }
 
 size_t Tokenizer::registered_buffers() const
