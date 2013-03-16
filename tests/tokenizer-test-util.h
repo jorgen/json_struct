@@ -35,13 +35,13 @@ static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::
         return -1;
     }
 
-    if (token.name.content_size != property.size()) {
-        fprintf(stderr, "token.name_length is: %lu, expected: %lu\n", token.name.content_size, property.size());
+    if (token.name.size != property.size()) {
+        fprintf(stderr, "token.name_length is: %lu, expected: %lu\n", token.name.size, property.size());
         return -1;
     }
-    std::string token_property(token.name.data, token.name.content_size);
+    std::string token_property(token.name.data, token.name.size);
     if (property.compare(token_property) != 0) {
-        std::string name(token.name.data, token.name.content_size);
+        std::string name(token.name.data, token.name.size);
         fprintf(stderr, "token.property: %s is unequal to %s\n", name.c_str(), property.c_str());
         return -1;
     }
@@ -51,15 +51,15 @@ static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::
         return -1;
     }
 
-    std::string token_data(token.data.data, token.data.content_size);
+    std::string token_data(token.data.data, token.data.size);
     if (data.compare(token_data) != 0) {
-        std::string data_name(token.data.data, token.data.content_size);
+        std::string data_name(token.data.data, token.data.size);
         fprintf(stderr, "token.data: %s is unequal to %s\n", data_name.c_str(), data.c_str());
         return -1;
     }
 
-    if (token.data.content_size != data.size()) {
-        fprintf(stderr, "token.data_length is: %lu, expected: %lu\n", token.data.content_size, data.size());
+    if (token.data.size != data.size()) {
+        fprintf(stderr, "token.data_length is: %lu, expected: %lu\n", token.data.size, data.size());
         return -1;
     }
 return 0;

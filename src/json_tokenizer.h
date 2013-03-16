@@ -33,15 +33,15 @@ class TokenizerPrivate;
 
 struct Data
 {
-    Data(const char *data, size_t content_size, bool temporary)
+    Data(const char *data, size_t size, bool temporary)
         : temporary(temporary)
         , data(data)
-        , content_size(content_size)
+        , size(size)
     {}
 
     bool temporary;
     const char *data;
-    size_t content_size;
+    size_t size;
 };
 
 struct Token

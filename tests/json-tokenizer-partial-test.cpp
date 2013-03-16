@@ -89,7 +89,7 @@ static int check_json_partial_2()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    std::string foo(token.name.data, token.name.content_size);
+    std::string foo(token.name.data, token.name.size);
     assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(&token);

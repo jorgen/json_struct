@@ -84,15 +84,15 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
         Error error;
         while ((error = tokenizer->nextToken(&next_token)) == Error::NoError) {
             if (!root) {
-                if (!token->name.content_size) {
+                if (!token->name.size) {
                     return_pair.second = Error::MissingPropertyName;
                     return return_pair;
                 }
                 root = new ObjectNode();
                 root->asObjectNode()->insertNode(
-                        std::string(token->name.data, token->name.content_size), first_node.first);
+                        std::string(token->name.data, token->name.size), first_node.first);
             }
-            if (!next_token.name.content_size) {
+            if (!next_token.name.size) {
                 delete root;
                 return_pair.second = Error::MissingPropertyName;
                 return return_pair;
@@ -105,7 +105,7 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
                 return return_pair;
             }
             root->asObjectNode()->insertNode(
-                    std::string(next_token.name.data, next_token.name.content_size), new_node.first);
+                    std::string(next_token.name.data, next_token.name.size), new_node.first);
         }
         if (error == Error::NeedMoreData) {
             if (!root)
@@ -379,8 +379,8 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
             return created.second;
         }
 
-        assert(token.name.content_size);
-        insertNode(std::string(token.name.data, token.name.content_size), created.first, true);
+        assert(token.name.size);
+        insertNode(std::string(token.name.data, token.name.size), created.first, true);
     }
     return error;
 }
@@ -538,7 +538,7 @@ Node *ObjectNode::findNode(const std::string name) const
 }
 StringNode::StringNode(Token *token)
     : Node(String)
-    , m_string(token->data.data, token->data.content_size)
+    , m_string(token->data.data, token->data.size)
 {
 }
 
@@ -571,7 +571,7 @@ bool StringNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 NumberNode::NumberNode(Token *token)
     : Node(Number)
 {
-    std::string null_terminated(token->data.data, token->data.content_size);
+    std::string null_terminated(token->data.data, token->data.size);
     char **success = 0;
     m_number = strtod(null_terminated.c_str(), success);
     if ((char *)success == null_terminated.c_str()) {
