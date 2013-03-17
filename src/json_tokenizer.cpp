@@ -311,12 +311,13 @@ public:
         current_data_start = 0;
     }
 
-    Error populateFromData(const char **data, int *length, Token::Type *type, const Data &json_data)
+    Error populateFromData(Data &data, Token::Type *type, const Data &json_data)
     {
         size_t diff = 0;
         Error error = Error::NoError;
-        *length = 0;
-        *data = json_data.data + cursor_index;
+        data.size = 0;
+        data.data = json_data.data + cursor_index;
+        data.temporary = json_data.temporary;
         if (property_state == NoStartFound) {
             Error error = findStartOfNextValue(type, json_data, &diff);
             if (error != Error::NoError) {
@@ -324,7 +325,7 @@ public:
                 return error;
             }
 
-            *data = json_data.data + cursor_index + diff;
+            data.data = json_data.data + cursor_index + diff;
             current_data_start = cursor_index + diff;
             cursor_index += diff + 1;
             property_type = *type;
@@ -332,7 +333,7 @@ public:
 
             if (*type == Token::ObjectStart || *type == Token::ObjectEnd
                     || *type == Token::ArrayStart || *type == Token::ArrayEnd) {
-                *length = 1;
+                data.size = 1;
                 property_state = FoundEnd;
             } else {
                 property_state = FindingEnd;
@@ -359,7 +360,7 @@ public:
             }
 
             cursor_index += diff;
-            *length = cursor_index - current_data_start;
+            data.size = cursor_index - current_data_start;
             property_state = FoundEnd;
         }
 
@@ -370,19 +371,18 @@ public:
     {
         while (cursor_index < json_data.size) {
             size_t diff = 0;
-            const char *data;
-            int data_length;
+            Data data;
             Token::Type type;
             Error error;
             switch (token_state) {
                 case FindingName:
                     type = intermediate_token.name_type;
-                    error = populateFromData(&data, &data_length, &type, json_data);
+                    error = populateFromData(data, &type, json_data);
                     if (error == Error::NeedMoreData) {
                         if (property_state > NoStartFound) {
                             intermediate_token.intermedia_set = true;
-                            size_t to_null = strnlen(data , json_data.size - current_data_start);
-                            intermediate_token.name.append(data , to_null);
+                            size_t to_null = strnlen(data.data , json_data.size - current_data_start);
+                            intermediate_token.name.append(data.data , to_null);
                             if (!intermediate_token.name_type_set) {
                                 intermediate_token.name_type = type;
                                 intermediate_token.name_type_set = true;
@@ -392,9 +392,10 @@ public:
                     }
 
                     if (intermediate_token.intermedia_set) {
-                        intermediate_token.name.append(data, data_length);
-                        data_length = intermediate_token.name.length();
-                        data = intermediate_token.name.c_str();
+                        intermediate_token.name.append(data.data, data.size);
+                        data.size = intermediate_token.name.length();
+                        data.data  = intermediate_token.name.c_str();
+                        data.temporary = true;
                         type = intermediate_token.name_type;
                     }
 
@@ -408,7 +409,7 @@ public:
                         case Token::ArrayStart:
                             next_token->name = Data("",0,false);
                             next_token->name_type = Token::String;
-                            next_token->data = Data(data, data_length, json_data.temporary);
+                            next_token->data = data;
                             next_token->data_type = type;
                             expecting_prop_or_annonymous_data = false;
                             if (type == Token::ObjectStart || type == Token::ArrayStart)
@@ -418,10 +419,11 @@ public:
                             return Error::NoError;
 
                         case Token::String:
-                            next_token->name = Data(data + 1, data_length -2, json_data.temporary);
+                            data.data++; data.size -= 2;
+                            next_token->name = data;
                             break;
                         default:
-                            next_token->name = Data(data, data_length, json_data.temporary);
+                            next_token->name = data;
                             break;
                     }
 
@@ -471,7 +473,7 @@ public:
 
                 case FindingData:
                     type = intermediate_token.data_type;
-                    error = populateFromData(&data, &data_length, &type, json_data);
+                    error = populateFromData(data, &type, json_data);
                     if (error == Error::NeedMoreData) {
                         if (intermediate_token.intermedia_set == false) {
                             intermediate_token.name.append(next_token->name.data, next_token->name.size);
@@ -479,8 +481,8 @@ public:
                             intermediate_token.intermedia_set = true;
                         }
                         if (property_state > NoStartFound) {
-                            size_t data_length = strnlen(data , json_data.size - current_data_start);
-                            intermediate_token.data.append(data, data_length);
+                            size_t data_length = strnlen(data.data , json_data.size - current_data_start);
+                            intermediate_token.data.append(data.data, data_length);
                             if (!intermediate_token.data_type_set) {
                                 intermediate_token.data_type = type;
                                 intermediate_token.data_type_set = true;
@@ -490,22 +492,22 @@ public:
                     }
 
                     if (intermediate_token.intermedia_set) {
-                        intermediate_token.data.append(data, data_length);
+                        intermediate_token.data.append(data.data, data.size);
                         if (!intermediate_token.data_type_set) {
                             intermediate_token.data_type = type;
                             intermediate_token.data_type_set = true;
                         }
-                        data = intermediate_token.data.c_str();
-                        data_length = intermediate_token.data.length();
+                        data.data = intermediate_token.data.c_str();
+                        data.size = intermediate_token.data.length();
+                        data.temporary = true;
                         type = intermediate_token.data_type;
                     }
 
                     if (type == Token::String) {
-                        next_token->data.data = data + 1;
-                        next_token->data.size = data_length - 2;
+                        data.data++; data.size -= 2;
+                        next_token->data = data;
                     } else {
-                        next_token->data.data = data;
-                        next_token->data.size = data_length;
+                        next_token->data = data;
                     }
                     if (type == Token::Ascii) {
                         next_token->data_type = AsciiTypeChecker::type(next_token->data.data, next_token->data.size);

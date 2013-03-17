@@ -33,6 +33,12 @@ class TokenizerPrivate;
 
 struct Data
 {
+    Data()
+        : temporary(false)
+        , data("")
+        , size(0)
+    {}
+
     Data(const char *data, size_t size, bool temporary)
         : temporary(temporary)
         , data(data)
