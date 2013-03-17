@@ -497,6 +497,10 @@ public:
                             intermediate_token.data_type = type;
                             intermediate_token.data_type_set = true;
                         }
+                        next_token->name.data = intermediate_token.name.c_str();
+                        next_token->name.size = intermediate_token.name.size();
+                        next_token->name.temporary = true;
+                        next_token->name_type = intermediate_token.name_type;
                         data.data = intermediate_token.data.c_str();
                         data.size = intermediate_token.data.length();
                         data.temporary = true;
