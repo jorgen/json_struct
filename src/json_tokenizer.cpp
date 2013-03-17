@@ -409,8 +409,8 @@ public:
                         case Token::ArrayStart:
                             next_token->name = Data("",0,false);
                             next_token->name_type = Token::String;
-                            next_token->data = data;
-                            next_token->data_type = type;
+                            next_token->value = data;
+                            next_token->value_type = type;
                             expecting_prop_or_annonymous_data = false;
                             if (type == Token::ObjectStart || type == Token::ArrayStart)
                                 token_state = FindingName;
@@ -456,8 +456,8 @@ public:
                     expecting_prop_or_annonymous_data = false;
                     if (token_state == FindingName) {
                         //anonymous data object
-                        next_token->data = next_token->name;
-                        next_token->data_type = next_token->name_type;
+                        next_token->value = next_token->name;
+                        next_token->value_type = next_token->name_type;
                         next_token->name.data = 0;
                         next_token->name.size = 0;
                         next_token->name_type = Token::String;
@@ -505,17 +505,17 @@ public:
 
                     if (type == Token::String) {
                         data.data++; data.size -= 2;
-                        next_token->data = data;
+                        next_token->value = data;
                     } else {
-                        next_token->data = data;
+                        next_token->value = data;
                     }
                     if (type == Token::Ascii) {
-                        next_token->data_type = AsciiTypeChecker::type(next_token->data.data, next_token->data.size);
+                        next_token->value_type = AsciiTypeChecker::type(next_token->value.data, next_token->value.size);
                     } else {
-                        next_token->data_type = type;
+                        next_token->value_type = type;
                     }
 
-                    if (next_token->data_type  == Token::Ascii && !allow_ascii_properties)
+                    if (next_token->value_type  == Token::Ascii && !allow_ascii_properties)
                         return Error::IlligalDataValue;
 
                     if (type == Token::ObjectStart || type == Token::ArrayStart)
@@ -524,8 +524,8 @@ public:
                     if (error != Error::NoError)
                         return error;
 
-                    if (next_token->data_type == Token::ObjectStart
-                            || next_token->data_type == Token::ArrayStart) {
+                    if (next_token->value_type == Token::ObjectStart
+                            || next_token->value_type == Token::ArrayStart) {
                         return Error::NoError;
                     }
                     token_state = FindingTokenEnd;
@@ -561,8 +561,8 @@ public:
 Token::Token()
     : name_type(String)
     , name("", 0, false)
-    , data_type(String)
-    , data("", 0, false)
+    , value_type(String)
+    , value("", 0, false)
 {
 
 }

@@ -39,7 +39,7 @@ static int check_json_with_string_and_ascii()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -87,7 +87,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -103,7 +103,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -123,7 +123,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ArrayEnd);
+    assert(token.value_type == JT::Token::ArrayEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -143,7 +143,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -159,15 +159,15 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ArrayEnd);
+    assert(token.value_type == JT::Token::ArrayEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);

@@ -46,7 +46,7 @@ static int check_json_partial_1()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -58,7 +58,7 @@ static int check_json_partial_1()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -85,7 +85,7 @@ static int check_json_partial_2()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -98,7 +98,7 @@ static int check_json_partial_2()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -125,7 +125,7 @@ static int check_json_partial_3()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -137,7 +137,7 @@ static int check_json_partial_3()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -164,7 +164,7 @@ static int check_json_partial_4()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -176,7 +176,7 @@ static int check_json_partial_4()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -203,7 +203,7 @@ static int check_json_partial_5()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -215,7 +215,7 @@ static int check_json_partial_5()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -242,7 +242,7 @@ static int check_json_partial_6()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -254,7 +254,7 @@ static int check_json_partial_6()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -280,7 +280,7 @@ static int check_json_partial_7()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -292,7 +292,7 @@ static int check_json_partial_7()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);
@@ -322,7 +322,7 @@ static int check_json_partial_8()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -350,7 +350,7 @@ static int check_json_partial_8()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectEnd);
+    assert(token.value_type == JT::Token::ObjectEnd);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NeedMoreData);

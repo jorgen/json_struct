@@ -68,8 +68,8 @@ struct Token
     Token();
     Type name_type;
     Data name;
-    Type data_type;
-    Data data;
+    Type value_type;
+    Data value;
 };
 
 enum class Error {

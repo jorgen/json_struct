@@ -42,7 +42,7 @@ static int check_fail_json_with_ascii_property()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -69,7 +69,7 @@ static int check_fail_json_with_ascii_data()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -96,7 +96,7 @@ static int check_fail_json_with_new_line_seperator()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -123,7 +123,7 @@ static int check_fail_json_with_comma_before_obj_end()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -154,7 +154,7 @@ static int check_fail_json_with_illigal_chars()
     JT::Token token;
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(token.data_type == JT::Token::ObjectStart);
+    assert(token.value_type == JT::Token::ObjectStart);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);

@@ -116,8 +116,8 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
             return return_pair;
         }
     } else {
-        if (token->data_type == Token::ArrayStart
-                || token->data_type == Token::ObjectStart) {
+        if (token->value_type == Token::ArrayStart
+                || token->value_type == Token::ObjectStart) {
             return createNode(token,tokenizer);
         }
     }
@@ -127,7 +127,7 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
 std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokenizer) const
 {
     std::pair<Node *, Error> ret(nullptr, Error::NoError);
-    switch (token->data_type) {
+    switch (token->value_type) {
         case Token::ArrayStart:
             {
                 ArrayNode *return_node = new ArrayNode();
@@ -371,7 +371,7 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
     Token token;
     Error error;
     while ((error = tokenizer->nextToken(&token)) == Error::NoError) {
-        if (token.data_type == Token::ObjectEnd) {
+        if (token.value_type == Token::ObjectEnd) {
             return Error::NoError;
         }
         auto created = builder.createNode(&token, tokenizer);
@@ -538,7 +538,7 @@ Node *ObjectNode::findNode(const std::string name) const
 }
 StringNode::StringNode(Token *token)
     : Node(String)
-    , m_string(token->data.data, token->data.size)
+    , m_string(token->value.data, token->value.size)
 {
 }
 
@@ -571,7 +571,7 @@ bool StringNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 NumberNode::NumberNode(Token *token)
     : Node(Number)
 {
-    std::string null_terminated(token->data.data, token->data.size);
+    std::string null_terminated(token->value.data, token->value.size);
     char **success = 0;
     m_number = strtod(null_terminated.c_str(), success);
     if ((char *)success == null_terminated.c_str()) {
@@ -597,7 +597,7 @@ bool NumberNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 BooleanNode::BooleanNode(Token *token)
     : Node(Bool)
 {
-    if (*token->data.data == 't' || *token->data.data == 'T')
+    if (*token->value.data == 't' || *token->value.data == 'T')
         m_boolean = true;
     else
         m_boolean = false;
@@ -689,7 +689,7 @@ Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
     Token token;
     Error error;
     while ((error = tokenizer->nextToken(&token)) == Error::NoError) {
-        if (token.data_type == Token::ArrayEnd) {
+        if (token.value_type == Token::ArrayEnd) {
             return Error::NoError;
         }
         auto created = builder.createNode(&token, tokenizer);

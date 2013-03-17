@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <string>
 
-static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::string property, JT::Token::Type data_type, std::string data)
+static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::string property, JT::Token::Type value_type, std::string value)
 {
     if (token.name_type != name_type) {
         fprintf(stderr, "token.name_type is: %d, expected %d\n", token.name_type, name_type);
@@ -46,20 +46,20 @@ static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::
         return -1;
     }
 
-    if (token.data_type != data_type) {
-        fprintf(stderr, "token.data_type is: %d, expected %d\n", token.data_type, data_type);
+    if (token.value_type != value_type) {
+        fprintf(stderr, "token.value_type is: %d, expected %d\n", token.value_type, value_type);
         return -1;
     }
 
-    std::string token_data(token.data.data, token.data.size);
-    if (data.compare(token_data) != 0) {
-        std::string data_name(token.data.data, token.data.size);
-        fprintf(stderr, "token.data: %s is unequal to %s\n", data_name.c_str(), data.c_str());
+    std::string token_value(token.value.data, token.value.size);
+    if (value.compare(token_value) != 0) {
+        std::string value_name(token.value.data, token.value.size);
+        fprintf(stderr, "token.value: %s is unequal to %s\n", value_name.c_str(), value.c_str());
         return -1;
     }
 
-    if (token.data.size != data.size()) {
-        fprintf(stderr, "token.data_length is: %lu, expected: %lu\n", token.data.size, data.size());
+    if (token.value.size != value.size()) {
+        fprintf(stderr, "token.value_length is: %lu, expected: %lu\n", token.value.size, value.size());
         return -1;
     }
 return 0;
