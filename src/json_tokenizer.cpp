@@ -32,10 +32,36 @@
 
 namespace JT {
 
-class AsciiTypeChecker
+static inline void trim_string_chars(Data &data)
+{
+    if (data.size > 2) {
+        data.data++; data.size-=2;
+    } else {
+        data.data = ""; data.size = 0;
+    }
+}
+static inline void fix_data_for_token(Token &token)
+{
+    if (token.name_type == Token::String)
+        trim_string_chars(token.name);
+    if (token.value_type == Token::String)
+        trim_string_chars(token.value);
+}
+
+static inline void populate_anonymous_token(const Data &data, Token::Type type, Token &token)
+{
+    token.name = Data("",0,false);
+    token.name_type = Token::String;
+    token.value = data;
+    token.value_type = type;
+}
+
+class TypeChecker
 {
 public:
-    static Token::Type type(const char *data, int length) {
+    static Token::Type type(Token::Type type, const char *data, int length) {
+        if (type != Token::Ascii)
+            return type;
         if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
             return Token::Null;
         if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
@@ -50,9 +76,9 @@ private:
     static const std::string m_false;
 };
 
-const std::string AsciiTypeChecker::m_null = "null";
-const std::string AsciiTypeChecker::m_true = "true";
-const std::string AsciiTypeChecker::m_false = "false";
+const std::string TypeChecker::m_null = "null";
+const std::string TypeChecker::m_true = "true";
+const std::string TypeChecker::m_false = "false";
 
 struct IntermediateToken
 {
@@ -369,6 +395,7 @@ public:
 
     Error populateNextTokenFromData(Token *next_token, const Data &json_data)
     {
+        Token tmp_token;
         while (cursor_index < json_data.size) {
             size_t diff = 0;
             Data data;
@@ -389,6 +416,8 @@ public:
                             }
                         }
                         return error;
+                    } else if (error != Error::NoError) {
+                        return error;
                     }
 
                     if (intermediate_token.intermedia_set) {
@@ -399,44 +428,33 @@ public:
                         type = intermediate_token.name_type;
                     }
 
-                    switch (type) {
-                        case Token::ObjectEnd:
-                        case Token::ArrayEnd:
-                            if (expecting_prop_or_annonymous_data) {
-                                return Error::ExpectedDataToken;
-                            }
-                        case Token::ObjectStart:
-                        case Token::ArrayStart:
-                            next_token->name = Data("",0,false);
-                            next_token->name_type = Token::String;
-                            next_token->value = data;
-                            next_token->value_type = type;
-                            expecting_prop_or_annonymous_data = false;
-                            if (type == Token::ObjectStart || type == Token::ArrayStart)
-                                token_state = FindingName;
-                            else
+                    if (type == Token::ObjectEnd || type == Token::ArrayEnd
+                            || type == Token::ArrayStart || type == Token::ObjectStart) {
+                        switch (type) {
+                            case Token::ObjectEnd:
+                            case Token::ArrayEnd:
+                                if (expecting_prop_or_annonymous_data) {
+                                    return Error::ExpectedDataToken;
+                                }
+                                populate_anonymous_token(data,type,*next_token);
                                 token_state = FindingTokenEnd;
-                            return Error::NoError;
+                                return Error::NoError;
 
-                        case Token::String:
-                            data.data++; data.size -= 2;
-                            next_token->name = data;
-                            break;
-                        default:
-                            next_token->name = data;
-                            break;
-                    }
-
-                    if (error != Error::NoError)
-                        return error;
-
-                    if (type == Token::Ascii) {
-                        next_token->name_type =
-                            AsciiTypeChecker::type(next_token->name.data,
-                                                   next_token->name.size);
+                            case Token::ObjectStart:
+                            case Token::ArrayStart:
+                                populate_anonymous_token(data,type,*next_token);
+                                expecting_prop_or_annonymous_data = false;
+                                token_state = FindingName;
+                                return Error::NoError;
+                            default:
+                                return Error::UnknownError;
+                        }
                     } else {
-                        next_token->name_type = type;
+                        tmp_token.name = data;
                     }
+
+                    tmp_token.name_type = TypeChecker::type(type, tmp_token.name.data,
+                                                            tmp_token.name.size);
                     token_state = FindingDelimiter;
                     resetForNewValue();
                     break;
@@ -445,8 +463,8 @@ public:
                     error = findDelimiter(json_data, &diff);
                     if (error != Error::NoError) {
                         if (intermediate_token.intermedia_set == false) {
-                            intermediate_token.name.append(next_token->name.data, next_token->name.size);
-                            intermediate_token.name_type = next_token->name_type;
+                            intermediate_token.name.append(tmp_token.name.data, tmp_token.name.size);
+                            intermediate_token.name_type = tmp_token.name_type;
                             intermediate_token.intermedia_set = true;
                         }
                         return Error::NeedMoreData;
@@ -455,16 +473,12 @@ public:
                     resetForNewValue();
                     expecting_prop_or_annonymous_data = false;
                     if (token_state == FindingName) {
-                        //anonymous data object
-                        next_token->value = next_token->name;
-                        next_token->value_type = next_token->name_type;
-                        next_token->name.data = 0;
-                        next_token->name.size = 0;
-                        next_token->name_type = Token::String;
+                        fix_data_for_token(tmp_token);
+                        populate_anonymous_token(tmp_token.name, tmp_token.name_type, *next_token);
                         return Error::NoError;
                     } else {
-                        if (next_token->name_type != Token::String) {
-                            if (!allow_ascii_properties || next_token->name_type != Token::Ascii) {
+                        if (tmp_token.name_type != Token::String) {
+                            if (!allow_ascii_properties || tmp_token.name_type != Token::Ascii) {
                                 return Error::IlligalPropertyName;
                             }
                         }
@@ -476,8 +490,8 @@ public:
                     error = populateFromData(data, &type, json_data);
                     if (error == Error::NeedMoreData) {
                         if (intermediate_token.intermedia_set == false) {
-                            intermediate_token.name.append(next_token->name.data, next_token->name.size);
-                            intermediate_token.name_type = next_token->name_type;
+                            intermediate_token.name.append(tmp_token.name.data, tmp_token.name.size);
+                            intermediate_token.name_type = tmp_token.name_type;
                             intermediate_token.intermedia_set = true;
                         }
                         if (property_state > NoStartFound) {
@@ -489,6 +503,8 @@ public:
                             }
                         }
                         return error;
+                    } else if (error != Error::NoError) {
+                        return error;
                     }
 
                     if (intermediate_token.intermedia_set) {
@@ -497,42 +513,29 @@ public:
                             intermediate_token.data_type = type;
                             intermediate_token.data_type_set = true;
                         }
-                        next_token->name.data = intermediate_token.name.c_str();
-                        next_token->name.size = intermediate_token.name.size();
-                        next_token->name.temporary = true;
-                        next_token->name_type = intermediate_token.name_type;
+                        tmp_token.name.data = intermediate_token.name.c_str();
+                        tmp_token.name.size = intermediate_token.name.size();
+                        tmp_token.name_type = intermediate_token.name_type;
+                        tmp_token.name.temporary = true;
                         data.data = intermediate_token.data.c_str();
                         data.size = intermediate_token.data.length();
                         data.temporary = true;
                         type = intermediate_token.data_type;
                     }
 
-                    if (type == Token::String) {
-                        data.data++; data.size -= 2;
-                        next_token->value = data;
-                    } else {
-                        next_token->value = data;
-                    }
-                    if (type == Token::Ascii) {
-                        next_token->value_type = AsciiTypeChecker::type(next_token->value.data, next_token->value.size);
-                    } else {
-                        next_token->value_type = type;
-                    }
+                    tmp_token.value = data;
+                    tmp_token.value_type = TypeChecker::type(type, tmp_token.value.data, tmp_token.value.size);
 
-                    if (next_token->value_type  == Token::Ascii && !allow_ascii_properties)
+                    if (tmp_token.value_type  == Token::Ascii && !allow_ascii_properties)
                         return Error::IlligalDataValue;
 
-                    if (type == Token::ObjectStart || type == Token::ArrayStart)
+                    if (type == Token::ObjectStart || type == Token::ArrayStart) {
                         token_state = FindingName;
-
-                    if (error != Error::NoError)
-                        return error;
-
-                    if (next_token->value_type == Token::ObjectStart
-                            || next_token->value_type == Token::ArrayStart) {
-                        return Error::NoError;
+                    } else {
+                        token_state = FindingTokenEnd;
                     }
-                    token_state = FindingTokenEnd;
+                    fix_data_for_token(tmp_token);
+                    *next_token = tmp_token;
                     return Error::NoError;
                 case FindingTokenEnd:
                     error = findTokenEnd(json_data, &diff);
