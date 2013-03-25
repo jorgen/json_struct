@@ -44,13 +44,6 @@ class Printer;
 class TreeBuilder
 {
 public:
-    virtual ObjectNode *createObjectNode(Token *token) const;
-    virtual ArrayNode *createArrayNode(Token *token) const;
-    virtual StringNode *createStringNode(Token *token) const;
-    virtual NumberNode *createNumberNode(Token *token) const;
-    virtual BooleanNode *createBooleanNode(Token *token) const;
-    virtual NullNode *createNullNode(Token *token) const;
-
     std::pair<Node *, Error> build(const char *data, size_t data_size) const;
     std::pair<Node *, Error> build(Tokenizer *tokenizer) const;
     std::pair<Node *, Error> build(Token *token, Tokenizer *tokenizer) const;

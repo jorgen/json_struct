@@ -28,31 +28,6 @@
 
 namespace JT {
 
-ObjectNode *TreeBuilder::createObjectNode(Token *token) const
-{
-    return new ObjectNode();
-}
-ArrayNode *TreeBuilder::createArrayNode(Token *token) const
-{
-    return new ArrayNode();
-}
-StringNode *TreeBuilder::createStringNode(Token *token) const
-{
-    return new StringNode(token);
-}
-NumberNode *TreeBuilder::createNumberNode(Token *token) const
-{
-    return new NumberNode(token);
-}
-BooleanNode *TreeBuilder::createBooleanNode(Token *token) const
-{
-    return new BooleanNode(token);
-}
-NullNode *TreeBuilder::createNullNode(Token *token) const
-{
-    return new NullNode(token);
-}
-
 std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) const
 {
     Tokenizer tokenizer;
