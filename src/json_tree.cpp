@@ -23,6 +23,7 @@
 #include "json_tree.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 namespace JT {
@@ -161,11 +162,24 @@ std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokeni
     return ret;
 }
 
-Node::Node(Node::Type type)
+Node::Node(Node::Type type, const Data &data)
     : m_type(type)
-{ }
+    , m_delete_data_buffer(false)
+    , m_data(data)
+{
+    if (m_data.temporary) {
+        char *new_data = new char[m_data.size];
+        m_data.data = new_data;
+        m_data.temporary = false;
+        memcpy(new_data, data.data, m_data.size);
+        m_delete_data_buffer = true;
+    }
+}
 Node::~Node()
 {
+    if (m_delete_data_buffer) {
+        delete[] m_data.data;
+    }
 }
 
 StringNode *Node::stringNodeAt(const std::string &path) const
@@ -306,7 +320,7 @@ const ObjectNode *Node::asObjectNode() const
 }
 
 ObjectNode::ObjectNode()
-    : Node(Node::Object)
+    : Node(Node::Object, Data("{",1,false))
 {
 }
 
@@ -537,7 +551,7 @@ Node *ObjectNode::findNode(const std::string name) const
     return nullptr;
 }
 StringNode::StringNode(Token *token)
-    : Node(String)
+    : Node(String, token->value)
     , m_string(token->value.data, token->value.size)
 {
 }
@@ -569,7 +583,7 @@ bool StringNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 }
 
 NumberNode::NumberNode(Token *token)
-    : Node(Number)
+    : Node(Number, token->value)
 {
     std::string null_terminated(token->value.data, token->value.size);
     char **success = 0;
@@ -595,7 +609,7 @@ bool NumberNode::print(PrintHandler &buffers, const PrinterOption &option , int 
 }
 
 BooleanNode::BooleanNode(Token *token)
-    : Node(Bool)
+    : Node(Bool,token->value)
 {
     if (*token->value.data == 't' || *token->value.data == 'T')
         m_boolean = true;
@@ -617,7 +631,7 @@ bool BooleanNode::print(PrintHandler &buffers, const PrinterOption &option , int
 }
 
 NullNode::NullNode(Token *token)
-    : Node(Null)
+    : Node(Null, token->value)
 { }
 
 size_t NullNode::printSize(const PrinterOption &option, int depth)
@@ -631,7 +645,7 @@ bool NullNode::print(PrintHandler &buffers, const PrinterOption &option , int de
 }
 
 ArrayNode::ArrayNode()
-    : Node(Array)
+    : Node(Array, Data("[",1,false))
 {
 }
 

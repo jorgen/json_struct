@@ -73,7 +73,7 @@ public:
         Array
     };
 
-    Node(Node::Type type);
+    Node(Node::Type type, const Data &data);
     virtual ~Node();
 
     Node::Type type() const
@@ -105,6 +105,8 @@ public:
     virtual bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
     Node::Type m_type;
+    bool m_delete_data_buffer;
+    Data m_data;
 };
 
 class ObjectNode : public Node
