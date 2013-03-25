@@ -23,9 +23,9 @@ m4_include([m4/ax_cxx_compile_stdcxx_11.m4])
 
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
-#`AM_SILENT_RULES([yes])
+#AM_SILENT_RULES([yes])
 
-CXXFLAGS="-Wall -Wextra -Wno-unused-parameter -g -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden"
+CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-parameter -Wmissing-prototypes"
 
 AC_LANG([C++])
 AC_PROG_CXX
