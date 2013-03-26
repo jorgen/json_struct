@@ -215,6 +215,8 @@ public:
 
     size_t size();
 
+    void fillToken(int index, Token *token) const;
+
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
     size_t printSize(const PrinterOption &option, int depth);

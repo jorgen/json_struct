@@ -705,6 +705,15 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
+void ArrayNode::fillToken(int index, Token *token) const
+{
+    token->name = Data();
+    token->name_type = Token::String;
+
+    token->value = m_vector.at(index)->data();
+    token->value_type = json_tree_type_lookup_dic[m_vector.at(index)->type()];
+}
+
 Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
 {
     Token token;
