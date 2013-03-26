@@ -42,7 +42,7 @@ static int check_json_tree_printer()
     JT::PrinterOption printerOption(false);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JT::PrintHandler buffer_handler(buffer,4096);
+    JT::Serializer buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);
@@ -73,7 +73,7 @@ static int check_json_tree_printer_pretty()
     JT::PrinterOption printerOption(true);
     char buffer[4096];
     memset(buffer,'\0', 4096);
-    JT::PrintHandler buffer_handler(buffer,4096);
+    JT::Serializer buffer_handler(buffer,4096);
     assert(root->print(buffer_handler, printerOption));
 
     size_t printed_size = root->printSize(printerOption);
@@ -102,7 +102,7 @@ static int check_multiple_print_buffers()
     JT::PrinterOption printerOption(true);
     size_t printed_size = root->printSize(printerOption);
 
-    JT::PrintHandler printHandler;
+    JT::Serializer printHandler;
     char buffer1[printed_size/2];
     printHandler.appendBuffer(buffer1, printed_size/2);
     char buffer2[2];
@@ -128,7 +128,7 @@ static int check_multiple_print_buffers()
 
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
-    printHandler = JT::PrintHandler();
+    printHandler = JT::Serializer();
     printHandler.appendBuffer(valid_buffer,4096);
 
     root->print(printHandler,printerOption);
@@ -138,7 +138,7 @@ static int check_multiple_print_buffers()
     return 0;
 }
 
-static void add_buffer_func(JT::PrintHandler *printHandler, size_t atleast)
+static void add_buffer_func(JT::Serializer *printHandler, size_t atleast)
 {
     char *buffer = new char[atleast];
     printHandler->appendBuffer(buffer,atleast);
@@ -154,7 +154,7 @@ static int check_callback_print_buffers()
     JT::PrinterOption printerOption(true);
     size_t printed_size = root->printSize(printerOption);
 
-    JT::PrintHandler printHandler;
+    JT::Serializer printHandler;
     printHandler.addRequestBufferCallback(add_buffer_func);
 
     assert(root->print(printHandler, printerOption));
@@ -176,7 +176,7 @@ static int check_callback_print_buffers()
 
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
-    printHandler = JT::PrintHandler();
+    printHandler = JT::Serializer();
     printHandler.appendBuffer(valid_buffer,4096);
 
     root->print(printHandler,printerOption);

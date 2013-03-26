@@ -97,7 +97,7 @@ public:
     const ObjectNode *asObjectNode() const;
 
     virtual size_t printSize(const PrinterOption &option, int depth = 0) = 0;
-    virtual bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0) = 0;
+    virtual bool print(Serializer &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
     Node::Type m_type;
     bool m_delete_data_buffer;
@@ -120,7 +120,7 @@ public:
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 
     class Iterator {
     public:
@@ -153,7 +153,7 @@ public:
     void setString(const std::string &string);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     std::string m_string;
 };
@@ -170,7 +170,7 @@ public:
     { m_number = number; }
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     double m_number;
 };
@@ -187,7 +187,7 @@ public:
     { m_boolean = boolean; }
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     bool m_boolean;
 };
@@ -198,7 +198,7 @@ public:
     NullNode(Token *token);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 };
 
 class ArrayNode : public Node
@@ -220,7 +220,7 @@ public:
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
     size_t printSize(const PrinterOption &option, int depth);
-    bool print(PrintHandler &buffers, const PrinterOption &option , int depth = 0);
+    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 private:
     std::vector<Node *> m_vector;
 };

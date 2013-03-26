@@ -137,11 +137,11 @@ public:
     size_t used;
 };
 
-class PrintHandler
+class Serializer
 {
 public:
-    PrintHandler();
-    PrintHandler(char *buffer, size_t size);
+    Serializer();
+    Serializer(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
 
@@ -149,10 +149,10 @@ public:
     bool write(const char *data, size_t size);
     void markCurrentPrintBufferFull();
 
-    void addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback);
+    void addRequestBufferCallback(std::function<void(Serializer *, size_t)> callback);
     const std::list<PrintBuffer> &printBuffers() const;
 private:
-    std::list<std::function<void(PrintHandler *, size_t)>> m_request_buffer_callbacks;
+    std::list<std::function<void(Serializer *, size_t)>> m_request_buffer_callbacks;
     std::list<PrintBuffer *> m_unused_buffers;
     std::list<PrintBuffer> m_all_buffers;
 };

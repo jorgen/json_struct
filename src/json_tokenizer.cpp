@@ -673,34 +673,34 @@ bool PrintBuffer::append(const char *data, size_t size)
     return true;
 }
 
-PrintHandler::PrintHandler()
+Serializer::Serializer()
 {
 }
 
-PrintHandler::PrintHandler(char *buffer, size_t size)
+Serializer::Serializer(char *buffer, size_t size)
 {
     appendBuffer(buffer,size);
 }
 
-void PrintHandler::appendBuffer(char *buffer, size_t size)
+void Serializer::appendBuffer(char *buffer, size_t size)
 {
     m_all_buffers.push_back({buffer,size,0});
     m_unused_buffers.push_back(&m_all_buffers.back());
 }
 
-void PrintHandler::markCurrentPrintBufferFull()
+void Serializer::markCurrentPrintBufferFull()
 {
     m_unused_buffers.pop_front();
     if (m_unused_buffers.size() == 0) {
     }
 }
 
-bool PrintHandler::canCurrentBufferFit(size_t amount)
+bool Serializer::canCurrentBufferFit(size_t amount)
 {
     return m_unused_buffers.front()->canFit(amount);
 }
 
-bool PrintHandler::write(const char *data, size_t size)
+bool Serializer::write(const char *data, size_t size)
 {
     while(m_unused_buffers.size() && !canCurrentBufferFit(size)) {
         markCurrentPrintBufferFull();
@@ -717,12 +717,12 @@ bool PrintHandler::write(const char *data, size_t size)
     return true;
 }
 
-void PrintHandler::addRequestBufferCallback(std::function<void(PrintHandler *, size_t)> callback)
+void Serializer::addRequestBufferCallback(std::function<void(Serializer *, size_t)> callback)
 {
     m_request_buffer_callbacks.push_back(callback);
 }
 
-const std::list<PrintBuffer> &PrintHandler::printBuffers() const
+const std::list<PrintBuffer> &Serializer::printBuffers() const
 {
     return m_all_buffers;
 }
