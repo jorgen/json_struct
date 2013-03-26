@@ -28,6 +28,16 @@
 
 namespace JT {
 
+static Token::Type json_tree_type_lookup_dic[] = {
+        Token::ObjectStart,
+        Token::String,
+        Token::Ascii,
+        Token::Number,
+        Token::Bool,
+        Token::Null,
+        Token::ArrayStart
+};
+
 std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) const
 {
     Tokenizer tokenizer;
@@ -203,6 +213,11 @@ ObjectNode *Node::objectNodeAt(const std::string &path) const
     if (node)
         return node->asObjectNode();
     return nullptr;
+}
+
+Data Node::data() const
+{
+    return m_data;
 }
 
 Node *Node::nodeAt(const std::string &path) const
@@ -478,36 +493,52 @@ bool ObjectNode::print(PrintHandler &buffers, const PrinterOption &option , int 
     return true;
 }
 
-std::pair<std::string, Node *> &ObjectNode::Iterator::operator*() const
+void ObjectNode::Iterator::fillToken(Token *token) const
 {
-    return *(const_cast<ObjectNode::Iterator *>(this)->m_it);
+    std::string name = m_it->first;
+    token->name = Data(name.c_str(),name.size(), false);
+    token->name_type = Token::String;
+
+    token->value = m_it->second->data();
+    token->value_type = json_tree_type_lookup_dic[m_it->second->type()];
 }
+
+const std::pair<std::string, Node *> &ObjectNode::Iterator::operator*() const
+{
+    return *m_it;
+}
+
 ObjectNode::Iterator &ObjectNode::Iterator::operator++()
 {
     ++m_it;
     return *this;
 }
+
 ObjectNode::Iterator ObjectNode::Iterator::operator++(int)
 {
     ObjectNode::Iterator self = *this;
     m_it++;
     return self;
 }
+
 ObjectNode::Iterator &ObjectNode::Iterator::operator--()
 {
     --m_it;
     return *this;
 }
+
 ObjectNode::Iterator ObjectNode::Iterator::operator--(int)
 {
     ObjectNode::Iterator self = *this;
     m_it--;
     return self;
 }
+
 bool ObjectNode::Iterator::operator==(const Iterator &other) const
 {
     return m_it == other.m_it;
 }
+
 bool ObjectNode::Iterator::operator!=(const Iterator &other) const
 {
     return m_it != other.m_it;
@@ -525,6 +556,7 @@ Node *ObjectNode::findNode(const std::string name) const
     }
     return nullptr;
 }
+
 StringNode::StringNode(Token *token)
     : Node(String, token->value)
     , m_string(token->value.data, token->value.size)

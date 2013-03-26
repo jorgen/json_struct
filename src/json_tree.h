@@ -72,6 +72,8 @@ public:
     Node::Type type() const
     { return m_type; };
 
+    Data data() const;
+
     virtual Node *nodeAt(const std::string &path) const;
 
     StringNode *stringNodeAt(const std::string &path) const;
@@ -122,7 +124,9 @@ public:
 
     class Iterator {
     public:
-        std::pair<std::string, Node *> &operator*() const;
+        void fillToken(Token *token) const;
+
+        const std::pair<std::string, Node *> &operator*() const;
         Iterator &operator++();
         Iterator operator++(int);
         Iterator &operator--();
