@@ -104,7 +104,7 @@ static int check_json_tree_no_root()
     return 0;
 };
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
     check_json_tree_nodes();
     check_json_tree_no_root();

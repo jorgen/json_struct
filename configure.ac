@@ -25,7 +25,7 @@ AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
 #AM_SILENT_RULES([yes])
 
-CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-parameter -Wmissing-prototypes"
+CXXFLAGS="$CXXFLAGS -Wall -Wextra -ggdb"
 
 AC_LANG([C++])
 AC_PROG_CXX

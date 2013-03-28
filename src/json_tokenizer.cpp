@@ -646,9 +646,33 @@ Error Tokenizer::nextToken(Token *next_token)
 
 PrinterOption::PrinterOption(bool pretty, bool ascii_name)
     : m_shift_size(4)
+    , m_depth(0)
     , m_pretty(pretty)
     , m_ascii_name(ascii_name)
-{ }
+    , m_token_delimiter(",")
+{
+    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
+    m_postfix = m_pretty? std::string("\n") : std::string("");
+}
+
+int PrinterOption::shiftSize() const { return m_shift_size; }
+
+int PrinterOption::depth() const { return m_depth; }
+
+bool PrinterOption::pretty() const { return m_pretty; }
+
+bool PrinterOption::ascii_name() const { return m_ascii_name; }
+
+void PrinterOption::setDepth(int depth)
+{
+    m_depth = depth;
+    m_prefix = m_pretty? std::string(depth * m_shift_size, ' ') : std::string();
+}
+
+const std::string &PrinterOption::prefix() const { return m_prefix; }
+const std::string &PrinterOption::tokenDelimiter() const { return m_token_delimiter; }
+const std::string &PrinterOption::valueDelimiter() const { return m_value_delimiter; }
+const std::string &PrinterOption::postfix() const { return m_postfix; }
 
 bool PrintBuffer::append(const char *data, size_t size)
 {
@@ -675,36 +699,56 @@ void Serializer::appendBuffer(char *buffer, size_t size)
     m_unused_buffers.push_back(&m_all_buffers.back());
 }
 
-void Serializer::markCurrentPrintBufferFull()
+void Serializer::setPrinterOption(const PrinterOption &option)
 {
-    m_unused_buffers.pop_front();
-    if (m_unused_buffers.size() == 0) {
-    }
+    m_option = option;
 }
 
-bool Serializer::canCurrentBufferFit(size_t amount)
+bool Serializer::write(const Token &token)
 {
-    return m_unused_buffers.front()->canFit(amount);
-}
-
-bool Serializer::write(const char *data, size_t size)
-{
-    while(m_unused_buffers.size() && !canCurrentBufferFit(size)) {
-        markCurrentPrintBufferFull();
-    }
-    if (!m_unused_buffers.size()) {
-        for (auto it = m_request_buffer_callbacks.begin(); it != m_request_buffer_callbacks.end(); ++it) {
-            //Ask for new buffer with atleast size
-            (*it)(this,size);
+    if (!m_token_start) {
+        if (token.value_type != Token::ObjectEnd
+                && token.value_type != Token::ArrayEnd) {
+            if (!write(m_option.tokenDelimiter()))
+                return false;
         }
     }
-    if (!canCurrentBufferFit(size))
+
+    if (m_first) {
+        m_first = false;
+    } else {
+        if (!write(m_option.postfix()))
+            return false;
+    }
+
+    if (token.value_type == Token::ObjectEnd
+            || token.value_type == Token::ArrayEnd) {
+        m_option.setDepth(m_option.depth() - 1);
+    }
+
+    if (!write(m_option.prefix()))
         return false;
-    m_unused_buffers.front()->append(data,size);
+
+    if (token.name.size) {
+        if (!write(token.name.data,token.name.size))
+            return false;
+
+        if (!write(m_option.valueDelimiter()))
+            return false;
+    }
+
+    if (!write(token.value.data, token.value.size))
+        return false;
+
+    m_token_start = (token.value_type == Token::ObjectStart
+            || token.value_type == Token::ArrayStart);
+    if (m_token_start) {
+        m_option.setDepth(m_option.depth() + 1);
+    }
     return true;
 }
 
-void Serializer::addRequestBufferCallback(std::function<void(Serializer *, size_t)> callback)
+void Serializer::addRequestBufferCallback(std::function<void(Serializer *)> callback)
 {
     m_request_buffer_callbacks.push_back(callback);
 }
@@ -712,6 +756,41 @@ void Serializer::addRequestBufferCallback(std::function<void(Serializer *, size_
 const std::list<PrintBuffer> &Serializer::printBuffers() const
 {
     return m_all_buffers;
+}
+
+void Serializer::askForMoreBuffers()
+{
+    for (auto it = m_request_buffer_callbacks.begin();
+            it != m_request_buffer_callbacks.end();
+            ++it) {
+        (*it)(this);
+    }
+}
+
+void Serializer::markCurrentPrintBufferFull()
+{
+    m_unused_buffers.pop_front();
+    if (m_unused_buffers.size() == 0)
+        askForMoreBuffers();
+}
+
+bool Serializer::write(const char *data, size_t size)
+{
+    if (m_unused_buffers.size() == 0)
+        askForMoreBuffers();
+    size_t written = 0;
+    while(m_unused_buffers.size() && written < size) {
+        PrintBuffer *first = m_unused_buffers.front();
+        size_t free = first->free();
+        if (!free) {
+            markCurrentPrintBufferFull();
+            continue;
+        }
+        size_t to_write = min(size, free);
+        first->append(data + written, to_write);
+        written += to_write;
+    }
+    return written == size;
 }
 
 } //namespace

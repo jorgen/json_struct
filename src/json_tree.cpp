@@ -75,13 +75,8 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
                     return return_pair;
                 }
                 root = new ObjectNode();
-                const char *first_token_name_data = token->name.data;
-                size_t first_token_name_size = token->name.size;
-                if (token->name_type == Token::String) {
-                    first_token_name_data++; first_token_name_size -=2;
-                }
                 root->asObjectNode()->insertNode(
-                        std::string(first_token_name_data, first_token_name_size), first_node.first);
+                        Property(token->name_type, token->name), first_node.first);
             }
             if (!next_token.name.size) {
                 delete root;
@@ -95,13 +90,8 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
                 return_pair.second = new_node.second;
                 return return_pair;
             }
-            const char *token_name_data = next_token.name.data;
-            size_t token_name_size = next_token.name.size;
-            if (next_token.name_type == Token::String) {
-                token_name_data++; token_name_size -=2;
-            }
             root->asObjectNode()->insertNode(
-                    std::string(token_name_data,token_name_size), new_node.first);
+                    Property(next_token.name_type, next_token.name), new_node.first);
         }
         if (error == Error::NeedMoreData) {
             if (!root)
@@ -118,6 +108,98 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
         }
     }
     return return_pair;
+}
+
+TreeSerializer::TreeSerializer()
+    : Serializer()
+{ }
+TreeSerializer::TreeSerializer(char *buffer, size_t size)
+    : Serializer(buffer,size)
+{ }
+
+bool TreeSerializer::serialize(ObjectNode *rootObject)
+{
+    Token token;
+
+    rootObject->fillStartToken(&token);
+    if (!write(token))
+        return false;
+
+    if (!serializeNode(rootObject))
+        return false;
+
+    rootObject->fillEndToken(&token);
+    return write(token);
+}
+
+bool TreeSerializer::serialize(ArrayNode *rootArray)
+{
+    Token token;
+    rootArray->fillStartToken(&token);
+    if (!write(token))
+        return false;
+
+    if (!serializeNode(rootArray))
+        return false;
+
+    rootArray->fillEndToken(&token);
+    return write(token);
+}
+
+bool TreeSerializer::serializeNode(ObjectNode *objectNode)
+{
+    Token token;
+    for (auto it = objectNode->begin(); it != objectNode->end(); ++it) {
+        it.fillToken(&token);
+        if (!write(token))
+            return false;
+        if (token.value_type == Token::ObjectStart) {
+            ObjectNode *child_object = (*it).second->asObjectNode();
+            assert(child_object);
+            if (!serializeNode(child_object))
+                return false;
+            child_object->fillEndToken(&token);
+            if (!write(token))
+                return false;
+        } else if (token.value_type == Token::ArrayStart) {
+            ArrayNode *child_array = (*it).second->asArrayNode();
+            assert(child_array);
+            if (!serializeNode(child_array))
+                return false;
+            child_array->fillEndToken(&token);
+            if (!write(token))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool TreeSerializer::serializeNode(ArrayNode *arrayNode)
+{
+    Token token;
+    for (size_t i = 0; i < arrayNode->size(); i++) {
+        arrayNode->fillToken(i, &token);
+        if (!write(token))
+            return false;
+        if (token.value_type == Token::ObjectStart) {
+            ObjectNode *child_object = arrayNode->index(i)->asObjectNode();
+            assert(child_object);
+            if (!serializeNode(child_object))
+                return false;
+            child_object->fillEndToken(&token);
+            if (!write(token))
+                return false;
+        } else if (token.value_type == Token::ArrayStart) {
+            ArrayNode *child_array = arrayNode->index(i)->asArrayNode();
+            assert(child_array);
+            if (!serializeNode(child_array))
+                return false;
+            child_array->fillEndToken(&token);
+            if (!write(token))
+                return false;
+        }
+    }
+    return true;
 }
 
 std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokenizer) const
@@ -232,6 +314,7 @@ Data Node::data() const
 
 Node *Node::nodeAt(const std::string &path) const
 {
+    (void) path;
     return nullptr;
 }
 
@@ -319,6 +402,106 @@ const ObjectNode *Node::asObjectNode() const
     return nullptr;
 }
 
+Property::Property(Token::Type type, const Data data)
+    : m_type(type)
+    , m_delete_data_buffer(false)
+    , m_data(data)
+{
+    if (data.temporary) {
+        char *new_data = new char[m_data.size];
+        m_data.data = new_data;
+        memcpy(new_data, data.data,m_data.size);
+        m_delete_data_buffer = true;
+    }
+}
+
+Property::Property(const Property &other)
+    : m_type(other.m_type)
+    , m_delete_data_buffer(other.m_delete_data_buffer)
+    , m_data(other.m_data)
+{
+    if (m_delete_data_buffer) {
+        char *new_data = new char[m_data.size];
+        m_data.data = new_data;
+        memcpy(new_data, other.m_data.data,m_data.size);
+    }
+}
+
+Property::Property(Property &&other)
+    : m_type(other.m_type)
+    , m_delete_data_buffer(other.m_delete_data_buffer)
+    , m_data(other.m_data)
+{
+    other.m_delete_data_buffer = false;
+}
+
+Property::~Property()
+{
+    if (m_delete_data_buffer)
+        delete[] m_data.data;
+}
+
+Token::Type Property::type() const
+{
+    return m_type;
+}
+
+bool Property::comparePropertyData(const Property &property) const
+{
+    if (property.m_data.size != m_data.size)
+        return false;
+    return memcmp(m_data.data, property.m_data.data, m_data.size);
+}
+bool Property::comparePropertyAscii(const Property &property) const
+{
+    const char *other_data = property.m_data.data;
+    size_t other_size = property.m_data.size;
+    if (property.m_type == Token::String) {
+        other_data++; other_size -= 2;
+    }
+
+    const char *this_data = m_data.data;
+    size_t this_size = m_data.size;
+    if (m_type == Token::String) {
+        this_data++; this_size -= 2;
+    }
+
+    if (this_size != other_size)
+        return false;
+    return memcmp(this_data, other_data, this_size) == 0;
+}
+
+bool Property::comparePropertyAscii(const std::string &property_name) const
+{
+    const char *this_data = m_data.data;
+    size_t this_size = m_data.size;
+    if (m_type == Token::String) {
+        this_data++; this_size -= 2;
+    }
+
+    if (this_size != property_name.size())
+        return false;
+    return memcmp(this_data, property_name.c_str(), this_size) == 0;
+}
+
+Data Property::data() const
+{
+    return m_data;
+}
+
+Property &Property::operator= (const Property &other)
+{
+    m_type = other.m_type;
+    m_delete_data_buffer = other.m_delete_data_buffer;
+    m_data = other.m_data;
+    if (m_delete_data_buffer) {
+        char *new_data = new char[m_data.size];
+        m_data.data = new_data;
+        memcpy(new_data, other.m_data.data,m_data.size);
+    }
+    return *this;
+}
+
 ObjectNode::ObjectNode()
     : Node(Node::Object, Data("{",1,false))
 {
@@ -355,23 +538,23 @@ Node *ObjectNode::node(const std::string &child_node) const
     return findNode(child_node);
 }
 
-void ObjectNode::insertNode(const std::string &name, Node *node, bool replace)
+void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
 {
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first == name) {
+        if ((*it).first.comparePropertyAscii(name)) {
             if (replace) {
                 (*it).second = node;
             }
             return;
         }
     }
-    m_data.push_back(std::pair<std::string,Node *>(name,node));
+    m_data.push_back(std::pair<const Property, Node *>(name,node));
 }
 
 Node *ObjectNode::take(const std::string &name)
 {
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first == name) {
+        if ((*it).first.comparePropertyAscii(name)) {
             Node *return_node = (*it).second;
             m_data.erase(it);
             return return_node;
@@ -394,131 +577,26 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
         }
 
         assert(token.name.size);
-        const char *name = token.name.data;
-        size_t name_size = token.name.size;
-        if (token.name_type == Token::String) {
-            name++; name_size -= 2;
-        }
-        insertNode(std::string(name, name_size), created.first, true);
+        insertNode(Property(token.name_type, token.name), created.first, true);
     }
     return error;
 }
 
-size_t ObjectNode::printSize(const PrinterOption &option, int depth)
-{
-    depth++;
-    size_t return_size = 0;
-    bool first = true;
-    int shift_width = depth * option.shiftSize();
-
-    if (option.pretty()) {
-        return_size += 2;
-    } else {
-        return_size++;
-    }
-
-    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        const std::string &property = (*it).first;
-        if (first) {
-            first = false;
-        } else {
-            if (option.pretty()) {
-                return_size+=2;
-            } else {
-                return_size++;
-            }
-        }
-        if (option.pretty()) {
-            return_size += shift_width;
-        }
-        return_size += property.size() + 2;
-
-        if (option.pretty()) {
-            return_size += 3;
-        } else {
-            return_size += 1;
-        }
-
-        return_size += (*it).second->printSize(option,depth);
-    }
-    if (option.pretty()) {
-        return_size += 1 + (shift_width - option.shiftSize());
-    }
-    return_size += 1;
-    return return_size;
-}
-
-bool ObjectNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    depth++;
-    if (option.pretty()) {
-        if (!buffers.write("{\n",2))
-            return false;
-    } else {
-        if (!buffers.write("{", 1))
-            return false;
-    }
-
-    int shift_width = option.shiftSize() * depth;
-
-    for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        const std::string &property = (*it).first;
-        if (it != m_data.begin()) {
-            if (option.pretty()) {
-                if (!buffers.write(",\n",2))
-                    return false;
-           } else {
-                if (!buffers.write(",",1))
-                    return false;
-            }
-        }
-        if (option.pretty()) {
-            if (!buffers.write(
-                        std::string(shift_width,' ').c_str(),shift_width))
-                return false;
-        }
-        if (!buffers.write("\"",1))
-            return false;
-        if (!buffers.write(property.c_str(), property.size()))
-            return false;
-        if (!buffers.write("\"",1))
-            return false;
-        if (option.pretty()) {
-            const char delimiter[] = " : ";
-            if (!buffers.write(delimiter, 3))
-                return false;
-        } else {
-            const char delimiter[] = ":";
-            if (!buffers.write(delimiter, 1))
-                return false;
-        }
-        Node *print_node = node(property);
-        if (!print_node->print(buffers,option,depth))
-            return false;
-    }
-
-    if (option.pretty()) {
-        std::string before_close_bracket("\n");
-        before_close_bracket.append(std::string(shift_width - option.shiftSize(),' '));
-        if (!buffers.write(before_close_bracket.c_str(), before_close_bracket.size()))
-            return false;
-    }
-    if (!buffers.write("}",1))
-        return false;
-    return true;
-}
+ObjectNode::Iterator::Iterator(std::vector<std::pair<Property, Node *>>::const_iterator it)
+    : m_it(it)
+{ }
 
 void ObjectNode::Iterator::fillToken(Token *token) const
 {
-    std::string name = m_it->first;
-    token->name = Data(name.c_str(),name.size(), false);
-    token->name_type = Token::String;
+    const Property &name = m_it->first;
+    token->name = name.data();
+    token->name_type = name.type();
 
     token->value = m_it->second->data();
     token->value_type = json_tree_type_lookup_dic[m_it->second->type()];
 }
 
-const std::pair<std::string, Node *> &ObjectNode::Iterator::operator*() const
+const std::pair<Property, Node *> &ObjectNode::Iterator::operator*() const
 {
     return *m_it;
 }
@@ -559,14 +637,36 @@ bool ObjectNode::Iterator::operator!=(const Iterator &other) const
     return m_it != other.m_it;
 }
 
-ObjectNode::Iterator::Iterator()
+ObjectNode::Iterator ObjectNode::begin() const
 {
+    return ObjectNode::Iterator(m_data.begin());
+}
+
+ObjectNode::Iterator ObjectNode::end() const
+{
+    return Iterator(m_data.end());
+}
+
+void ObjectNode::fillStartToken(Token *token)
+{
+    token->name = Data();
+    token->name_type = Token::String;
+    token->value = {"{",1,true};
+    token->value_type = Token::ObjectStart;
+}
+
+void ObjectNode::fillEndToken(Token *token)
+{
+    token->name = Data();
+    token->name_type = Token::String;
+    token->value = {"}",1,true};
+    token->value_type = Token::ObjectEnd;
 }
 
 Node *ObjectNode::findNode(const std::string name) const
 {
     for(auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first == name)
+        if ((*it).first.comparePropertyAscii(name))
             return (*it).second;
     }
     return nullptr;
@@ -588,22 +688,6 @@ void StringNode::setString(const std::string &string)
     m_string = string;
 }
 
-size_t StringNode::printSize(const PrinterOption &option, int depth)
-{
-    return m_string.size() + 2;
-}
-
-bool StringNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    if (!buffers.write("\"",1))
-        return false;
-    if (!buffers.write(m_string.c_str(), m_string.size()))
-        return false;
-    if (!buffers.write("\"",1))
-        return false;
-    return true;
-}
-
 NumberNode::NumberNode(Token *token)
     : Node(Number, token->value)
 {
@@ -615,21 +699,6 @@ NumberNode::NumberNode(Token *token)
     }
 }
 
-size_t NumberNode::printSize(const PrinterOption &option, int depth)
-{
-    char buff[20];
-    size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
-    assert(size > 0);
-    return size;
-}
-
-bool NumberNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    char buff[20];
-    size_t size  = snprintf(buff, sizeof(buff), "%f", m_number);
-    return buffers.write(buff,size);
-}
-
 BooleanNode::BooleanNode(Token *token)
     : Node(Bool,token->value)
 {
@@ -639,32 +708,9 @@ BooleanNode::BooleanNode(Token *token)
         m_boolean = false;
 }
 
-size_t BooleanNode::printSize(const PrinterOption &option, int depth)
-{
-    return m_boolean ? 4 : 5;
-}
-
-bool BooleanNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    if (m_boolean)
-        return buffers.write("true",4);
-    else
-        return buffers.write("false",5);
-}
-
 NullNode::NullNode(Token *token)
     : Node(Null, token->value)
 { }
-
-size_t NullNode::printSize(const PrinterOption &option, int depth)
-{
-    return 4;
-}
-
-bool NullNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    return buffers.write("null",4);
-}
 
 ArrayNode::ArrayNode()
     : Node(Array, Data("[",1,false))
@@ -720,13 +766,30 @@ size_t ArrayNode::size()
     return m_vector.size();
 }
 
-void ArrayNode::fillToken(int index, Token *token) const
+void ArrayNode::fillToken(size_t index, Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
-
     token->value = m_vector.at(index)->data();
     token->value_type = json_tree_type_lookup_dic[m_vector.at(index)->type()];
+}
+
+void ArrayNode::fillStartToken(Token *token)
+{
+    token->name = Data();
+    token->name_type = Token::String;
+    token->value.data = "[";
+    token->value.size = 1;
+    token->value_type = Token::ArrayStart;
+}
+
+void ArrayNode::fillEndToken(Token *token)
+{
+    token->name = Data();
+    token->name_type = Token::String;
+    token->value.data = "]";
+    token->value.size = 1;
+    token->value_type = Token::ArrayEnd;
 }
 
 Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
@@ -746,87 +809,6 @@ Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
     }
 
     return error;
-}
-
-size_t ArrayNode::printSize(const PrinterOption &option, int depth)
-{
-    depth++;
-    int shift_width = option.shiftSize() * depth;
-    size_t return_size = 0;
-
-    if (option.pretty()) {
-        return_size += 2;
-    }else {
-        return_size++;
-    }
-
-    bool first = true;
-    for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
-        if (first) {
-            first = false;
-        } else {
-            if (option.pretty())
-                return_size += 2;
-            else
-                return_size++;
-        }
-        if (option.pretty()) {
-            return_size += shift_width;
-        }
-
-        return_size += (*it)->printSize(option, depth);
-    }
-
-    if (option.pretty()) {
-        return_size += 1 + (shift_width - option.shiftSize());
-    }
-
-    return_size++;
-
-    return return_size;
-}
-
-bool ArrayNode::print(Serializer &buffers, const PrinterOption &option , int depth)
-{
-    depth++;
-    if (option.pretty()) {
-        if (!buffers.write("[\n",2))
-            return false;
-    } else {
-        if (!buffers.write("[",1))
-            return false;
-    }
-
-    int shift_width = option.shiftSize() * depth;
-
-    for (auto it = m_vector.begin(); it != m_vector.end(); ++it) {
-        if (it != m_vector.begin()) {
-            if (option.pretty()) {
-                if (!buffers.write(",\n",2))
-                    return false;
-            } else {
-                if (!buffers.write(",",1))
-                    return false;
-            }
-        }
-        if (option.pretty()) {
-            if (!buffers.write(std::string(shift_width,' ').c_str(),shift_width))
-                return false;
-        }
-        if (!(*it)->print(buffers,option,depth))
-            return false;
-    }
-
-    if (option.pretty()) {
-        if (!buffers.write("\n",1))
-            return false;
-        if (!buffers.write(std::string(shift_width - option.shiftSize(),' ').c_str(),shift_width - option.shiftSize()))
-            return false;
-    }
-    if (!buffers.write("]",1))
-        return false;
-    return true;
-
 }
 
 } //namespace JT

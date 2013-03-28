@@ -168,7 +168,7 @@ static int check_fail_json_with_illigal_chars()
 
 
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
     check_fail_json_with_ascii_property();
     check_fail_json_with_ascii_data();

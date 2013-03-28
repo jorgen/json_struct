@@ -60,8 +60,7 @@ const char json_data1[] = u8R"(
 }
 )";
 
-const char json_data2[] = u8R"(
-{
+const char json_data2[] = u8R"({
     "StringNode" : "Some test data",
     "NumberNode" : 4676.4,
     "NullNode" : null,
@@ -79,8 +78,7 @@ const char json_data2[] = u8R"(
         }
     ],
     "LastStringNode" : "More test data"
-}
-)";
+})";
 
 int check_json_tree_from_json_data2(JT::Node *root)
 {

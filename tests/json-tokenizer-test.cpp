@@ -175,7 +175,7 @@ static int check_json_with_string_and_ascii()
     return 0;
 }
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
     return check_json_with_string_and_ascii();
 }

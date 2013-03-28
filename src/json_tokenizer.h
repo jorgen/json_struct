@@ -26,6 +26,7 @@
 #include <stddef.h>
 #include <functional>
 #include <list>
+#include <string>
 
 namespace JT {
 
@@ -117,20 +118,34 @@ class PrinterOption
 public:
     PrinterOption(bool pretty = false, bool ascii_name = false);
 
-    short shiftSize() const { return m_shift_size; }
-    bool pretty() const { return m_pretty; }
-    bool ascii_name() const { return m_ascii_name; }
+    int shiftSize() const;
+    int depth() const;
+    bool pretty() const;
+    bool ascii_name() const;
+
+    void setDepth(int depth);
+
+    const std::string &prefix() const;
+    const std::string &tokenDelimiter() const;
+    const std::string &valueDelimiter() const;
+    const std::string &postfix() const;
 
 private:
-    short m_shift_size;
+    int m_shift_size;
+    int m_depth;
     bool m_pretty;
     bool m_ascii_name;
+
+    std::string m_prefix;
+    std::string m_token_delimiter;
+    std::string m_value_delimiter;
+    std::string m_postfix;
 };
 
 class PrintBuffer
 {
 public:
-    bool canFit(size_t amount) const { return size - used >= amount; }
+    bool free() const { return size - used; }
     bool append(const char *data, size_t size);
     char *buffer;
     size_t size;
@@ -144,17 +159,25 @@ public:
     Serializer(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
+    void setPrinterOption(const PrinterOption &option);
 
-    bool canCurrentBufferFit(size_t amount);
-    bool write(const char *data, size_t size);
-    void markCurrentPrintBufferFull();
+    bool write(const Token &token);
 
-    void addRequestBufferCallback(std::function<void(Serializer *, size_t)> callback);
+    void addRequestBufferCallback(std::function<void(Serializer *)> callback);
     const std::list<PrintBuffer> &printBuffers() const;
 private:
-    std::list<std::function<void(Serializer *, size_t)>> m_request_buffer_callbacks;
+    void askForMoreBuffers();
+    void markCurrentPrintBufferFull();
+    bool write(const char *data, size_t size);
+    bool write(const std::string &str) { return write(str.c_str(), str.size()); }
+
+    std::list<std::function<void(Serializer *)>> m_request_buffer_callbacks;
     std::list<PrintBuffer *> m_unused_buffers;
     std::list<PrintBuffer> m_all_buffers;
+
+    PrinterOption m_option;
+    bool m_first = true;
+    bool m_token_start = true;
 };
 
 } //Namespace

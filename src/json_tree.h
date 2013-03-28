@@ -39,7 +39,6 @@ class NumberNode;
 class BooleanNode;
 class NullNode;
 class ArrayNode;
-class Printer;
 
 class TreeBuilder
 {
@@ -51,6 +50,19 @@ public:
     std::pair<Node *, Error> createNode(Token *token, Tokenizer *tokenizer) const;
 
     bool create_root_if_needed = false;
+};
+
+class TreeSerializer : public Serializer
+{
+public:
+    TreeSerializer();
+    TreeSerializer(char *buffer, size_t size);
+
+    bool serialize(ObjectNode *rootObject);
+    bool serialize(ArrayNode *rootArray);
+
+    bool serializeNode(ObjectNode *objectNode);
+    bool serializeNode(ArrayNode *arrayNode);
 };
 
 class Node
@@ -95,11 +107,30 @@ public:
     const ArrayNode *asArrayNode() const;
     ObjectNode *asObjectNode();
     const ObjectNode *asObjectNode() const;
-
-    virtual size_t printSize(const PrinterOption &option, int depth = 0) = 0;
-    virtual bool print(Serializer &buffers, const PrinterOption &option , int depth = 0) = 0;
 protected:
     Node::Type m_type;
+    bool m_delete_data_buffer;
+    Data m_data;
+};
+
+class Property
+{
+public:
+    Property(Token::Type type, const Data data);
+    Property(const Property &other);
+    Property(Property &&other);
+    ~Property();
+
+    Token::Type type() const;
+    bool comparePropertyData(const Property &property) const;
+    bool comparePropertyAscii(const Property &property) const;
+    bool comparePropertyAscii(const std::string &property_name) const;
+
+    Data data() const;
+
+    Property &operator= (const Property &other);
+private:
+    Token::Type m_type;
     bool m_delete_data_buffer;
     Data m_data;
 };
@@ -114,34 +145,35 @@ public:
 
     Node *node(const std::string &child_node) const;
 
-    void insertNode(const std::string &name, Node *node, bool replace = false);
+    void insertNode(const Property &property, Node *node, bool replace = false);
     Node *take(const std::string &name);
 
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
-
     class Iterator {
     public:
+        Iterator( std::vector<std::pair<Property, Node *>>::const_iterator it);
         void fillToken(Token *token) const;
 
-        const std::pair<std::string, Node *> &operator*() const;
+        const std::pair<Property, Node *> &operator*() const;
         Iterator &operator++();
         Iterator operator++(int);
         Iterator &operator--();
         Iterator operator--(int);
         bool operator==(const Iterator &other) const;
         bool operator!=(const Iterator &other) const;
+
     private:
-        Iterator();
-        std::vector<std::pair<std::string, Node *>>::iterator m_it;
+        std::vector<std::pair<Property, Node *>>::const_iterator m_it;
     };
     Iterator begin() const;
     Iterator end() const;
+
+    void fillStartToken(Token *token);
+    void fillEndToken(Token *token);
 private:
     Node *findNode(const std::string name) const;
-    std::vector<std::pair<std::string, Node *>> m_data;
+    std::vector<std::pair<Property, Node *>> m_data;
 };
 
 class StringNode : public Node
@@ -152,8 +184,6 @@ public:
     const std::string &string() const;
     void setString(const std::string &string);
 
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     std::string m_string;
 };
@@ -169,8 +199,6 @@ public:
     void setNumber(double number)
     { m_number = number; }
 
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     double m_number;
 };
@@ -186,8 +214,6 @@ public:
     void setBoolean(bool boolean)
     { m_boolean = boolean; }
 
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 protected:
     bool m_boolean;
 };
@@ -197,8 +223,6 @@ class NullNode : public Node
 public:
     NullNode(Token *token);
 
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 };
 
 class ArrayNode : public Node
@@ -215,12 +239,11 @@ public:
 
     size_t size();
 
-    void fillToken(int index, Token *token) const;
+    void fillToken(size_t index, Token *token) const;
+    void fillStartToken(Token *token);
+    void fillEndToken(Token *token);
 
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
-
-    size_t printSize(const PrinterOption &option, int depth);
-    bool print(Serializer &buffers, const PrinterOption &option , int depth = 0);
 private:
     std::vector<Node *> m_vector;
 };
