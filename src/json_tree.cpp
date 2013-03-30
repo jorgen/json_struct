@@ -75,8 +75,13 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
                     return return_pair;
                 }
                 root = new ObjectNode();
+                const char *first_token_name_data = token->name.data;
+                size_t first_token_name_size = token->name.size;
+                if (token->name_type == Token::String) {
+                    first_token_name_data++; first_token_name_size -=2;
+                }
                 root->asObjectNode()->insertNode(
-                        std::string(token->name.data, token->name.size), first_node.first);
+                        std::string(first_token_name_data, first_token_name_size), first_node.first);
             }
             if (!next_token.name.size) {
                 delete root;
@@ -90,8 +95,13 @@ std::pair<Node *, Error> TreeBuilder::build(Token *token, Tokenizer *tokenizer) 
                 return_pair.second = new_node.second;
                 return return_pair;
             }
+            const char *token_name_data = next_token.name.data;
+            size_t token_name_size = next_token.name.size;
+            if (next_token.name_type == Token::String) {
+                token_name_data++; token_name_size -=2;
+            }
             root->asObjectNode()->insertNode(
-                    std::string(next_token.name.data, next_token.name.size), new_node.first);
+                    std::string(token_name_data,token_name_size), new_node.first);
         }
         if (error == Error::NeedMoreData) {
             if (!root)
@@ -384,7 +394,12 @@ Error ObjectNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
         }
 
         assert(token.name.size);
-        insertNode(std::string(token.name.data, token.name.size), created.first, true);
+        const char *name = token.name.data;
+        size_t name_size = token.name.size;
+        if (token.name_type == Token::String) {
+            name++; name_size -= 2;
+        }
+        insertNode(std::string(name, name_size), created.first, true);
     }
     return error;
 }
@@ -559,7 +574,7 @@ Node *ObjectNode::findNode(const std::string name) const
 
 StringNode::StringNode(Token *token)
     : Node(String, token->value)
-    , m_string(token->value.data, token->value.size)
+    , m_string(token->value.data + 1, token->value.size - 2)
 {
 }
 

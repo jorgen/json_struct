@@ -32,26 +32,15 @@
 
 namespace JT {
 
-static inline void trim_string_chars(Data &data)
+static inline size_t min(size_t a, size_t b)
 {
-    if (data.size > 2) {
-        data.data++; data.size-=2;
-    } else {
-        data.data = ""; data.size = 0;
-    }
-}
-static inline void fix_data_for_token(Token &token)
-{
-    if (token.name_type == Token::String)
-        trim_string_chars(token.name);
-    if (token.value_type == Token::String)
-        trim_string_chars(token.value);
+    return a < b? a : b;
 }
 
-static inline void populate_anonymous_token(const Data &data, Token::Type type, Token &token)
+static inline void populate_annonymous_token(const Data &data, Token::Type type, Token &token)
 {
     token.name = Data("",0,false);
-    token.name_type = Token::String;
+    token.name_type = Token::Ascii;
     token.value = data;
     token.value_type = type;
 }
@@ -436,13 +425,13 @@ public:
                                 if (expecting_prop_or_annonymous_data) {
                                     return Error::ExpectedDataToken;
                                 }
-                                populate_anonymous_token(data,type,*next_token);
+                                populate_annonymous_token(data,type,*next_token);
                                 token_state = FindingTokenEnd;
                                 return Error::NoError;
 
                             case Token::ObjectStart:
                             case Token::ArrayStart:
-                                populate_anonymous_token(data,type,*next_token);
+                                populate_annonymous_token(data,type,*next_token);
                                 expecting_prop_or_annonymous_data = false;
                                 token_state = FindingName;
                                 return Error::NoError;
@@ -473,8 +462,7 @@ public:
                     resetForNewValue();
                     expecting_prop_or_annonymous_data = false;
                     if (token_state == FindingName) {
-                        fix_data_for_token(tmp_token);
-                        populate_anonymous_token(tmp_token.name, tmp_token.name_type, *next_token);
+                        populate_annonymous_token(tmp_token.name, tmp_token.name_type, *next_token);
                         return Error::NoError;
                     } else {
                         if (tmp_token.name_type != Token::String) {
@@ -534,7 +522,6 @@ public:
                     } else {
                         token_state = FindingTokenEnd;
                     }
-                    fix_data_for_token(tmp_token);
                     *next_token = tmp_token;
                     return Error::NoError;
                 case FindingTokenEnd:

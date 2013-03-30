@@ -43,19 +43,19 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
+    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
+    assert((assert_token(token, JT::Token::String, "\"color\"", JT::Token::String, "\"red\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "weather", JT::Token::String, "clear") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "weather", JT::Token::String, "\"clear\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "weather1", JT::Token::String, "clear1") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "weather1", JT::Token::String, "\"clear1\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -71,7 +71,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "EscapedString", JT::Token::String, "contains \\\"") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "EscapedString", JT::Token::String, "\"contains \\\"\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -83,7 +83,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "ThisIsASubType", JT::Token::String, "red") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "ThisIsASubType", JT::Token::String, "\"red\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -91,7 +91,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "AnotherProp", JT::Token::String, "prop") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "AnotherProp", JT::Token::String, "\"prop\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -99,7 +99,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "ThisIsAnotherASubType", JT::Token::String, "blue") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "ThisIsAnotherASubType", JT::Token::String, "\"blue\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -111,15 +111,15 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "", JT::Token::Number, "12.4") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "12.4") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "", JT::Token::Number, "3") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "3") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "", JT::Token::Number, "43.2") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "43.2") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -131,15 +131,15 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "", JT::Token::ObjectStart, "{") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "Test1", JT::Token::String, "Test2") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "Test1", JT::Token::String, "\"Test2\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "Test3", JT::Token::String, "Test4") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "Test3", JT::Token::String, "\"Test4\"") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
@@ -147,7 +147,7 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "", JT::Token::ObjectStart, "{") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(&token);
     assert(error == JT::Error::NoError);
