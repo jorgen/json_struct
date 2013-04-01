@@ -491,6 +491,8 @@ Data Property::data() const
 
 Property &Property::operator= (const Property &other)
 {
+    if (m_delete_data_buffer)
+        delete[] m_data.data;
     m_type = other.m_type;
     m_delete_data_buffer = other.m_delete_data_buffer;
     m_data = other.m_data;
@@ -548,7 +550,7 @@ void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
             return;
         }
     }
-    m_data.push_back(std::pair<const Property, Node *>(name,node));
+    m_data.push_back(std::pair<Property, Node *>(name,node));
 }
 
 Node *ObjectNode::take(const std::string &name)
