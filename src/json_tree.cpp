@@ -307,7 +307,7 @@ ObjectNode *Node::objectNodeAt(const std::string &path) const
     return nullptr;
 }
 
-Data Node::data() const
+const Data &Node::data() const
 {
     return m_data;
 }

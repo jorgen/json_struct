@@ -39,14 +39,14 @@ static int check_json_tree_printer()
 
     check_json_tree_from_json_data2(root);
 
-    JT::PrinterOption printerOption(false);
+    JT::SerializerOptions printerOption(false);
     char buffer[4096];
     memset(buffer,'\0', 4096);
     JT::TreeSerializer serializer(buffer,4096);
     assert(serializer.serialize(root->asObjectNode()));
 
     size_t actual_size = strlen(buffer);
-    size_t reported_used = serializer.printBuffers().front().used;
+    size_t reported_used = serializer.buffers().front().used;
 
     assert(actual_size == reported_used);
 
@@ -70,14 +70,14 @@ static int check_json_tree_printer_pretty()
 
     check_json_tree_from_json_data2(root);
 
-    JT::PrinterOption printerOption(true);
+    JT::SerializerOptions printerOption(true);
     char buffer[4096];
     memset(buffer,'\0', 4096);
     JT::TreeSerializer serializer(buffer,4096);
     assert(serializer.serialize(root->asObjectNode()));
 
     size_t actual_size = strlen(buffer);
-    size_t reported_used = serializer.printBuffers().front().used;
+    size_t reported_used = serializer.buffers().front().used;
 
     assert(actual_size == reported_used);
 
@@ -100,7 +100,7 @@ static int check_multiple_print_buffers()
     size_t printed_size = sizeof(json_data2);
 
     JT::TreeSerializer serializer;
-    serializer.setPrinterOption(JT::PrinterOption(true));
+    serializer.setSerializerOptions(JT::SerializerOptions(true));
 
     char buffer1[printed_size/2];
     serializer.appendBuffer(buffer1, printed_size/2);
@@ -114,7 +114,7 @@ static int check_multiple_print_buffers()
     size_t complete_size = 0;
     char target_buffer[4096];
     memset(target_buffer,'\0', 4096);
-    auto buffers = serializer.printBuffers();
+    auto buffers = serializer.buffers();
     for (auto it = buffers.begin(); it != buffers.end(); ++it) {
         if ((*it).used > 0) {
             memcpy(target_buffer + complete_size, (*it).buffer, (*it).used);
@@ -128,7 +128,7 @@ static int check_multiple_print_buffers()
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
     serializer = JT::TreeSerializer();
-    serializer.setPrinterOption(JT::PrinterOption(true));
+    serializer.setSerializerOptions(JT::SerializerOptions(true));
     serializer.appendBuffer(valid_buffer,4096);
 
     serializer.serialize(root->asObjectNode());
@@ -152,7 +152,7 @@ static int check_callback_print_buffers()
     assert(root);
 
     JT::TreeSerializer serializer;
-    serializer.setPrinterOption(JT::PrinterOption(true));
+    serializer.setSerializerOptions(JT::SerializerOptions(true));
     serializer.addRequestBufferCallback(add_buffer_func);
 
     assert(serializer.serialize(root->asObjectNode()));
@@ -160,7 +160,7 @@ static int check_callback_print_buffers()
     size_t complete_size = 0;
     char target_buffer[4096];
     memset(target_buffer,'\0', 4096);
-    auto buffers = serializer.printBuffers();
+    auto buffers = serializer.buffers();
     for (auto it = buffers.begin(); it != buffers.end(); ++it) {
         if ((*it).used > 0) {
             memcpy(target_buffer + complete_size, (*it).buffer, (*it).used);
@@ -172,7 +172,7 @@ static int check_callback_print_buffers()
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
     serializer = JT::TreeSerializer();
-    serializer.setPrinterOption(JT::PrinterOption(true));
+    serializer.setSerializerOptions(JT::SerializerOptions(true));
     serializer.appendBuffer(valid_buffer,4096);
 
     serializer.serialize(root->asObjectNode());

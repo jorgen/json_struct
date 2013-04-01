@@ -113,10 +113,10 @@ private:
     TokenizerPrivate *m_private;
 };
 
-class PrinterOption
+class SerializerOptions
 {
 public:
-    PrinterOption(bool pretty = false, bool ascii_name = false);
+    SerializerOptions(bool pretty = false, bool ascii_name = false);
 
     int shiftSize() const;
     int depth() const;
@@ -142,7 +142,7 @@ private:
     std::string m_postfix;
 };
 
-class PrintBuffer
+class SerializerBuffer
 {
 public:
     bool free() const { return size - used; }
@@ -159,23 +159,23 @@ public:
     Serializer(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
-    void setPrinterOption(const PrinterOption &option);
+    void setSerializerOptions(const SerializerOptions &option);
 
     bool write(const Token &token);
 
     void addRequestBufferCallback(std::function<void(Serializer *)> callback);
-    const std::list<PrintBuffer> &printBuffers() const;
+    const std::list<SerializerBuffer> &buffers() const;
 private:
     void askForMoreBuffers();
-    void markCurrentPrintBufferFull();
+    void markCurrentSerializerBufferFull();
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 
     std::list<std::function<void(Serializer *)>> m_request_buffer_callbacks;
-    std::list<PrintBuffer *> m_unused_buffers;
-    std::list<PrintBuffer> m_all_buffers;
+    std::list<SerializerBuffer *> m_unused_buffers;
+    std::list<SerializerBuffer> m_all_buffers;
 
-    PrinterOption m_option;
+    SerializerOptions m_option;
     bool m_first = true;
     bool m_token_start = true;
 };

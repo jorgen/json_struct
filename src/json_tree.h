@@ -84,7 +84,7 @@ public:
     Node::Type type() const
     { return m_type; };
 
-    Data data() const;
+    const Data &data() const;
 
     virtual Node *nodeAt(const std::string &path) const;
 
