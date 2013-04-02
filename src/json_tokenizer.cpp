@@ -48,15 +48,20 @@ static inline void populate_annonymous_token(const Data &data, Token::Type type,
 class TypeChecker
 {
 public:
-    static Token::Type type(Token::Type type, const char *data, int length) {
+    static Token::Type type(Token::Type type, const char *data, size_t length) {
         if (type != Token::Ascii)
             return type;
-        if (m_null.compare(0,m_null.size(), data, 0, length) == 0)
-            return Token::Null;
-        if (m_true.compare(0,m_true.size(), data, 0, length) == 0)
-            return Token::Bool;
-        if (m_false.compare(0,m_false.size(), data, 0, length) == 0)
-            return Token::Bool;
+        if (m_null.size() == length) {
+            if (strncmp(m_null.c_str(),data,length) == 0) {
+                return Token::Null;
+            } else if (strncmp(m_true.c_str(),data,length) == 0) {
+                return Token::Bool;
+            }
+        }
+        if (m_false.size() == length) {
+            if (strncmp(m_false.c_str(),data,length) == 0)
+                return Token::Bool;
+        }
         return Token::Ascii;
     }
 private:
