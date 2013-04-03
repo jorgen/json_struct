@@ -446,13 +446,13 @@ Token::Type Property::type() const
     return m_type;
 }
 
-bool Property::comparePropertyData(const Property &property) const
+bool Property::compareData(const Property &property) const
 {
     if (property.m_data.size != m_data.size)
         return false;
     return memcmp(m_data.data, property.m_data.data, m_data.size);
 }
-bool Property::comparePropertyAscii(const Property &property) const
+bool Property::compareString(const Property &property) const
 {
     const char *other_data = property.m_data.data;
     size_t other_size = property.m_data.size;
@@ -471,7 +471,7 @@ bool Property::comparePropertyAscii(const Property &property) const
     return memcmp(this_data, other_data, this_size) == 0;
 }
 
-bool Property::comparePropertyAscii(const std::string &property_name) const
+bool Property::compareString(const std::string &property_name) const
 {
     const char *this_data = m_data.data;
     size_t this_size = m_data.size;
@@ -543,7 +543,7 @@ Node *ObjectNode::node(const std::string &child_node) const
 void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
 {
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first.comparePropertyAscii(name)) {
+        if ((*it).first.compareString(name)) {
             if (replace) {
                 (*it).second = node;
             }
@@ -556,7 +556,7 @@ void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
 Node *ObjectNode::take(const std::string &name)
 {
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first.comparePropertyAscii(name)) {
+        if ((*it).first.compareString(name)) {
             Node *return_node = (*it).second;
             m_data.erase(it);
             return return_node;
@@ -668,7 +668,7 @@ void ObjectNode::fillEndToken(Token *token)
 Node *ObjectNode::findNode(const std::string name) const
 {
     for(auto it = m_data.begin(); it != m_data.end(); ++it) {
-        if ((*it).first.comparePropertyAscii(name))
+        if ((*it).first.compareString(name))
             return (*it).second;
     }
     return nullptr;

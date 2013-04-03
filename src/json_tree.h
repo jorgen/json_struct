@@ -122,9 +122,9 @@ public:
     ~Property();
 
     Token::Type type() const;
-    bool comparePropertyData(const Property &property) const;
-    bool comparePropertyAscii(const Property &property) const;
-    bool comparePropertyAscii(const std::string &property_name) const;
+    bool compareData(const Property &property) const;
+    bool compareString(const Property &property) const;
+    bool compareString(const std::string &property_name) const;
 
     Data data() const;
 
