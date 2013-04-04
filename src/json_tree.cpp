@@ -38,6 +38,8 @@ static Token::Type json_tree_type_lookup_dic[] = {
         Token::ArrayStart
 };
 
+static Property empty_property(Token::Ascii, Data());
+
 std::pair<Node *, Error> TreeBuilder::build(const char *data, size_t data_size) const
 {
     Tokenizer tokenizer;
@@ -446,6 +448,81 @@ Token::Type Property::type() const
     return m_type;
 }
 
+std::string Property::string() const
+{
+    if (m_type == Token::String)
+        return std::string(m_data.data+1, m_data.size -2);
+    else
+        return std::string(m_data.data, m_data.size);
+}
+
+double Property::number(double defaultValue) const
+{
+    if (m_type == Token::Number) {
+        char *end;
+        double number = strtod(m_data.data,&end);
+        if (end == m_data.data)
+            return defaultValue;
+        return number;
+    }
+    return defaultValue;
+}
+
+bool Property::boolean(bool defaultValue) const
+{
+    if (m_type == Token::Bool) {
+        if (*m_data.data == 'T' || *m_data.data == 't')
+            return true;
+        else
+            return false;
+    }
+    return defaultValue;
+}
+
+bool Property::isNull(bool defaultValue) const
+{
+    if(m_type == Token::Null)
+        return true;
+    return defaultValue;
+}
+
+bool Property::isEmpty() const
+{
+    return m_data.size == 0;
+}
+
+const Property &Property::get(const std::string &) const
+{
+    return empty_property;
+}
+
+Property &Property::get(const std::string &)
+{
+    return empty_property;
+}
+
+const Property &Property::get(int) const
+{
+    return empty_property;
+}
+
+Property &Property::get(int)
+{
+    return empty_property;
+}
+
+void Property::remove(const std::string &)
+{ }
+
+void Property::remove(int)
+{ }
+
+void Property::insert(const std::string &, const Property &, const Property &)
+{ }
+
+void Property::insert(const Property &, const Property &)
+{ }
+
 bool Property::compareData(const Property &property) const
 {
     if (property.m_data.size != m_data.size)
@@ -484,7 +561,7 @@ bool Property::compareString(const std::string &property_name) const
     return memcmp(this_data, property_name.c_str(), this_size) == 0;
 }
 
-Data Property::data() const
+const Data &Property::data() const
 {
     return m_data;
 }

@@ -122,13 +122,32 @@ public:
     ~Property();
 
     Token::Type type() const;
+
+    std::string string() const;
+    double number(double defaultValue) const;
+    bool boolean(bool defaultValue = false) const;
+    bool isNull(bool defaultValue = false) const;
+
+    bool isEmpty() const;
+
+    virtual const Property &get(const std::string &node) const;
+    virtual Property &get(const std::string &node);
+    virtual const Property &get(int index) const;
+    virtual Property &get(int index);
+
+    virtual void remove(const std::string &node);
+    virtual void remove(int index);
+
+    virtual void insert(const std::string &path, const Property &property, const Property &value);
+    virtual void insert(const Property &property, const Property &value);
+
+    const Data &data() const;
+
     bool compareData(const Property &property) const;
     bool compareString(const Property &property) const;
     bool compareString(const std::string &property_name) const;
 
-    Data data() const;
-
-    Property &operator= (const Property &other);
+    virtual Property &operator= (const Property &other);
 private:
     Token::Type m_type;
     bool m_delete_data_buffer;
