@@ -665,6 +665,12 @@ int SerializerOptions::shiftSize() const { return m_shift_size; }
 int SerializerOptions::depth() const { return m_depth; }
 
 bool SerializerOptions::pretty() const { return m_pretty; }
+void SerializerOptions::setPretty(bool pretty)
+{
+    m_pretty = pretty;
+    m_postfix = m_pretty? std::string("\n") : std::string("");
+    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
+}
 
 bool SerializerOptions::ascii_name() const { return m_ascii_name; }
 
@@ -761,6 +767,12 @@ void Serializer::addRequestBufferCallback(std::function<void(Serializer *)> call
 const std::list<SerializerBuffer> &Serializer::buffers() const
 {
     return m_all_buffers;
+}
+
+void Serializer::clearBuffers()
+{
+    m_all_buffers.clear();
+    m_unused_buffers.clear();
 }
 
 void Serializer::askForMoreBuffers()

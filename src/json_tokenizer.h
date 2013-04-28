@@ -121,6 +121,7 @@ public:
     int shiftSize() const;
     int depth() const;
     bool pretty() const;
+    void setPretty(bool pretty);
     bool ascii_name() const;
 
     void setDepth(int depth);
@@ -160,11 +161,13 @@ public:
 
     void appendBuffer(char *buffer, size_t size);
     void setSerializerOptions(const SerializerOptions &option);
+    SerializerOptions options() const { return m_option; }
 
     bool write(const Token &token);
 
     void addRequestBufferCallback(std::function<void(Serializer *)> callback);
     const std::list<SerializerBuffer> &buffers() const;
+    void clearBuffers();
 private:
     void askForMoreBuffers();
     void markCurrentSerializerBufferFull();
