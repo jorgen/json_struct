@@ -119,12 +119,16 @@ public:
     SerializerOptions(bool pretty = false, bool ascii_name = false);
 
     int shiftSize() const;
-    int depth() const;
+
     bool pretty() const;
     void setPretty(bool pretty);
+
+    int depth() const;
+    void setDepth(int depth);
+
     bool ascii_name() const;
 
-    void setDepth(int depth);
+    void skipDelimiter(bool skip);
 
     const std::string &prefix() const;
     const std::string &tokenDelimiter() const;
@@ -160,7 +164,7 @@ public:
     Serializer(char *buffer, size_t size);
 
     void appendBuffer(char *buffer, size_t size);
-    void setSerializerOptions(const SerializerOptions &option);
+    void setOptions(const SerializerOptions &option);
     SerializerOptions options() const { return m_option; }
 
     bool write(const Token &token);

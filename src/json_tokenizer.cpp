@@ -670,9 +670,18 @@ void SerializerOptions::setPretty(bool pretty)
     m_pretty = pretty;
     m_postfix = m_pretty? std::string("\n") : std::string("");
     m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
+    setDepth(m_depth);
 }
 
 bool SerializerOptions::ascii_name() const { return m_ascii_name; }
+
+void SerializerOptions::skipDelimiter(bool skip)
+{
+    if (skip)
+        m_token_delimiter = "";
+    else
+        m_token_delimiter = ",";
+}
 
 void SerializerOptions::setDepth(int depth)
 {
@@ -710,7 +719,7 @@ void Serializer::appendBuffer(char *buffer, size_t size)
     m_unused_buffers.push_back(&m_all_buffers.back());
 }
 
-void Serializer::setSerializerOptions(const SerializerOptions &option)
+void Serializer::setOptions(const SerializerOptions &option)
 {
     m_option = option;
 }
@@ -793,6 +802,8 @@ void Serializer::markCurrentSerializerBufferFull()
 
 bool Serializer::write(const char *data, size_t size)
 {
+    if(!size)
+        return true;
     if (m_unused_buffers.size() == 0)
         askForMoreBuffers();
     size_t written = 0;
