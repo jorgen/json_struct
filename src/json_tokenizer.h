@@ -175,6 +175,7 @@ public:
 private:
     void askForMoreBuffers();
     void markCurrentSerializerBufferFull();
+    bool write(Token::Type type, const Data &data);
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 

@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 namespace JT {
 
@@ -750,14 +751,14 @@ bool Serializer::write(const Token &token)
         return false;
 
     if (token.name.size) {
-        if (!write(token.name.data,token.name.size))
+        if (!write(token.name_type, token.name))
             return false;
 
         if (!write(m_option.valueDelimiter()))
             return false;
     }
 
-    if (!write(token.value.data, token.value.size))
+    if (!write(token.value_type, token.value))
         return false;
 
     m_token_start = (token.value_type == Token::ObjectStart
@@ -800,6 +801,33 @@ void Serializer::markCurrentSerializerBufferFull()
         askForMoreBuffers();
 }
 
+bool Serializer::write(Token::Type type, const Data &data)
+{
+    bool written;
+    switch (type) {
+        case Token::String:
+            if (*data.data != '"') {
+                written = write("\"",1);
+                if (!written)
+                    return false;
+            }
+
+            written = write(data.data,data.size);
+            if (!written)
+                return false;
+
+            if (*data.data != '"') {
+                if (!written)
+                    return false;
+                written = write("\"",1);
+            }
+            break;
+        default:
+            written = write(data.data,data.size);
+            break;
+    }
+    return written;
+}
 bool Serializer::write(const char *data, size_t size)
 {
     if(!size)
