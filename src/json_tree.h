@@ -86,12 +86,18 @@ public:
 
     const Data &data() const;
 
+    bool addValueToObject(const std::string &path, const std::string &value, JT::Token::Type);
+
     virtual Node *nodeAt(const std::string &path) const;
 
     StringNode *stringNodeAt(const std::string &path) const;
+    const std::string &stringAt(const std::string &path) const;
     NumberNode *numberNodeAt(const std::string &path) const;
+    double numberAt(const std::string &path) const;
     BooleanNode *booleanNodeAt(const std::string &path) const;
+    bool booleanAt(const std::string &path) const;
     NullNode *nullNodeAt(const std::string &path) const;
+    bool nullAt(const std::string &path) const;
     ArrayNode *arrayNodeAt(const std::string &path) const;
     ObjectNode *objectNodeAt(const std::string &path) const;
 
@@ -117,6 +123,7 @@ class Property
 {
 public:
     Property(Token::Type type, const Data data);
+    Property(const std::string string);
     Property(const Property &other);
     Property(Property &&other);
     ~Property();

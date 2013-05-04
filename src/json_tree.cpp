@@ -269,12 +269,30 @@ StringNode *Node::stringNodeAt(const std::string &path) const
     return nullptr;
 }
 
+static const std::string empty_string;
+
+const std::string &Node::stringAt(const std::string &path) const
+{
+    StringNode *node = stringNodeAt(path);
+    if (node)
+        return node->string();
+    return empty_string;
+}
+
 NumberNode *Node::numberNodeAt(const std::string &path) const
 {
     Node *node = nodeAt(path);
     if (node)
         return node->asNumberNode();
     return nullptr;
+}
+
+double Node::numberAt(const std::string &path) const
+{
+    NumberNode *node = numberNodeAt(path);
+    if (node)
+        return node->number();
+    return 0;
 }
 
 BooleanNode *Node::booleanNodeAt(const std::string &path) const
@@ -285,12 +303,28 @@ BooleanNode *Node::booleanNodeAt(const std::string &path) const
     return nullptr;
 }
 
+bool Node::booleanAt(const std::string &path) const
+{
+    BooleanNode *node = booleanNodeAt(path);
+    if (node)
+        return node->boolean();
+    return false;
+}
+
 NullNode *Node::nullNodeAt(const std::string &path) const
 {
     Node *node = nodeAt(path);
     if (node)
         return node->asNullNode();
     return nullptr;
+}
+
+bool Node::nullAt(const std::string &path) const
+{
+    NullNode *node = nullNodeAt(path);
+    if (node)
+        return true;
+    return false;
 }
 
 ArrayNode *Node::arrayNodeAt(const std::string &path) const
@@ -314,6 +348,49 @@ const Data &Node::data() const
     return m_data;
 }
 
+bool Node::addValueToObject(const std::string &path, const std::string &value, JT::Token::Type)
+{
+    JT::ObjectNode *last_node = asObjectNode();
+    if (!last_node)
+        return false;
+
+    std::vector<std::string> path_vector;
+
+    size_t pos = 0;
+    while (pos < path.size()) {
+        size_t new_pos = path.find('.', pos);
+        path_vector.push_back(path.substr(pos, new_pos - pos));
+        pos = new_pos;
+        if (new_pos != std::string::npos)
+            pos++;
+    }
+
+    for (size_t i = 0; i < path_vector.size(); i++) {
+        if (i == path_vector.size() -1) {
+            JT::Token token;
+            token.value.data = value.c_str();
+            token.value.size = value.size();
+            token.value.temporary = true;
+            JT::StringNode *string_node = new JT::StringNode(&token);
+            JT::Property prop(JT::Token::String, JT::Data(path_vector[i].c_str(), path_vector[i].size(), true));
+            last_node->insertNode(prop,string_node,true);
+        } else {
+            JT::Node *new_child = last_node->node(path_vector[i]);
+            JT::ObjectNode *object_child_node = 0;
+            if (new_child) {
+                object_child_node = new_child->asObjectNode();
+            } else {
+                JT::Property prop(path_vector[i]);
+                object_child_node = new JT::ObjectNode();
+                last_node->insertNode(prop,object_child_node,false);
+            }
+            if (!object_child_node)
+                return false;
+            last_node = object_child_node;
+        }
+    }
+    return true;
+}
 Node *Node::nodeAt(const std::string &path) const
 {
     (void) path;
@@ -415,6 +492,17 @@ Property::Property(Token::Type type, const Data data)
         memcpy(new_data, data.data,m_data.size);
         m_delete_data_buffer = true;
     }
+}
+
+Property::Property(const std::string string)
+    : m_type(Token::Ascii)
+    , m_delete_data_buffer(true)
+{
+    char *new_data = new char[string.size()];
+    m_data.data = new_data;
+    m_data.size = string.size();
+    m_data.temporary = true;
+    memcpy(new_data, string.c_str(),  string.size());
 }
 
 Property::Property(const Property &other)
