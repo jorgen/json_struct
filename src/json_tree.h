@@ -184,6 +184,7 @@ public:
         void fillToken(Token *token) const;
 
         const std::pair<Property, Node *> &operator*() const;
+        const std::pair<Property, Node *> *operator->() const;
         Iterator &operator++();
         Iterator operator++(int);
         Iterator &operator--();

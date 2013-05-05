@@ -792,6 +792,11 @@ const std::pair<Property, Node *> &ObjectNode::Iterator::operator*() const
     return *m_it;
 }
 
+const std::pair<Property, Node *> *ObjectNode::Iterator::operator->() const
+{
+    return &(*m_it);
+}
+
 ObjectNode::Iterator &ObjectNode::Iterator::operator++()
 {
     ++m_it;
