@@ -116,7 +116,7 @@ private:
 class SerializerOptions
 {
 public:
-    SerializerOptions(bool pretty = false, bool ascii_name = false);
+    SerializerOptions(bool pretty = false, bool ascii = false);
 
     int shiftSize() const;
 
@@ -126,7 +126,7 @@ public:
     int depth() const;
     void setDepth(int depth);
 
-    bool ascii_name() const;
+    bool ascii() const;
 
     void skipDelimiter(bool skip);
 
@@ -139,7 +139,7 @@ private:
     int m_shift_size;
     int m_depth;
     bool m_pretty;
-    bool m_ascii_name;
+    bool m_ascii;
 
     std::string m_prefix;
     std::string m_token_delimiter;
@@ -175,6 +175,7 @@ public:
 private:
     void askForMoreBuffers();
     void markCurrentSerializerBufferFull();
+    bool writeAsString(const Data &data);
     bool write(Token::Type type, const Data &data);
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }

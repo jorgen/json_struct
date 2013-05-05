@@ -650,11 +650,11 @@ Error Tokenizer::nextToken(Token *next_token)
     return error;
 }
 
-SerializerOptions::SerializerOptions(bool pretty, bool ascii_name)
+SerializerOptions::SerializerOptions(bool pretty, bool ascii)
     : m_shift_size(4)
     , m_depth(0)
     , m_pretty(pretty)
-    , m_ascii_name(ascii_name)
+    , m_ascii(ascii)
     , m_token_delimiter(",")
 {
     m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
@@ -674,7 +674,7 @@ void SerializerOptions::setPretty(bool pretty)
     setDepth(m_depth);
 }
 
-bool SerializerOptions::ascii_name() const { return m_ascii_name; }
+bool SerializerOptions::ascii() const { return m_ascii; }
 
 void SerializerOptions::skipDelimiter(bool skip)
 {
@@ -801,26 +801,39 @@ void Serializer::markCurrentSerializerBufferFull()
         askForMoreBuffers();
 }
 
+bool Serializer::writeAsString(const Data &data)
+{
+    bool written;
+    if (*data.data != '"') {
+        written = write("\"",1);
+        if (!written)
+            return false;
+    }
+
+    written = write(data.data,data.size);
+    if (!written)
+        return false;
+
+    if (*data.data != '"') {
+        if (!written)
+            return false;
+        written = write("\"",1);
+    }
+    return written;
+}
+
 bool Serializer::write(Token::Type type, const Data &data)
 {
     bool written;
     switch (type) {
         case Token::String:
-            if (*data.data != '"') {
-                written = write("\"",1);
-                if (!written)
-                    return false;
-            }
-
-            written = write(data.data,data.size);
-            if (!written)
-                return false;
-
-            if (*data.data != '"') {
-                if (!written)
-                    return false;
-                written = write("\"",1);
-            }
+            written = writeAsString(data);
+            break;
+        case Token::Ascii:
+            if (!m_option.ascii())
+                written = writeAsString(data);
+            else
+                written = write(data.data,data.size);
             break;
         default:
             written = write(data.data,data.size);

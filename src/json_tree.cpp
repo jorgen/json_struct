@@ -498,6 +498,10 @@ Property::Property(const std::string string)
     : m_type(Token::Ascii)
     , m_delete_data_buffer(true)
 {
+    if (string.front() == '"') {
+        m_type = Token::String;
+    }
+
     char *new_data = new char[string.size()];
     m_data.data = new_data;
     m_data.size = string.size();
