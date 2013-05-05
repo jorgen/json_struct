@@ -88,6 +88,8 @@ public:
 
     bool addValueToObject(const std::string &path, const std::string &value, JT::Token::Type);
 
+    static Node *createValueNode(Token *token);
+
     virtual Node *nodeAt(const std::string &path) const;
 
     StringNode *stringNodeAt(const std::string &path) const;

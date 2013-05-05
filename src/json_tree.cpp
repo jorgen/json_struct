@@ -222,20 +222,8 @@ std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokeni
                 ret.second = return_node->fill(tokenizer, *this);
             }
             break;
-        case Token::String:
-        case Token::Ascii:
-            ret.first = new StringNode(token);
-            break;
-        case Token::Number:
-            ret.first = new NumberNode(token);
-            break;
-        case Token::Bool:
-            ret.first = new BooleanNode(token);
-            break;
-        case Token::Null:
-            ret.first = new NullNode(token);
-            break;
         default:
+            ret.first = Node::createValueNode(token);
             break;
     }
     return ret;
@@ -348,8 +336,14 @@ const Data &Node::data() const
     return m_data;
 }
 
-bool Node::addValueToObject(const std::string &path, const std::string &value, JT::Token::Type)
+bool Node::addValueToObject(const std::string &path, const std::string &value, JT::Token::Type type)
 {
+    if (type == JT::Token::ObjectStart
+            || type == JT::Token::ArrayStart
+            || type == JT::Token::ObjectEnd
+            || type == JT::Token::ArrayEnd)
+        return false;
+
     JT::ObjectNode *last_node = asObjectNode();
     if (!last_node)
         return false;
@@ -370,10 +364,11 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
             JT::Token token;
             token.value.data = value.c_str();
             token.value.size = value.size();
+            token.value_type = type;
             token.value.temporary = true;
-            JT::StringNode *string_node = new JT::StringNode(&token);
-            JT::Property prop(JT::Token::String, JT::Data(path_vector[i].c_str(), path_vector[i].size(), true));
-            last_node->insertNode(prop,string_node,true);
+            JT::Node *node = Node::createValueNode(&token);
+            JT::Property prop(path_vector[i]);
+            last_node->insertNode(prop,node,true);
         } else {
             JT::Node *new_child = last_node->node(path_vector[i]);
             JT::ObjectNode *object_child_node = 0;
@@ -391,6 +386,31 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
     }
     return true;
 }
+
+Node *Node::createValueNode(Token *token)
+{
+    Node *return_node;
+    switch (token->value_type) {
+        case Token::String:
+        case Token::Ascii:
+            return_node = new StringNode(token);
+            break;
+        case Token::Number:
+            return_node = new NumberNode(token);
+            break;
+        case Token::Bool:
+            return_node = new BooleanNode(token);
+            break;
+        case Token::Null:
+            return_node = new NullNode(token);
+            break;
+        default:
+            return_node = 0;
+            break;
+    }
+    return return_node;
+}
+
 Node *Node::nodeAt(const std::string &path) const
 {
     (void) path;
