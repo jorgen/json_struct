@@ -127,6 +127,7 @@ public:
     void setDepth(int depth);
 
     bool ascii() const;
+    void setAscii(bool ascii);
 
     void skipDelimiter(bool skip);
 

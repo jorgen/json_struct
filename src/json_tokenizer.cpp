@@ -675,6 +675,10 @@ void SerializerOptions::setPretty(bool pretty)
 }
 
 bool SerializerOptions::ascii() const { return m_ascii; }
+void SerializerOptions::setAscii(bool ascii)
+{
+    m_ascii = ascii;
+}
 
 void SerializerOptions::skipDelimiter(bool skip)
 {

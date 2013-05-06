@@ -359,6 +359,7 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
             pos++;
     }
 
+
     for (size_t i = 0; i < path_vector.size(); i++) {
         if (i == path_vector.size() -1) {
             JT::Token token;
@@ -514,7 +515,7 @@ Property::Property(Token::Type type, const Data data)
     }
 }
 
-Property::Property(const std::string string)
+Property::Property(const std::string &string)
     : m_type(Token::Ascii)
     , m_delete_data_buffer(true)
 {
@@ -870,8 +871,12 @@ Node *ObjectNode::findNode(const std::string name) const
 
 StringNode::StringNode(Token *token)
     : Node(String, token->value)
-    , m_string(token->value.data + 1, token->value.size - 2)
 {
+    if (token->value_type == Token::String && *m_data.data == '"') {
+        m_string = std::string(m_data.data + 1, m_data.size - 2);
+    } else {
+        m_string = std::string(token->value.data, token->value.size);
+    }
 }
 
 const std::string &StringNode::string() const

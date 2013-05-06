@@ -125,7 +125,7 @@ class Property
 {
 public:
     Property(Token::Type type, const Data data);
-    Property(const std::string string);
+    Property(const std::string &string);
     Property(const Property &other);
     Property(Property &&other);
     ~Property();
