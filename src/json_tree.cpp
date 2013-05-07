@@ -735,7 +735,8 @@ void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
         if ((*it).first.compareString(name)) {
             if (replace) {
-                (*it).second = node;
+                delete it->second;
+                it->second = node;
             }
             return;
         }
