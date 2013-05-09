@@ -200,6 +200,8 @@ public:
 
     void fillStartToken(Token *token);
     void fillEndToken(Token *token);
+
+    ObjectNode *copy() const;
 private:
     Node *findNode(const std::string name) const;
     std::vector<std::pair<Property, Node *>> m_data;
@@ -273,6 +275,8 @@ public:
     void fillEndToken(Token *token);
 
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
+
+    ArrayNode *copy() const;
 private:
     std::vector<Node *> m_vector;
 };

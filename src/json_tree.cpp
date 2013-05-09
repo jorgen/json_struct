@@ -26,6 +26,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <functional>
+
 namespace JT {
 
 static Token::Type json_tree_type_lookup_dic[] = {
@@ -861,6 +863,30 @@ void ObjectNode::fillEndToken(Token *token)
     token->value_type = Token::ObjectEnd;
 }
 
+ObjectNode *ObjectNode::copy() const
+{
+    JT::ObjectNode *return_node = new JT::ObjectNode();
+
+    for (auto it = begin(); it != end(); ++it) {
+        if (ObjectNode *child_node = it->second->asObjectNode()) {
+            ObjectNode *child_copy = child_node->copy();
+            return_node->insertNode(it->first, child_copy);
+        } else if (ArrayNode *child_node = it->second->asArrayNode()) {
+            ArrayNode *child_copy = child_node->copy();
+            return_node->insertNode(it->first, child_copy);
+        } else {
+            Token token;
+            it.fillToken(&token);
+            Node *child_copy = Node::createValueNode(&token);
+            if (!child_copy)
+                continue;
+            return_node->insertNode(it->first, child_copy);
+        }
+    }
+
+    return return_node;
+}
+
 Node *ObjectNode::findNode(const std::string name) const
 {
     for(auto it = m_data.begin(); it != m_data.end(); ++it) {
@@ -1011,6 +1037,31 @@ Error ArrayNode::fill(Tokenizer *tokenizer, const TreeBuilder &builder)
     }
 
     return error;
+}
+
+ArrayNode *ArrayNode::copy() const
+{
+    ArrayNode *return_node = new ArrayNode();
+
+    for (size_t i = 0; i < m_vector.size(); i++) {
+        Node *it = m_vector[i];
+        if (ObjectNode *child_node = it->asObjectNode()) {
+            ObjectNode *child_copy = child_node->copy();
+            return_node->append(child_copy);
+        } else if (ArrayNode *child_node = it->asArrayNode()) {
+            ArrayNode *child_copy = child_node->copy();
+            return_node->append(child_copy);
+        } else {
+            Token token;
+            fillToken(i, &token);
+            Node *child_copy = Node::createValueNode(&token);
+            if (!child_copy)
+                continue;
+            return_node->append(child_copy);
+        }
+    }
+
+    return return_node;
 }
 
 } //namespace JT
