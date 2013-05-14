@@ -211,6 +211,7 @@ class StringNode : public Node
 {
 public:
     StringNode(Token *token);
+    StringNode(const std::string &string);
 
     const std::string &string() const;
     void setString(const std::string &string);

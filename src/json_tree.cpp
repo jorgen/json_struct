@@ -906,6 +906,14 @@ StringNode::StringNode(Token *token)
     }
 }
 
+StringNode::StringNode(const std::string &string)
+    : Node(String, Data())
+    , m_string(string)
+{
+    m_data.data = m_string.c_str();
+    m_data.size = m_string.size();
+}
+
 const std::string &StringNode::string() const
 {
     return m_string;
