@@ -86,22 +86,22 @@ public:
 
     const Data &data() const;
 
-    bool addValueToObject(const std::string &path, const std::string &value, JT::Token::Type);
+    bool addValueToObject(const std::string &path, const std::string &value, JT::Token::Type, const std::string &delimiter = ".");
 
     static Node *createValueNode(Token *token);
 
-    virtual Node *nodeAt(const std::string &path) const;
+    virtual Node *nodeAt(const std::string &path, const std::string &delimiter = ".") const;
 
-    StringNode *stringNodeAt(const std::string &path) const;
-    const std::string &stringAt(const std::string &path) const;
-    NumberNode *numberNodeAt(const std::string &path) const;
-    double numberAt(const std::string &path) const;
-    BooleanNode *booleanNodeAt(const std::string &path) const;
-    bool booleanAt(const std::string &path) const;
-    NullNode *nullNodeAt(const std::string &path) const;
-    bool nullAt(const std::string &path) const;
-    ArrayNode *arrayNodeAt(const std::string &path) const;
-    ObjectNode *objectNodeAt(const std::string &path) const;
+    StringNode *stringNodeAt(const std::string &path, const std::string &delimiter = ".") const;
+    const std::string &stringAt(const std::string &path, const std::string &delimiter = ".") const;
+    NumberNode *numberNodeAt(const std::string &path, const std::string &delimiter = ".") const;
+    double numberAt(const std::string &path, const std::string &delimiter = ".") const;
+    BooleanNode *booleanNodeAt(const std::string &path, const std::string &delimiter = ".") const;
+    bool booleanAt(const std::string &path, const std::string &delimiter = ".") const;
+    NullNode *nullNodeAt(const std::string &path, const std::string &delimiter = ".") const;
+    bool nullAt(const std::string &path, const std::string &delimiter = ".") const;
+    ArrayNode *arrayNodeAt(const std::string &path, const std::string &delimiter = ".") const;
+    ObjectNode *objectNodeAt(const std::string &path, const std::string &delimiter = ".") const;
 
     StringNode *asStringNode();
     const StringNode *asStringNode() const;
@@ -169,7 +169,7 @@ public:
     ObjectNode();
     ~ObjectNode();
 
-    Node *nodeAt(const std::string &path) const;
+    Node *nodeAt(const std::string &path, const std::string &delimiter = ".") const override;
 
     Node *node(const std::string &child_node) const;
 

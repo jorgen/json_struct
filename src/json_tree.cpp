@@ -251,9 +251,9 @@ Node::~Node()
     }
 }
 
-StringNode *Node::stringNodeAt(const std::string &path) const
+StringNode *Node::stringNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asStringNode();
     return nullptr;
@@ -261,73 +261,73 @@ StringNode *Node::stringNodeAt(const std::string &path) const
 
 static const std::string empty_string;
 
-const std::string &Node::stringAt(const std::string &path) const
+const std::string &Node::stringAt(const std::string &path, const std::string &delimiter) const
 {
-    StringNode *node = stringNodeAt(path);
+    StringNode *node = stringNodeAt(path,delimiter);
     if (node)
         return node->string();
     return empty_string;
 }
 
-NumberNode *Node::numberNodeAt(const std::string &path) const
+NumberNode *Node::numberNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asNumberNode();
     return nullptr;
 }
 
-double Node::numberAt(const std::string &path) const
+double Node::numberAt(const std::string &path, const std::string &delimiter) const
 {
-    NumberNode *node = numberNodeAt(path);
+    NumberNode *node = numberNodeAt(path, delimiter);
     if (node)
         return node->number();
     return 0;
 }
 
-BooleanNode *Node::booleanNodeAt(const std::string &path) const
+BooleanNode *Node::booleanNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asBooleanNode();
     return nullptr;
 }
 
-bool Node::booleanAt(const std::string &path) const
+bool Node::booleanAt(const std::string &path, const std::string &delimiter) const
 {
-    BooleanNode *node = booleanNodeAt(path);
+    BooleanNode *node = booleanNodeAt(path, delimiter);
     if (node)
         return node->boolean();
     return false;
 }
 
-NullNode *Node::nullNodeAt(const std::string &path) const
+NullNode *Node::nullNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asNullNode();
     return nullptr;
 }
 
-bool Node::nullAt(const std::string &path) const
+bool Node::nullAt(const std::string &path, const std::string &delimiter) const
 {
-    NullNode *node = nullNodeAt(path);
+    NullNode *node = nullNodeAt(path, delimiter);
     if (node)
         return true;
     return false;
 }
 
-ArrayNode *Node::arrayNodeAt(const std::string &path) const
+ArrayNode *Node::arrayNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asArrayNode();
     return nullptr;
 }
 
-ObjectNode *Node::objectNodeAt(const std::string &path) const
+ObjectNode *Node::objectNodeAt(const std::string &path, const std::string &delimiter) const
 {
-    Node *node = nodeAt(path);
+    Node *node = nodeAt(path, delimiter);
     if (node)
         return node->asObjectNode();
     return nullptr;
@@ -338,7 +338,7 @@ const Data &Node::data() const
     return m_data;
 }
 
-bool Node::addValueToObject(const std::string &path, const std::string &value, JT::Token::Type type)
+bool Node::addValueToObject(const std::string &path, const std::string &value, JT::Token::Type type, const std::string &delimiter)
 {
     if (type == JT::Token::ObjectStart
             || type == JT::Token::ArrayStart
@@ -354,13 +354,14 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
 
     size_t pos = 0;
     while (pos < path.size()) {
-        size_t new_pos = path.find('.', pos);
+        size_t new_pos = path.find(delimiter, pos);
         path_vector.push_back(path.substr(pos, new_pos - pos));
-        pos = new_pos;
-        if (new_pos != std::string::npos)
-            pos++;
+        if (new_pos < std::string::npos - delimiter.size()) {
+            pos = new_pos + delimiter.size();
+        } else {
+            pos = new_pos;
+        }
     }
-
 
     for (size_t i = 0; i < path_vector.size(); i++) {
         if (i == path_vector.size() -1) {
@@ -414,9 +415,10 @@ Node *Node::createValueNode(Token *token)
     return return_node;
 }
 
-Node *Node::nodeAt(const std::string &path) const
+Node *Node::nodeAt(const std::string &path, const std::string &delimiter) const
 {
     (void) path;
+    (void) delimiter;
     return nullptr;
 }
 
@@ -709,9 +711,9 @@ ObjectNode::~ObjectNode()
     }
 }
 
-Node *ObjectNode::nodeAt(const std::string &path) const
+Node *ObjectNode::nodeAt(const std::string &path, const std::string &delimiter) const
 {
-    size_t first_dot = path.find('.');
+    size_t first_dot = path.find(delimiter);
 
     if (first_dot == 0)
         return nullptr;
@@ -724,7 +726,7 @@ Node *ObjectNode::nodeAt(const std::string &path) const
     Node *child_node = findNode(first_node);
     if (!child_node)
         return nullptr;
-    return child_node->nodeAt(path.substr(first_dot+1));
+    return child_node->nodeAt(path.substr(first_dot+delimiter.size()), delimiter);
 }
 
 Node *ObjectNode::node(const std::string &child_node) const

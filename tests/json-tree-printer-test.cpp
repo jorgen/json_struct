@@ -100,7 +100,7 @@ static int check_multiple_print_buffers()
     size_t printed_size = sizeof(json_data2);
 
     JT::TreeSerializer serializer;
-    serializer.setSerializerOptions(JT::SerializerOptions(true));
+    serializer.setOptions(JT::SerializerOptions(true));
 
     char buffer1[printed_size/2];
     serializer.appendBuffer(buffer1, printed_size/2);
@@ -128,7 +128,7 @@ static int check_multiple_print_buffers()
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
     serializer = JT::TreeSerializer();
-    serializer.setSerializerOptions(JT::SerializerOptions(true));
+    serializer.setOptions(JT::SerializerOptions(true));
     serializer.appendBuffer(valid_buffer,4096);
 
     serializer.serialize(root->asObjectNode());
@@ -152,7 +152,7 @@ static int check_callback_print_buffers()
     assert(root);
 
     JT::TreeSerializer serializer;
-    serializer.setSerializerOptions(JT::SerializerOptions(true));
+    serializer.setOptions(JT::SerializerOptions(true));
     serializer.addRequestBufferCallback(add_buffer_func);
 
     assert(serializer.serialize(root->asObjectNode()));
@@ -172,7 +172,7 @@ static int check_callback_print_buffers()
     char valid_buffer[4096];
     memset(valid_buffer,'\0', 4096);
     serializer = JT::TreeSerializer();
-    serializer.setSerializerOptions(JT::SerializerOptions(true));
+    serializer.setOptions(JT::SerializerOptions(true));
     serializer.appendBuffer(valid_buffer,4096);
 
     serializer.serialize(root->asObjectNode());
