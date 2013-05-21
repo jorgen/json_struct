@@ -428,7 +428,7 @@ public:
                         switch (type) {
                             case Token::ObjectEnd:
                             case Token::ArrayEnd:
-                                if (expecting_prop_or_annonymous_data) {
+                                if (expecting_prop_or_annonymous_data && !allow_superfluous_comma) {
                                     return Error::ExpectedDataToken;
                                 }
                                 populate_annonymous_token(data,type,*next_token);
@@ -553,6 +553,7 @@ public:
     bool is_escaped = false;
     bool allow_ascii_properties = false;
     bool allow_new_lines = false;
+    bool allow_superfluous_comma = false;
     bool expecting_prop_or_annonymous_data = false;
     bool continue_after_need_more_data = false;
     IntermediateToken intermediate_token;
@@ -611,6 +612,10 @@ void Tokenizer::allowNewLineAsTokenDelimiter(bool allow)
     m_private->allow_new_lines = allow;
 }
 
+void Tokenizer::allowSuperfluousComma(bool allow)
+{
+    m_private->allow_superfluous_comma = allow;
+}
 void Tokenizer::addData(const char *data, size_t data_size, bool temporary)
 {
     m_private->data_list.push_back(Data(data, data_size, temporary));

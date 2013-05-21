@@ -98,6 +98,7 @@ public:
 
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
+    void allowSuperfluousComma(bool allow);
 
     void addData(const char *data, size_t size, bool temporary = true);
     size_t registered_buffers() const;
