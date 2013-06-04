@@ -557,6 +557,7 @@ public:
     bool expecting_prop_or_annonymous_data = false;
     bool continue_after_need_more_data = false;
     IntermediateToken intermediate_token;
+    std::function<void(Token *next_token)> token_transformer;
 };
 
 Token::Token()
@@ -652,7 +653,16 @@ Error Tokenizer::nextToken(Token *next_token)
 
     m_private->continue_after_need_more_data = error == Error::NeedMoreData;
 
+    if (error == Error::NoError && m_private->token_transformer != nullptr) {
+        m_private->token_transformer(next_token);
+    }
+
     return error;
+}
+
+void Tokenizer::registerTokenTransformer(std::function<void(Token *next_token)> token_transformer)
+{
+    m_private->token_transformer = token_transformer;
 }
 
 SerializerOptions::SerializerOptions(bool pretty, bool ascii)
@@ -734,8 +744,10 @@ void Serializer::setOptions(const SerializerOptions &option)
     m_option = option;
 }
 
-bool Serializer::write(const Token &token)
+bool Serializer::write(const Token &in_token)
 {
+    const Token &token =
+        m_token_transformer == nullptr? in_token : m_token_transformer(in_token);
     if (!m_token_start) {
         if (token.value_type != Token::ObjectEnd
                 && token.value_type != Token::ArrayEnd) {
@@ -776,6 +788,11 @@ bool Serializer::write(const Token &token)
         m_option.setDepth(m_option.depth() + 1);
     }
     return true;
+}
+
+void Serializer::registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer)
+{
+    this->m_token_transformer = token_transformer;
 }
 
 void Serializer::addRequestBufferCallback(std::function<void(Serializer *)> callback)

@@ -105,6 +105,7 @@ public:
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
     Error nextToken(Token *next_token);
+    void registerTokenTransformer(std::function<void(Token *next_token)> token_transformer);
 
     Tokenizer(const Tokenizer &other);
     Tokenizer(Tokenizer &&other);
@@ -170,6 +171,7 @@ public:
     SerializerOptions options() const { return m_option; }
 
     bool write(const Token &token);
+    void registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer);
 
     void addRequestBufferCallback(std::function<void(Serializer *)> callback);
     const std::list<SerializerBuffer> &buffers() const;
@@ -189,6 +191,7 @@ private:
     SerializerOptions m_option;
     bool m_first = true;
     bool m_token_start = true;
+    std::function<const Token&(const Token &)> m_token_transformer;
 };
 
 } //Namespace
