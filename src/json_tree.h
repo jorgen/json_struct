@@ -58,11 +58,11 @@ public:
     TreeSerializer();
     TreeSerializer(char *buffer, size_t size);
 
-    bool serialize(ObjectNode *rootObject);
-    bool serialize(ArrayNode *rootArray);
+    bool serialize(const ObjectNode *rootObject);
+    bool serialize(const ArrayNode *rootArray);
 
-    bool serializeNode(ObjectNode *objectNode);
-    bool serializeNode(ArrayNode *arrayNode);
+    bool serializeNode(const ObjectNode *objectNode);
+    bool serializeNode(const ArrayNode *arrayNode);
 };
 
 class Node
@@ -198,8 +198,8 @@ public:
     Iterator begin() const;
     Iterator end() const;
 
-    void fillStartToken(Token *token);
-    void fillEndToken(Token *token);
+    void fillStartToken(Token *token) const;
+    void fillEndToken(Token *token) const;
 
     ObjectNode *copy() const;
 private:
@@ -266,14 +266,14 @@ public:
     void insert(Node *node, size_t index);
     void append(Node *node);
 
-    Node *index(size_t index);
+    const Node *index(size_t index) const;
     Node *take(size_t index);
 
-    size_t size();
+    size_t size() const;
 
     void fillToken(size_t index, Token *token) const;
-    void fillStartToken(Token *token);
-    void fillEndToken(Token *token);
+    void fillStartToken(Token *token) const;
+    void fillEndToken(Token *token) const;
 
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
 

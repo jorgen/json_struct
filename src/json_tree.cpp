@@ -121,7 +121,7 @@ TreeSerializer::TreeSerializer(char *buffer, size_t size)
     : Serializer(buffer,size)
 { }
 
-bool TreeSerializer::serialize(ObjectNode *rootObject)
+bool TreeSerializer::serialize(const ObjectNode *rootObject)
 {
     Token token;
 
@@ -136,7 +136,7 @@ bool TreeSerializer::serialize(ObjectNode *rootObject)
     return write(token);
 }
 
-bool TreeSerializer::serialize(ArrayNode *rootArray)
+bool TreeSerializer::serialize(const ArrayNode *rootArray)
 {
     Token token;
     rootArray->fillStartToken(&token);
@@ -150,7 +150,7 @@ bool TreeSerializer::serialize(ArrayNode *rootArray)
     return write(token);
 }
 
-bool TreeSerializer::serializeNode(ObjectNode *objectNode)
+bool TreeSerializer::serializeNode(const ObjectNode *objectNode)
 {
     Token token;
     for (auto it = objectNode->begin(); it != objectNode->end(); ++it) {
@@ -178,7 +178,7 @@ bool TreeSerializer::serializeNode(ObjectNode *objectNode)
     return true;
 }
 
-bool TreeSerializer::serializeNode(ArrayNode *arrayNode)
+bool TreeSerializer::serializeNode(const ArrayNode *arrayNode)
 {
     Token token;
     for (size_t i = 0; i < arrayNode->size(); i++) {
@@ -186,7 +186,7 @@ bool TreeSerializer::serializeNode(ArrayNode *arrayNode)
         if (!write(token))
             return false;
         if (token.value_type == Token::ObjectStart) {
-            ObjectNode *child_object = arrayNode->index(i)->asObjectNode();
+            const ObjectNode *child_object = arrayNode->index(i)->asObjectNode();
             assert(child_object);
             if (!serializeNode(child_object))
                 return false;
@@ -194,7 +194,7 @@ bool TreeSerializer::serializeNode(ArrayNode *arrayNode)
             if (!write(token))
                 return false;
         } else if (token.value_type == Token::ArrayStart) {
-            ArrayNode *child_array = arrayNode->index(i)->asArrayNode();
+            const ArrayNode *child_array = arrayNode->index(i)->asArrayNode();
             assert(child_array);
             if (!serializeNode(child_array))
                 return false;
@@ -849,7 +849,7 @@ ObjectNode::Iterator ObjectNode::end() const
     return Iterator(m_data.end());
 }
 
-void ObjectNode::fillStartToken(Token *token)
+void ObjectNode::fillStartToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
@@ -857,7 +857,7 @@ void ObjectNode::fillStartToken(Token *token)
     token->value_type = Token::ObjectStart;
 }
 
-void ObjectNode::fillEndToken(Token *token)
+void ObjectNode::fillEndToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
@@ -978,7 +978,7 @@ void ArrayNode::append(Node *node)
     m_vector.push_back(node);
 }
 
-Node *ArrayNode::index(size_t index)
+const Node *ArrayNode::index(size_t index) const
 {
     if (index >= m_vector.size()) {
         return nullptr;
@@ -999,7 +999,7 @@ Node *ArrayNode::take(size_t index)
     return return_node;
 }
 
-size_t ArrayNode::size()
+size_t ArrayNode::size() const
 {
     return m_vector.size();
 }
@@ -1012,7 +1012,7 @@ void ArrayNode::fillToken(size_t index, Token *token) const
     token->value_type = json_tree_type_lookup_dic[m_vector.at(index)->type()];
 }
 
-void ArrayNode::fillStartToken(Token *token)
+void ArrayNode::fillStartToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
@@ -1021,7 +1021,7 @@ void ArrayNode::fillStartToken(Token *token)
     token->value_type = Token::ArrayStart;
 }
 
-void ArrayNode::fillEndToken(Token *token)
+void ArrayNode::fillEndToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
