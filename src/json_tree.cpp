@@ -251,6 +251,7 @@ Node::~Node()
     }
 }
 
+const std::string Node::empty_string = std::string();
 StringNode *Node::stringNodeAt(const std::string &path, const std::string &delimiter) const
 {
     Node *node = nodeAt(path, delimiter);
@@ -259,14 +260,13 @@ StringNode *Node::stringNodeAt(const std::string &path, const std::string &delim
     return nullptr;
 }
 
-static const std::string empty_string;
-
-const std::string &Node::stringAt(const std::string &path, const std::string &delimiter) const
+const std::string &Node::stringAt(const std::string &path, const std::string &default_value, const std::string &delimiter) const
 {
     StringNode *node = stringNodeAt(path,delimiter);
     if (node)
         return node->string();
-    return empty_string;
+    return default_value;
+
 }
 
 NumberNode *Node::numberNodeAt(const std::string &path, const std::string &delimiter) const
@@ -277,12 +277,12 @@ NumberNode *Node::numberNodeAt(const std::string &path, const std::string &delim
     return nullptr;
 }
 
-double Node::numberAt(const std::string &path, const std::string &delimiter) const
+double Node::numberAt(const std::string &path, double default_value, const std::string &delimiter) const
 {
     NumberNode *node = numberNodeAt(path, delimiter);
     if (node)
         return node->number();
-    return 0;
+    return default_value;
 }
 
 BooleanNode *Node::booleanNodeAt(const std::string &path, const std::string &delimiter) const
@@ -293,12 +293,12 @@ BooleanNode *Node::booleanNodeAt(const std::string &path, const std::string &del
     return nullptr;
 }
 
-bool Node::booleanAt(const std::string &path, const std::string &delimiter) const
+bool Node::booleanAt(const std::string &path, bool default_value, const std::string &delimiter) const
 {
     BooleanNode *node = booleanNodeAt(path, delimiter);
     if (node)
         return node->boolean();
-    return false;
+    return default_value;
 }
 
 NullNode *Node::nullNodeAt(const std::string &path, const std::string &delimiter) const
@@ -309,12 +309,12 @@ NullNode *Node::nullNodeAt(const std::string &path, const std::string &delimiter
     return nullptr;
 }
 
-bool Node::nullAt(const std::string &path, const std::string &delimiter) const
+bool Node::nullAt(const std::string &path, bool default_value, const std::string &delimiter) const
 {
     NullNode *node = nullNodeAt(path, delimiter);
     if (node)
         return true;
-    return false;
+    return default_value;
 }
 
 ArrayNode *Node::arrayNodeAt(const std::string &path, const std::string &delimiter) const

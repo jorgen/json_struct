@@ -114,32 +114,32 @@ int check_json_tree_from_json_data2(JT::Node *root)
     JT::ArrayNode *array_node = root->arrayNodeAt("Array");
     assert(array_node);
 
-    JT::StringNode *string_in_array = array_node->index(0)->asStringNode();
+    const JT::StringNode *string_in_array = array_node->index(0)->asStringNode();
     assert(string_in_array);
     assert(string_in_array->string() == "String");
 
-    JT::NullNode *null_in_array = array_node->index(1)->asNullNode();
+    const JT::NullNode *null_in_array = array_node->index(1)->asNullNode();
     assert(null_in_array);
 
-    JT::BooleanNode *true_in_array = array_node->index(2)->asBooleanNode();
+    const JT::BooleanNode *true_in_array = array_node->index(2)->asBooleanNode();
     assert(true_in_array);
     assert(true_in_array->boolean());
 
-    JT::ObjectNode *object_in_array = array_node->index(3)->asObjectNode();
+    const JT::ObjectNode *object_in_array = array_node->index(3)->asObjectNode();
     assert(object_in_array);
 
-    JT::StringNode *string_in_object_in_array = object_in_array->stringNodeAt("SomeOtherObjectProp");
+    const JT::StringNode *string_in_object_in_array = object_in_array->stringNodeAt("SomeOtherObjectProp");
     assert(string_in_object_in_array);
     assert(string_in_object_in_array->string() == "GREEN");
 
-    JT::StringNode *last_string_node = root->stringNodeAt("LastStringNode");
+    const JT::StringNode *last_string_node = root->stringNodeAt("LastStringNode");
     assert(last_string_node);
     assert(last_string_node->string() == "More test data");
 
-    JT::StringNode *non_existing_string_node = root->stringNodeAt("NON EXISTING STRING NODE");
+    const JT::StringNode *non_existing_string_node = root->stringNodeAt("NON EXISTING STRING NODE");
     assert(!non_existing_string_node);
 
-    JT::NullNode *null_null_node = root->nullNodeAt("NoNullNodeHere");
+    const JT::NullNode *null_null_node = root->nullNodeAt("NoNullNodeHere");
     assert(!null_null_node);
 
     return 0;

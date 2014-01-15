@@ -92,14 +92,15 @@ public:
 
     virtual Node *nodeAt(const std::string &path, const std::string &delimiter = ".") const;
 
+    static const std::string empty_string;
     StringNode *stringNodeAt(const std::string &path, const std::string &delimiter = ".") const;
-    const std::string &stringAt(const std::string &path, const std::string &delimiter = ".") const;
+    const std::string &stringAt(const std::string &path, const std::string &default_value = empty_string, const std::string &delimiter = ".") const;
     NumberNode *numberNodeAt(const std::string &path, const std::string &delimiter = ".") const;
-    double numberAt(const std::string &path, const std::string &delimiter = ".") const;
+    double numberAt(const std::string &path, double default_value = 0, const std::string &delimiter = ".") const;
     BooleanNode *booleanNodeAt(const std::string &path, const std::string &delimiter = ".") const;
-    bool booleanAt(const std::string &path, const std::string &delimiter = ".") const;
+    bool booleanAt(const std::string &path, bool default_value = false, const std::string &delimiter = ".") const;
     NullNode *nullNodeAt(const std::string &path, const std::string &delimiter = ".") const;
-    bool nullAt(const std::string &path, const std::string &delimiter = ".") const;
+    bool nullAt(const std::string &path, bool default_value = false, const std::string &delimiter = ".") const;
     ArrayNode *arrayNodeAt(const std::string &path, const std::string &delimiter = ".") const;
     ObjectNode *objectNodeAt(const std::string &path, const std::string &delimiter = ".") const;
 
