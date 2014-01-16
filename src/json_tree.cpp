@@ -713,6 +713,9 @@ ObjectNode::~ObjectNode()
 
 Node *ObjectNode::nodeAt(const std::string &path, const std::string &delimiter) const
 {
+    if (path.empty())
+        return nullptr;
+
     size_t first_dot = path.find(delimiter);
 
     if (first_dot == 0)
