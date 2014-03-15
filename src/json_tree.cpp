@@ -737,7 +737,7 @@ Node *ObjectNode::node(const std::string &child_node) const
     return findNode(child_node);
 }
 
-void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
+void ObjectNode::insertNode(const Property &name, Node *node, bool replace, bool at_beginning)
 {
     for (auto it = m_data.begin(); it != m_data.end(); ++it) {
         if ((*it).first.compareString(name)) {
@@ -748,7 +748,11 @@ void ObjectNode::insertNode(const Property &name, Node *node, bool replace)
             return;
         }
     }
-    m_data.push_back(std::pair<Property, Node *>(name,node));
+    if (at_beginning) {
+        m_data.insert(m_data.begin(),std::pair<Property, Node *>(name,node));
+    } else {
+        m_data.push_back(std::pair<Property, Node *>(name,node));
+    }
 }
 
 Node *ObjectNode::take(const std::string &name)

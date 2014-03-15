@@ -174,7 +174,7 @@ public:
 
     Node *node(const std::string &child_node) const;
 
-    void insertNode(const Property &property, Node *node, bool replace = false);
+    void insertNode(const Property &property, Node *node, bool replace = false, bool at_beginning = false);
     Node *take(const std::string &name);
 
     Error fill(Tokenizer *tokenizer, const TreeBuilder &builder);
