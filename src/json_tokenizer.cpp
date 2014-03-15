@@ -323,11 +323,15 @@ public:
 
     void releaseFirstData()
     {
-        const Data &json_data = data_list.front();
-        for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
-            (*it)(json_data.data);
+        const char *data_to_release = 0;
+        if (!data_list.empty()) {
+            const Data &json_data = data_list.front();
+            data_to_release = json_data.data;
+            data_list.pop_front();
         }
-        data_list.pop_front();
+        for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
+            (*it)(data_to_release);
+        }
         cursor_index = 0;
         current_data_start = 0;
     }
@@ -634,7 +638,11 @@ void Tokenizer::registerRelaseCallback(std::function<void(const char *)> functio
 
 Error Tokenizer::nextToken(Token *next_token)
 {
-    if (!m_private->data_list.size()) {
+    if (m_private->data_list.empty()) {
+        m_private->releaseFirstData();
+    }
+
+    if (m_private->data_list.empty()) {
         return Error::NeedMoreData;
     }
 
@@ -649,6 +657,7 @@ Error Tokenizer::nextToken(Token *next_token)
         if (error != Error::NoError) {
             m_private->releaseFirstData();
         }
+
     }
 
     m_private->continue_after_need_more_data = error == Error::NeedMoreData;
