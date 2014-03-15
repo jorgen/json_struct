@@ -75,8 +75,8 @@ struct Token
 
 enum class Error {
         NoError,
-        InvalidToken,
         NeedMoreData,
+        InvalidToken,
         ExpectedPropertyName,
         ExpectedDelimiter,
         ExpectedDataToken,
