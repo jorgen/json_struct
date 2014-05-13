@@ -338,7 +338,6 @@ public:
         Error error = Error::NoError;
         data.size = 0;
         data.data = json_data.data + cursor_index;
-        data.temporary = json_data.temporary;
         if (property_state == NoStartFound) {
             Error error = findStartOfNextValue(type, json_data, &diff);
             if (error != Error::NoError) {
@@ -613,7 +612,7 @@ void Tokenizer::allowSuperfluousComma(bool allow)
 }
 void Tokenizer::addData(const char *data, size_t data_size)
 {
-    m_private->data_list.push_back(Data(data, data_size, true));
+    m_private->data_list.push_back(Data(data, data_size));
 }
 
 size_t Tokenizer::registered_buffers() const

@@ -35,29 +35,26 @@ class TokenizerPrivate;
 struct Data
 {
     Data()
-        : temporary(false)
-        , data("")
+        : data("")
         , size(0)
     {}
 
-    Data(const char *data, size_t size, bool temporary)
-        : temporary(temporary)
-        , data(data)
+    Data(const char *data, size_t size)
+        : data(data)
         , size(size)
     {}
 
     template <size_t N>
     static Data asData(const char (&data)[N])
     {
-        return Data(data, N - 1, false);
+        return Data(data, N - 1);
     }
 
     static Data asData(const std::string &str)
     {
-        return Data(str.c_str(), str.size(), true);
+        return Data(str.c_str(), str.size());
     }
 
-    bool temporary;
     const char *data;
     size_t size;
 };
@@ -78,6 +75,7 @@ struct Token
     };
 
     Token();
+
     Type name_type;
     Data name;
     Type value_type;

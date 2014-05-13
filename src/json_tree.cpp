@@ -35,7 +35,7 @@ static inline Data cloneData(const Data &data)
     char *buffer = new char[data.size];
     memcpy(buffer, data.data, data.size);
 
-    return Data(buffer, data.size, true);
+    return Data(buffer, data.size);
 }
 
 static Token::Type json_tree_type_lookup_dic[] = {
@@ -241,14 +241,10 @@ std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokeni
 
 Node::Node(Node::Type type, const Data &data)
     : m_type(type)
-    , m_delete_data_buffer(false)
-    , m_data(data)
-{
-    if (m_data.temporary) {
-        m_data = cloneData(m_data);
-        m_delete_data_buffer = true;
-    }
-}
+    , m_delete_data_buffer(true)
+    , m_data(cloneData(data))
+{}
+
 Node::~Node()
 {
     if (m_delete_data_buffer) {
@@ -511,13 +507,9 @@ const ObjectNode *Node::asObjectNode() const
 
 Property::Property(Token::Type type, const Data data)
     : m_type(type)
-    , m_delete_data_buffer(false)
-    , m_data(data)
+    , m_delete_data_buffer(true)
+    , m_data(cloneData(data))
 {
-    if (data.temporary) {
-        m_data = cloneData(data);
-        m_delete_data_buffer = true;
-    }
 }
 
 Property::Property(const std::string &string)
