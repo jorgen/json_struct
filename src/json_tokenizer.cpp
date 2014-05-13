@@ -22,6 +22,7 @@
 
 #include "json_tokenizer.h"
 
+#include <algorithm>
 #include <list>
 #include <string>
 
@@ -32,11 +33,6 @@
 #include <string.h>
 
 namespace JT {
-
-static inline size_t min(size_t a, size_t b)
-{
-    return a < b? a : b;
-}
 
 static inline void populate_annonymous_token(const Data &data, Token::Type type, Token &token)
 {
@@ -890,7 +886,7 @@ bool Serializer::write(const char *data, size_t size)
             markCurrentSerializerBufferFull();
             continue;
         }
-        size_t to_write = min(size, free);
+        size_t to_write = std::min(size, free);
         first->append(data + written, to_write);
         written += to_write;
     }
