@@ -30,6 +30,14 @@
 
 namespace JT {
 
+static inline Data cloneData(const Data &data)
+{
+    char *buffer = new char[data.size];
+    memcpy(buffer, data.data, data.size);
+
+    return Data(buffer, data.size, true);
+}
+
 static Token::Type json_tree_type_lookup_dic[] = {
         Token::ObjectStart,
         Token::String,
@@ -237,10 +245,7 @@ Node::Node(Node::Type type, const Data &data)
     , m_data(data)
 {
     if (m_data.temporary) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        m_data.temporary = false;
-        memcpy(new_data, data.data, m_data.size);
+        m_data = cloneData(m_data);
         m_delete_data_buffer = true;
     }
 }
@@ -510,9 +515,7 @@ Property::Property(Token::Type type, const Data data)
     , m_data(data)
 {
     if (data.temporary) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, data.data,m_data.size);
+        m_data = cloneData(data);
         m_delete_data_buffer = true;
     }
 }
@@ -525,11 +528,7 @@ Property::Property(const std::string &string)
         m_type = Token::String;
     }
 
-    char *new_data = new char[string.size()];
-    m_data.data = new_data;
-    m_data.size = string.size();
-    m_data.temporary = true;
-    memcpy(new_data, string.c_str(),  string.size());
+    m_data = cloneData(Data::asData(string));
 }
 
 Property::Property(const Property &other)
@@ -538,9 +537,7 @@ Property::Property(const Property &other)
     , m_data(other.m_data)
 {
     if (m_delete_data_buffer) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, other.m_data.data,m_data.size);
+        m_data = cloneData(m_data);
     }
 }
 
@@ -689,9 +686,7 @@ Property &Property::operator= (const Property &other)
     m_delete_data_buffer = other.m_delete_data_buffer;
     m_data = other.m_data;
     if (m_delete_data_buffer) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, other.m_data.data,m_data.size);
+        m_data = cloneData(other.m_data);
     }
     return *this;
 }
