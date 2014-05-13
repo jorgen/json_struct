@@ -672,14 +672,19 @@ const Data &Property::data() const
 
 Property &Property::operator= (const Property &other)
 {
-    if (m_delete_data_buffer)
-        delete[] m_data.data;
+    Data beware_of_self_assignment = m_data;
+
     m_type = other.m_type;
-    m_delete_data_buffer = other.m_delete_data_buffer;
     m_data = other.m_data;
-    if (m_delete_data_buffer) {
+    if (other.m_delete_data_buffer) {
         m_data = cloneData(other.m_data);
     }
+
+    if (m_delete_data_buffer) {
+        delete[] beware_of_self_assignment.data;
+    }
+    m_delete_data_buffer = other.m_delete_data_buffer;
+
     return *this;
 }
 
