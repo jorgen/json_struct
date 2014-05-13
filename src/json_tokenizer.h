@@ -46,6 +46,11 @@ struct Data
         , size(size)
     {}
 
+    static Data asData(const std::string &str)
+    {
+        return Data(str.c_str(), str.size(), true);
+    }
+
     bool temporary;
     const char *data;
     size_t size;

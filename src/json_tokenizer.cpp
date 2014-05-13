@@ -417,9 +417,7 @@ public:
 
                     if (intermediate_token.intermedia_set) {
                         intermediate_token.name.append(data.data, data.size);
-                        data.size = intermediate_token.name.length();
-                        data.data  = intermediate_token.name.c_str();
-                        data.temporary = true;
+                        data = Data::asData(intermediate_token.name);
                         type = intermediate_token.name_type;
                     }
 
@@ -507,13 +505,9 @@ public:
                             intermediate_token.data_type = type;
                             intermediate_token.data_type_set = true;
                         }
-                        tmp_token.name.data = intermediate_token.name.c_str();
-                        tmp_token.name.size = intermediate_token.name.size();
+                        tmp_token.name = Data::asData(intermediate_token.name);
                         tmp_token.name_type = intermediate_token.name_type;
-                        tmp_token.name.temporary = true;
-                        data.data = intermediate_token.data.c_str();
-                        data.size = intermediate_token.data.length();
-                        data.temporary = true;
+                        data = Data::asData(intermediate_token.data);
                         type = intermediate_token.data_type;
                     }
 

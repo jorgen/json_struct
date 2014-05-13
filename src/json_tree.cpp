@@ -366,10 +366,8 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
     for (size_t i = 0; i < path_vector.size(); i++) {
         if (i == path_vector.size() -1) {
             JT::Token token;
-            token.value.data = value.c_str();
-            token.value.size = value.size();
+            token.value = Data::asData(value);
             token.value_type = type;
-            token.value.temporary = true;
             JT::Node *node = Node::createValueNode(&token);
             JT::Property prop(path_vector[i]);
             last_node->insertNode(prop,node,true);
