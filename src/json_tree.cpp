@@ -507,14 +507,12 @@ const ObjectNode *Node::asObjectNode() const
 
 Property::Property(Token::Type type, const Data data)
     : m_type(type)
-    , m_delete_data_buffer(true)
     , m_data(cloneData(data))
 {
 }
 
 Property::Property(const std::string &string)
     : m_type(Token::Ascii)
-    , m_delete_data_buffer(true)
 {
     if (string.front() == '"') {
         m_type = Token::String;
@@ -525,26 +523,20 @@ Property::Property(const std::string &string)
 
 Property::Property(const Property &other)
     : m_type(other.m_type)
-    , m_delete_data_buffer(other.m_delete_data_buffer)
-    , m_data(other.m_data)
+    , m_data(cloneData(other.m_data))
 {
-    if (m_delete_data_buffer) {
-        m_data = cloneData(m_data);
-    }
 }
 
 Property::Property(Property &&other)
     : m_type(other.m_type)
-    , m_delete_data_buffer(other.m_delete_data_buffer)
     , m_data(other.m_data)
 {
-    other.m_delete_data_buffer = false;
+    other.m_data = Data();
 }
 
 Property::~Property()
 {
-    if (m_delete_data_buffer)
-        delete[] m_data.data;
+    delete[] m_data.data;
 }
 
 Token::Type Property::type() const
@@ -675,15 +667,9 @@ Property &Property::operator= (const Property &other)
     Data beware_of_self_assignment = m_data;
 
     m_type = other.m_type;
-    m_data = other.m_data;
-    if (other.m_delete_data_buffer) {
-        m_data = cloneData(other.m_data);
-    }
+    m_data = cloneData(other.m_data);
 
-    if (m_delete_data_buffer) {
-        delete[] beware_of_self_assignment.data;
-    }
-    m_delete_data_buffer = other.m_delete_data_buffer;
+    delete[] beware_of_self_assignment.data;
 
     return *this;
 }
