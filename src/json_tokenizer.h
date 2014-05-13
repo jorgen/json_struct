@@ -105,7 +105,7 @@ public:
     void allowNewLineAsTokenDelimiter(bool allow);
     void allowSuperfluousComma(bool allow);
 
-    void addData(const char *data, size_t size, bool temporary = true);
+    void addData(const char *data, size_t size);
     size_t registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 

@@ -611,9 +611,9 @@ void Tokenizer::allowSuperfluousComma(bool allow)
 {
     m_private->allow_superfluous_comma = allow;
 }
-void Tokenizer::addData(const char *data, size_t data_size, bool temporary)
+void Tokenizer::addData(const char *data, size_t data_size)
 {
-    m_private->data_list.push_back(Data(data, data_size, temporary));
+    m_private->data_list.push_back(Data(data, data_size, true));
 }
 
 size_t Tokenizer::registered_buffers() const
