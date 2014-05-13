@@ -78,6 +78,14 @@ public:
         Array
     };
 
+    template <size_t N>
+    Node(Node::Type type, const char (&data)[N])
+        : m_type(type)
+        , m_delete_data_buffer(false)
+        , m_data(Data::asData(data))
+    {
+    }
+
     Node(Node::Type type, const Data &data);
     virtual ~Node();
 

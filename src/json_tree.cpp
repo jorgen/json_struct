@@ -697,7 +697,7 @@ Property &Property::operator= (const Property &other)
 }
 
 ObjectNode::ObjectNode()
-    : Node(Node::Object, Data("{",1,false))
+    : Node(Node::Object, "{")
 {
 }
 
@@ -858,7 +858,7 @@ void ObjectNode::fillStartToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
-    token->value = {"{",1,true};
+    token->value = Data::asData("{");
     token->value_type = Token::ObjectStart;
 }
 
@@ -866,7 +866,7 @@ void ObjectNode::fillEndToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
-    token->value = {"}",1,true};
+    token->value = Data::asData("}");
     token->value_type = Token::ObjectEnd;
 }
 
@@ -956,7 +956,7 @@ NullNode::NullNode(Token *token)
 { }
 
 ArrayNode::ArrayNode()
-    : Node(Array, Data("[",1,false))
+    : Node(Array, "[")
 {
 }
 

@@ -46,6 +46,12 @@ struct Data
         , size(size)
     {}
 
+    template <size_t N>
+    static Data asData(const char (&data)[N])
+    {
+        return Data(data, N - 1, false);
+    }
+
     static Data asData(const std::string &str)
     {
         return Data(str.c_str(), str.size(), true);
