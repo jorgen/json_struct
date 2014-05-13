@@ -36,7 +36,7 @@ namespace JT {
 
 static inline void populate_annonymous_token(const Data &data, Token::Type type, Token &token)
 {
-    token.name = Data("",0,false);
+    token.name = Data();
     token.name_type = Token::Ascii;
     token.value = data;
     token.value_type = type;
@@ -562,9 +562,9 @@ public:
 
 Token::Token()
     : name_type(String)
-    , name("", 0, false)
+    , name()
     , value_type(String)
-    , value("", 0, false)
+    , value()
 {
 
 }
