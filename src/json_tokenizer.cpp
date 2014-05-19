@@ -22,6 +22,7 @@
 
 #include "json_tokenizer.h"
 
+#include <algorithm>
 #include <list>
 #include <string>
 
@@ -33,14 +34,9 @@
 
 namespace JT {
 
-static inline size_t min(size_t a, size_t b)
-{
-    return a < b? a : b;
-}
-
 static inline void populate_annonymous_token(const Data &data, Token::Type type, Token &token)
 {
-    token.name = Data("",0,false);
+    token.name = Data();
     token.name_type = Token::Ascii;
     token.value = data;
     token.value_type = type;
@@ -342,7 +338,6 @@ public:
         Error error = Error::NoError;
         data.size = 0;
         data.data = json_data.data + cursor_index;
-        data.temporary = json_data.temporary;
         if (property_state == NoStartFound) {
             Error error = findStartOfNextValue(type, json_data, &diff);
             if (error != Error::NoError) {
@@ -421,9 +416,7 @@ public:
 
                     if (intermediate_token.intermedia_set) {
                         intermediate_token.name.append(data.data, data.size);
-                        data.size = intermediate_token.name.length();
-                        data.data  = intermediate_token.name.c_str();
-                        data.temporary = true;
+                        data = Data::asData(intermediate_token.name);
                         type = intermediate_token.name_type;
                     }
 
@@ -511,13 +504,9 @@ public:
                             intermediate_token.data_type = type;
                             intermediate_token.data_type_set = true;
                         }
-                        tmp_token.name.data = intermediate_token.name.c_str();
-                        tmp_token.name.size = intermediate_token.name.size();
+                        tmp_token.name = Data::asData(intermediate_token.name);
                         tmp_token.name_type = intermediate_token.name_type;
-                        tmp_token.name.temporary = true;
-                        data.data = intermediate_token.data.c_str();
-                        data.size = intermediate_token.data.length();
-                        data.temporary = true;
+                        data = Data::asData(intermediate_token.data);
                         type = intermediate_token.data_type;
                     }
 
@@ -566,9 +555,9 @@ public:
 
 Token::Token()
     : name_type(String)
-    , name("", 0, false)
+    , name()
     , value_type(String)
-    , value("", 0, false)
+    , value()
 {
 
 }
@@ -621,9 +610,9 @@ void Tokenizer::allowSuperfluousComma(bool allow)
 {
     m_private->allow_superfluous_comma = allow;
 }
-void Tokenizer::addData(const char *data, size_t data_size, bool temporary)
+void Tokenizer::addData(const char *data, size_t data_size)
 {
-    m_private->data_list.push_back(Data(data, data_size, temporary));
+    m_private->data_list.push_back(Data(data, data_size));
 }
 
 size_t Tokenizer::registered_buffers() const
@@ -890,7 +879,7 @@ bool Serializer::write(const char *data, size_t size)
             markCurrentSerializerBufferFull();
             continue;
         }
-        size_t to_write = min(size, free);
+        size_t to_write = std::min(size, free);
         first->append(data + written, to_write);
         written += to_write;
     }

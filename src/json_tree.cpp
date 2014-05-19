@@ -30,6 +30,14 @@
 
 namespace JT {
 
+static inline Data cloneData(const Data &data)
+{
+    char *buffer = new char[data.size];
+    memcpy(buffer, data.data, data.size);
+
+    return Data(buffer, data.size);
+}
+
 static Token::Type json_tree_type_lookup_dic[] = {
         Token::ObjectStart,
         Token::String,
@@ -233,17 +241,10 @@ std::pair<Node *, Error> TreeBuilder::createNode(Token *token, Tokenizer *tokeni
 
 Node::Node(Node::Type type, const Data &data)
     : m_type(type)
-    , m_delete_data_buffer(false)
-    , m_data(data)
-{
-    if (m_data.temporary) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        m_data.temporary = false;
-        memcpy(new_data, data.data, m_data.size);
-        m_delete_data_buffer = true;
-    }
-}
+    , m_delete_data_buffer(true)
+    , m_data(cloneData(data))
+{}
+
 Node::~Node()
 {
     if (m_delete_data_buffer) {
@@ -366,10 +367,8 @@ bool Node::addValueToObject(const std::string &path, const std::string &value, J
     for (size_t i = 0; i < path_vector.size(); i++) {
         if (i == path_vector.size() -1) {
             JT::Token token;
-            token.value.data = value.c_str();
-            token.value.size = value.size();
+            token.value = Data::asData(value);
             token.value_type = type;
-            token.value.temporary = true;
             JT::Node *node = Node::createValueNode(&token);
             JT::Property prop(path_vector[i]);
             last_node->insertNode(prop,node,true);
@@ -508,56 +507,36 @@ const ObjectNode *Node::asObjectNode() const
 
 Property::Property(Token::Type type, const Data data)
     : m_type(type)
-    , m_delete_data_buffer(false)
-    , m_data(data)
+    , m_data(cloneData(data))
 {
-    if (data.temporary) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, data.data,m_data.size);
-        m_delete_data_buffer = true;
-    }
 }
 
 Property::Property(const std::string &string)
     : m_type(Token::Ascii)
-    , m_delete_data_buffer(true)
 {
     if (string.front() == '"') {
         m_type = Token::String;
     }
 
-    char *new_data = new char[string.size()];
-    m_data.data = new_data;
-    m_data.size = string.size();
-    m_data.temporary = true;
-    memcpy(new_data, string.c_str(),  string.size());
+    m_data = cloneData(Data::asData(string));
 }
 
 Property::Property(const Property &other)
     : m_type(other.m_type)
-    , m_delete_data_buffer(other.m_delete_data_buffer)
-    , m_data(other.m_data)
+    , m_data(cloneData(other.m_data))
 {
-    if (m_delete_data_buffer) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, other.m_data.data,m_data.size);
-    }
 }
 
 Property::Property(Property &&other)
     : m_type(other.m_type)
-    , m_delete_data_buffer(other.m_delete_data_buffer)
     , m_data(other.m_data)
 {
-    other.m_delete_data_buffer = false;
+    other.m_data = Data();
 }
 
 Property::~Property()
 {
-    if (m_delete_data_buffer)
-        delete[] m_data.data;
+    delete[] m_data.data;
 }
 
 Token::Type Property::type() const
@@ -685,21 +664,18 @@ const Data &Property::data() const
 
 Property &Property::operator= (const Property &other)
 {
-    if (m_delete_data_buffer)
-        delete[] m_data.data;
+    Data beware_of_self_assignment = m_data;
+
     m_type = other.m_type;
-    m_delete_data_buffer = other.m_delete_data_buffer;
-    m_data = other.m_data;
-    if (m_delete_data_buffer) {
-        char *new_data = new char[m_data.size];
-        m_data.data = new_data;
-        memcpy(new_data, other.m_data.data,m_data.size);
-    }
+    m_data = cloneData(other.m_data);
+
+    delete[] beware_of_self_assignment.data;
+
     return *this;
 }
 
 ObjectNode::ObjectNode()
-    : Node(Node::Object, Data("{",1,false))
+    : Node(Node::Object, "{")
 {
 }
 
@@ -860,7 +836,7 @@ void ObjectNode::fillStartToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
-    token->value = {"{",1,true};
+    token->value = Data::asData("{");
     token->value_type = Token::ObjectStart;
 }
 
@@ -868,7 +844,7 @@ void ObjectNode::fillEndToken(Token *token) const
 {
     token->name = Data();
     token->name_type = Token::String;
-    token->value = {"}",1,true};
+    token->value = Data::asData("}");
     token->value_type = Token::ObjectEnd;
 }
 
@@ -958,7 +934,7 @@ NullNode::NullNode(Token *token)
 { }
 
 ArrayNode::ArrayNode()
-    : Node(Array, Data("[",1,false))
+    : Node(Array, "[")
 {
 }
 
