@@ -247,9 +247,8 @@ Node::Node(Node::Type type, const Data &data)
 
 Node::~Node()
 {
-    if (m_delete_data_buffer) {
+    if (m_data.size && m_delete_data_buffer)
         delete[] m_data.data;
-    }
 }
 
 const std::string Node::empty_string = std::string();
@@ -513,12 +512,12 @@ Property::Property(Token::Type type, const Data data)
 
 Property::Property(const std::string &string)
     : m_type(Token::Ascii)
+    , m_data(cloneData(Data::asData(string)))
 {
     if (string.front() == '"') {
         m_type = Token::String;
     }
 
-    m_data = cloneData(Data::asData(string));
 }
 
 Property::Property(const Property &other)
@@ -529,14 +528,15 @@ Property::Property(const Property &other)
 
 Property::Property(Property &&other)
     : m_type(other.m_type)
-    , m_data(other.m_data)
+    , m_data(cloneData(other.m_data))
 {
     other.m_data = Data();
 }
 
 Property::~Property()
 {
-    delete[] m_data.data;
+    if (m_data.size)
+        delete[] m_data.data;
 }
 
 Token::Type Property::type() const

@@ -126,6 +126,7 @@ public:
     const ObjectNode *asObjectNode() const;
 protected:
     Node::Type m_type;
+    bool m_delete_data_buffer;
     Data m_data;
 };
 
@@ -167,7 +168,6 @@ public:
     virtual Property &operator= (const Property &other);
 private:
     Token::Type m_type;
-    bool m_delete_data_buffer;
     Data m_data;
 };
 
