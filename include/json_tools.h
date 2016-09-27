@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 #include <functional>
-#include <list>
+#include <vector>
 #include <string>
 
 #include <assert.h>
@@ -200,8 +200,8 @@ private:
     static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
 
-    std::list<DataRef> data_list;
-    std::list<std::function<void(const char *)>> release_callback_list;
+    std::vector<DataRef> data_list;
+    std::vector<std::function<void(const char *)>> release_callback_list;
     size_t cursor_index = 0;
     size_t current_data_start = 0;
     InTokenState token_state = FindingName;
@@ -277,7 +277,7 @@ public:
     void registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer);
 
     void addRequestBufferCallback(std::function<void(Serializer *)> callback);
-    const std::list<SerializerBuffer> &buffers() const;
+    const std::vector<SerializerBuffer> &buffers() const;
     void clearBuffers();
 private:
     void askForMoreBuffers();
@@ -287,9 +287,9 @@ private:
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 
-    std::list<std::function<void(Serializer *)>> m_request_buffer_callbacks;
-    std::list<SerializerBuffer *> m_unused_buffers;
-    std::list<SerializerBuffer> m_all_buffers;
+    std::vector <std::function<void(Serializer *)>> m_request_buffer_callbacks;
+    std::vector <SerializerBuffer *> m_unused_buffers;
+    std::vector <SerializerBuffer> m_all_buffers;
 
     SerializerOptions m_option;
     bool m_first = true;
@@ -584,7 +584,7 @@ inline void Tokenizer::releaseFirstDataRef()
     if (!data_list.empty()) {
         const DataRef &json_data = data_list.front();
         data_to_release = json_data.data;
-        data_list.pop_front();
+        data_list.erase(data_list.begin());
     }
     for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
         (*it)(data_to_release);
