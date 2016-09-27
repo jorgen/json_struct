@@ -20,8 +20,8 @@
  * OF THIS SOFTWARE.
 */
 
-#ifndef JSON_TOKENIZER_H
-#define JSON_TOKENIZER_H
+#ifndef JSON_TOOLS_H
+#define JSON_TOOLS_H
 
 #include <stddef.h>
 #include <functional>
@@ -806,4 +806,4 @@ inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data 
 }
 
 } //Namespace
-#endif //JSON_TOKENIZER_H
+#endif //JSON_TOOLS_H

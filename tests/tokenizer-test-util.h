@@ -24,7 +24,7 @@
 #error "These tests uses assert. Please remove define NDEBUG"
 #endif
 
-#include "json_tokenizer.h"
+#include "json_tools.h"
 #include <assert.h>
 #include <string>
 
