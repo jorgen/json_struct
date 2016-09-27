@@ -32,27 +32,27 @@
 
 namespace JT {
 
-struct Data
+struct DataRef
 {
-    Data()
+    DataRef()
         : data("")
         , size(0)
     {}
 
-    Data(const char *data, size_t size)
+    DataRef(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
 
     template <size_t N>
-    static Data asData(const char (&data)[N])
+    static DataRef asDataRef(const char (&data)[N])
     {
-        return Data(data, N - 1);
+        return DataRef(data, N - 1);
     }
 
-    static Data asData(const std::string &str)
+    static DataRef asDataRef(const std::string &str)
     {
-        return Data(str.c_str(), str.size());
+        return DataRef(str.c_str(), str.size());
     }
 
     const char *data;
@@ -77,9 +77,9 @@ struct Token
     Token();
 
     Type name_type;
-    Data name;
+    DataRef name;
     Type value_type;
-    Data value;
+    DataRef value;
 };
 
 struct IntermediateToken
@@ -187,20 +187,20 @@ private:
 
     void resetForNewToken();
     void resetForNewValue();
-    Error findStringEnd(const Data &json_data, size_t *chars_ahead);
-    Error findAsciiEnd(const Data &json_data, size_t *chars_ahead);
-    Error findNumberEnd(const Data &json_data, size_t *chars_ahead);
+    Error findStringEnd(const DataRef &json_data, size_t *chars_ahead);
+    Error findAsciiEnd(const DataRef &json_data, size_t *chars_ahead);
+    Error findNumberEnd(const DataRef &json_data, size_t *chars_ahead);
     Error findStartOfNextValue(Token::Type *type,
-                               const Data &json_data,
+                               const DataRef &json_data,
                                size_t *chars_ahead);
-    Error findDelimiter(const Data &json_data, size_t *chars_ahead);
-    Error findTokenEnd(const Data &json_data, size_t *chars_ahead);
-    void releaseFirstData();
-    Error populateFromData(Data &data, Token::Type *type, const Data &json_data);
-    static void populate_annonymous_token(const Data &data, Token::Type type, Token &token);
-    Error populateNextTokenFromData(Token &next_token, const Data &json_data);
+    Error findDelimiter(const DataRef &json_data, size_t *chars_ahead);
+    Error findTokenEnd(const DataRef &json_data, size_t *chars_ahead);
+    void releaseFirstDataRef();
+    Error populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data);
+    static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
+    Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
 
-    std::list<Data> data_list;
+    std::list<DataRef> data_list;
     std::list<std::function<void(const char *)>> release_callback_list;
     size_t cursor_index = 0;
     size_t current_data_start = 0;
@@ -282,8 +282,8 @@ public:
 private:
     void askForMoreBuffers();
     void markCurrentSerializerBufferFull();
-    bool writeAsString(const Data &data);
-    bool write(Token::Type type, const Data &data);
+    bool writeAsString(const DataRef &data);
+    bool write(Token::Type type, const DataRef &data);
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 
@@ -329,7 +329,7 @@ inline void Tokenizer::allowSuperfluousComma(bool allow)
 }
 inline void Tokenizer::addData(const char *data, size_t data_size)
 {
-    data_list.push_back(Data(data, data_size));
+    data_list.push_back(DataRef(data, data_size));
 }
 
 inline size_t Tokenizer::registered_buffers() const
@@ -345,7 +345,7 @@ inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> 
 inline Error Tokenizer::nextToken(Token &next_token)
 {
     if (data_list.empty()) {
-        releaseFirstData();
+        releaseFirstDataRef();
     }
 
     if (data_list.empty()) {
@@ -357,11 +357,11 @@ inline Error Tokenizer::nextToken(Token &next_token)
 
     Error error = Error::NeedMoreData;
     while (error == Error::NeedMoreData && data_list.size()) {
-        const Data &json_data = data_list.front();
-        error = populateNextTokenFromData(next_token, json_data);
+        const DataRef &json_data = data_list.front();
+        error = populateNextTokenFromDataRef(next_token, json_data);
 
         if (error != Error::NoError) {
-            releaseFirstData();
+            releaseFirstDataRef();
         }
 
     }
@@ -393,7 +393,7 @@ inline void Tokenizer::resetForNewValue()
     current_data_start = 0;
 }
 
-inline Error Tokenizer::findStringEnd(const Data &json_data, size_t *chars_ahead)
+inline Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
         if (is_escaped) {
@@ -415,7 +415,7 @@ inline Error Tokenizer::findStringEnd(const Data &json_data, size_t *chars_ahead
     return Error::NeedMoreData;
 }
 
-inline Error Tokenizer::findAsciiEnd(const Data &json_data, size_t *chars_ahead)
+inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     assert(property_type == Token::Ascii);
     for (size_t end = cursor_index; end < json_data.size; end++) {
@@ -435,7 +435,7 @@ inline Error Tokenizer::findAsciiEnd(const Data &json_data, size_t *chars_ahead)
     return Error::NeedMoreData;
 }
 
-inline Error Tokenizer::findNumberEnd(const Data &json_data, size_t *chars_ahead)
+inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
         char number_code = *(json_data.data + end);
@@ -457,7 +457,7 @@ inline Error Tokenizer::findNumberEnd(const Data &json_data, size_t *chars_ahead
 }
 
 inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
-                                      const Data &json_data,
+                                      const DataRef &json_data,
                                       size_t *chars_ahead)
 {
 
@@ -522,7 +522,7 @@ inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
     return Error::NeedMoreData;
 }
 
-inline Error Tokenizer::findDelimiter(const Data &json_data, size_t *chars_ahead)
+inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
         switch(*(json_data.data + end)) {
@@ -549,7 +549,7 @@ inline Error Tokenizer::findDelimiter(const Data &json_data, size_t *chars_ahead
     return Error::NeedMoreData;
 }
 
-inline Error Tokenizer::findTokenEnd(const Data &json_data, size_t *chars_ahead)
+inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
         switch(*(json_data.data + end)) {
@@ -578,11 +578,11 @@ inline Error Tokenizer::findTokenEnd(const Data &json_data, size_t *chars_ahead)
     return Error::NeedMoreData;
 }
 
-inline void Tokenizer::releaseFirstData()
+inline void Tokenizer::releaseFirstDataRef()
 {
     const char *data_to_release = 0;
     if (!data_list.empty()) {
-        const Data &json_data = data_list.front();
+        const DataRef &json_data = data_list.front();
         data_to_release = json_data.data;
         data_list.pop_front();
     }
@@ -593,7 +593,7 @@ inline void Tokenizer::releaseFirstData()
     current_data_start = 0;
 }
 
-inline Error Tokenizer::populateFromData(Data &data, Token::Type *type, const Data &json_data)
+inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data)
 {
     size_t diff = 0;
     Error error = Error::NoError;
@@ -648,26 +648,26 @@ inline Error Tokenizer::populateFromData(Data &data, Token::Type *type, const Da
     return Error::NoError;
 }
 
-inline void Tokenizer::populate_annonymous_token(const Data &data, Token::Type type, Token &token)
+inline void Tokenizer::populate_annonymous_token(const DataRef &data, Token::Type type, Token &token)
 {
-    token.name = Data();
+    token.name = DataRef();
     token.name_type = Token::Ascii;
     token.value = data;
     token.value_type = type;
 }
 
-inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data &json_data)
+inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data)
 {
     Token tmp_token;
     while (cursor_index < json_data.size) {
         size_t diff = 0;
-        Data data;
+        DataRef data;
         Token::Type type;
         Error error;
         switch (token_state) {
         case FindingName:
             type = intermediate_token.name_type;
-            error = populateFromData(data, &type, json_data);
+            error = populateFromDataRef(data, &type, json_data);
             if (error == Error::NeedMoreData) {
                 if (property_state > NoStartFound) {
                     intermediate_token.active = true;
@@ -685,7 +685,7 @@ inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data 
 
             if (intermediate_token.active) {
                 intermediate_token.name.append(data.data, data.size);
-                data = Data::asData(intermediate_token.name);
+                data = DataRef::asDataRef(intermediate_token.name);
                 type = intermediate_token.name_type;
             }
 
@@ -747,7 +747,7 @@ inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data 
 
         case FindingData:
             type = intermediate_token.data_type;
-            error = populateFromData(data, &type, json_data);
+            error = populateFromDataRef(data, &type, json_data);
             if (error == Error::NeedMoreData) {
                 if (intermediate_token.active == false) {
                     intermediate_token.name.append(tmp_token.name.data, tmp_token.name.size);
@@ -773,9 +773,9 @@ inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data 
                     intermediate_token.data_type = type;
                     intermediate_token.data_type_set = true;
                 }
-                tmp_token.name = Data::asData(intermediate_token.name);
+                tmp_token.name = DataRef::asDataRef(intermediate_token.name);
                 tmp_token.name_type = intermediate_token.name_type;
-                data = Data::asData(intermediate_token.data);
+                data = DataRef::asDataRef(intermediate_token.data);
                 type = intermediate_token.data_type;
             }
 
