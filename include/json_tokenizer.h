@@ -168,8 +168,8 @@ public:
     size_t registered_buffers() const;
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
-    Error nextToken(Token *next_token);
-    void registerTokenTransformer(std::function<void(Token *next_token)> token_transformer);
+    Error nextToken(Token &next_token);
+    void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
 
 private:
     enum InTokenState {
@@ -198,7 +198,7 @@ private:
     void releaseFirstData();
     Error populateFromData(Data &data, Token::Type *type, const Data &json_data);
     static void populate_annonymous_token(const Data &data, Token::Type type, Token &token);
-    Error populateNextTokenFromData(Token *next_token, const Data &json_data);
+    Error populateNextTokenFromData(Token &next_token, const Data &json_data);
 
     std::list<Data> data_list;
     std::list<std::function<void(const char *)>> release_callback_list;
@@ -214,7 +214,7 @@ private:
     bool expecting_prop_or_annonymous_data = false;
     bool continue_after_need_more_data = false;
     IntermediateToken intermediate_token;
-    std::function<void(Token *next_token)> token_transformer;
+    std::function<void(Token &next_token)> token_transformer;
     TypeChecker type_checker;
 };
 
@@ -342,7 +342,7 @@ inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> 
     release_callback_list.push_back(function);
 }
 
-inline Error Tokenizer::nextToken(Token *next_token)
+inline Error Tokenizer::nextToken(Token &next_token)
 {
     if (data_list.empty()) {
         releaseFirstData();
@@ -375,7 +375,7 @@ inline Error Tokenizer::nextToken(Token *next_token)
     return error;
 }
 
-inline void Tokenizer::registerTokenTransformer(std::function<void(Token *next_token)> token_transformer)
+inline void Tokenizer::registerTokenTransformer(std::function<void(Token &next_token)> token_transformer)
 {
     token_transformer = token_transformer;
 }
@@ -656,7 +656,7 @@ inline void Tokenizer::populate_annonymous_token(const Data &data, Token::Type t
     token.value_type = type;
 }
 
-inline Error Tokenizer::populateNextTokenFromData(Token *next_token, const Data &json_data)
+inline Error Tokenizer::populateNextTokenFromData(Token &next_token, const Data &json_data)
 {
     Token tmp_token;
     while (cursor_index < json_data.size) {
@@ -697,13 +697,13 @@ inline Error Tokenizer::populateNextTokenFromData(Token *next_token, const Data 
                     if (expecting_prop_or_annonymous_data && !allow_superfluous_comma) {
                         return Error::ExpectedDataToken;
                     }
-                    populate_annonymous_token(data,type,*next_token);
+                    populate_annonymous_token(data,type,next_token);
                     token_state = FindingTokenEnd;
                     return Error::NoError;
 
                 case Token::ObjectStart:
                 case Token::ArrayStart:
-                    populate_annonymous_token(data,type,*next_token);
+                    populate_annonymous_token(data,type,next_token);
                     expecting_prop_or_annonymous_data = false;
                     token_state = FindingName;
                     return Error::NoError;
@@ -734,7 +734,7 @@ inline Error Tokenizer::populateNextTokenFromData(Token *next_token, const Data 
             resetForNewValue();
             expecting_prop_or_annonymous_data = false;
             if (token_state == FindingName) {
-                populate_annonymous_token(tmp_token.name, tmp_token.name_type, *next_token);
+                populate_annonymous_token(tmp_token.name, tmp_token.name_type, next_token);
                 return Error::NoError;
             } else {
                 if (tmp_token.name_type != Token::String) {
@@ -790,7 +790,7 @@ inline Error Tokenizer::populateNextTokenFromData(Token *next_token, const Data 
             } else {
                 token_state = FindingTokenEnd;
             }
-            *next_token = tmp_token;
+            next_token = tmp_token;
             return Error::NoError;
         case FindingTokenEnd:
             error = findTokenEnd(json_data, &diff);
