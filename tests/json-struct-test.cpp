@@ -32,10 +32,23 @@
 const char json_data1[] = u8R"({
     "StringNode" : "Some test data",
     "NumberNode" : 4676.4,
-    "NullNode" : null,
     "BooleanTrue" : true,
-    "BooleanFalse" : false
+    "BooleanFalse" : false,
+    "TestStruct" : {
+        "SubString" : "Some other string",
+        "SubNumber" : 500
+    }
     })";
+
+struct SubStruct
+{
+    std::string SubString;
+    double SubNumber;
+    
+    JT_STRUCT(SubStruct,
+              JT_FIELD(SubString),
+              JT_FIELD(SubNumber));
+};
 
 struct JsonData1
 {
@@ -43,17 +56,20 @@ struct JsonData1
     double NumberNode;
     bool BooleanTrue;
     bool BooleanFalse;
+    SubStruct TestStruct;
     JT_STRUCT(JsonData2,
               JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
               JT_FIELD(BooleanTrue),
-              JT_FIELD(BooleanFalse));
+              JT_FIELD(BooleanFalse),
+              JT_FIELD(TestStruct));
 };
 
 static int check_json_tree_nodes()
 {
-    bool parsed;
-    JsonData1 data = JT::parseData<JsonData1>(json_data1, sizeof(json_data1), parsed);
+    JT::Error error;
+    JsonData1 data = JT::parseData<JsonData1>(json_data1, sizeof(json_data1), error);
+    assert(error == JT::Error::NoError);
     assert(data.StringNode == "Some test data");
     return 0;
 }

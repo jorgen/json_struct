@@ -82,20 +82,6 @@ struct Token
     DataRef value;
 };
 
-DataRef stringContentOfDataRef(const DataRef &ref, Token::Type type)
-{
-    assert(type == Token::String || type == Token::Ascii);
-    switch(type) {
-        case Token::String:
-            return DataRef(ref.data+1, ref.size -2);
-        case Token::Ascii:
-            return ref;
-        default:
-            break;
-    }
-    assert(false); //Can only use function with Token types String or Ascii
-    return ref;
-}
 struct IntermediateToken
 {
     IntermediateToken()
@@ -131,7 +117,7 @@ public:
         , m_false("false")
     {}
 
-    Token::Type type(Token::Type type, const char *data, size_t length) {
+    Token::Type type(Token::Type type, const char *data, size_t length) const {
         if (type != Token::Ascii)
             return type;
         if (m_null.size() == length) {
@@ -160,6 +146,10 @@ enum class Error {
         ExpectedPropertyName,
         ExpectedDelimiter,
         ExpectedDataToken,
+        ExpectedObjectStart,
+        ExpectedObjectEnd,
+        ExpectedArrayStart,
+        ExpectedArrayEnd,
         IlligalPropertyName,
         IlligalPropertyType,
         IlligalDataValue,
@@ -167,6 +157,7 @@ enum class Error {
         CouldNotCreateNode,
         NodeNotFound,
         MissingPropertyName,
+        UnknownPropertyName,
         UnknownError
 };
 
@@ -182,7 +173,7 @@ public:
 
     void addData(const char *data, size_t size);
     size_t registered_buffers() const;
-    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
+    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback, bool oneShotCallback);
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
     Error nextToken(Token &next_token);
@@ -220,7 +211,7 @@ private:
 
     std::vector<DataRef> data_list;
     std::vector<std::function<void(const char *)>> release_callbacks;
-    std::vector<std::function<void(Tokenizer &)>> need_more_data_callabcks;
+    std::vector<std::pair<std::function<void(Tokenizer &)>, bool>> need_more_data_callabcks;
     size_t cursor_index = 0;
     size_t current_data_start = 0;
     InTokenState token_state = FindingName;
@@ -356,9 +347,9 @@ inline size_t Tokenizer::registered_buffers() const
     return data_list.size();
 }
 
-inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
+inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback, bool oneShotCallback)
 {
-    need_more_data_callabcks.push_back(callback);
+    need_more_data_callabcks.push_back(std::make_pair(callback, oneShotCallback));
 }
 inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
 {
@@ -496,7 +487,7 @@ inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
             break;
         case '"':
             *type = Token::String;
-            *chars_ahead = current_pos - cursor_index;
+            *chars_ahead = current_pos - cursor_index + 1;
             return Error::NoError;
         case '{':
             *type = Token::ObjectStart;
@@ -605,10 +596,14 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
 
 inline void Tokenizer::requestMoreData()
 {
-    for (auto function : need_more_data_callabcks)
+    for (auto pairs: need_more_data_callabcks)
     {
-        function(*this);
+        pairs.first(*this);
     }
+    need_more_data_callabcks.erase(std::remove_if(need_more_data_callabcks.begin(),
+                              need_more_data_callabcks.end(),
+                              [](decltype(*need_more_data_callabcks.begin()) &pair)
+                                { return pair.second; }), need_more_data_callabcks.end());
 }
 
 inline void Tokenizer::releaseFirstDataRef()
@@ -654,10 +649,12 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, co
         }
     }
 
+    int size_adjustment = 0;
     if (property_state == FindingEnd) {
         switch (*type) {
         case Token::String:
             error = findStringEnd(json_data, &diff);
+            size_adjustment = -1;
             break;
         case Token::Ascii:
             error = findAsciiEnd(json_data, &diff);
@@ -674,7 +671,7 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, co
         }
 
         cursor_index += diff;
-        data.size = cursor_index - current_data_start;
+        data.size = cursor_index - current_data_start + size_adjustment;
         property_state = FoundEnd;
     }
 
@@ -908,25 +905,26 @@ struct member_fields_tuple<>
 };
 
 template<typename T, typename Field>
-bool unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
+Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
 {
     if (memcmp(field.name, token.name.data, field.name_size) == 0)
     {
         std::string name(token.name.data, token.name.size);
         fprintf(stderr, "found name %s\n", name.c_str());
         unpackToken(to_type.*field.member, tokenizer, token);
-        return true;
+        return Error::NoError;
     }
-    return false;
+    return Error::UnknownPropertyName;
 }
 
 template<typename T, typename Fields, size_t INDEX>
 struct FieldChecker
 {
-    static bool unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
     {
-        if (unpackField(to_type, std::get<INDEX>(fields), tokenizer, token))
-            return true;
+        Error error = unpackField(to_type, std::get<INDEX>(fields), tokenizer, token);
+        if (error != Error::UnknownPropertyName)
+            return error;
 
         return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, tokenizer, token);
     }
@@ -935,80 +933,77 @@ struct FieldChecker
 template<typename T, typename Fields>
 struct FieldChecker<T, Fields, 0>
 {
-    static bool unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
     {
         return unpackField(to_type, std::get<0>(fields), tokenizer, token);
     }
 };
 
 template<typename T>
-bool unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
 {
-    //static_assert(has_json_tools_base<T>::value, "Given type has no unpackToken specialisation or a specified the JT_STRUCT with its fields\n");
+    static_assert(has_json_tools_base<T>::value, "Given type has no unpackToken specialisation or a specified the JT_STRUCT with its fields\n");
 
     if (token.value_type != JT::Token::ObjectStart)
-        return false;
+        return Error::ExpectedObjectStart;
     JT::Error error = tokenizer.nextToken(token);
     if (error != JT::Error::NoError)
-        return false;
+        return error;
     auto fields = T::template json_tools_base<T>::_fields();
-    for(;token.value_type != JT::Token::ObjectEnd; tokenizer.nextToken(token))
+    while(token.value_type != JT::Token::ObjectEnd)
     {
-        //arguably a bit evil
-        token.name = stringContentOfDataRef(token.name, token.name_type);
-        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token);
-
+        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token);
+        if (error != Error::NoError)
+            return error;
+        error = tokenizer.nextToken(token);
+        if (error != Error::NoError)
+            return error;
     }
-    return true;
+    return Error::NoError;
 }
 
 template<>
-bool unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
+Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
 {
-    if (token.value_type != Token::String && token.value_type != Token::Ascii)
-        return false;
-
-    DataRef ref = stringContentOfDataRef(token.value, token.value_type);
-    to_type = std::string(ref.data, ref.size);
-    return true;
+    to_type = std::string(token.value.data, token.value.size);
+    return Error::NoError;
 }
 
 template<>
-bool unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
+Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = 4;
-    return true;
+    return Error::NoError;
 }
 
 template<>
-bool unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
+Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = true;
-    return true;
+    return Error::NoError;
 }
 
 template<typename T>
-T parseData(T &to_type, Tokenizer &tokenizer, bool &parsed)
+T parseData(T &to_type, Tokenizer &tokenizer, Error &error)
 {
     Token token;
-    Error error = tokenizer.nextToken(token);
+    error = tokenizer.nextToken(token);
     if (error != JT::Error::NoError)
         return to_type;
-    parsed = unpackToken<T>(to_type, tokenizer, token);
+    error = unpackToken<T>(to_type, tokenizer, token);
     return to_type;
 }
 
 template<typename T>
-T parseData(const char *json_data, size_t size, bool &parsed)
+T parseData(const char *json_data, size_t size, Error &error)
 {
     T ret;
-    parsed = false;
     Tokenizer tokenizer;
     //just doing this to ensure code works
     tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
                                                tokenizer.addData(json_data, size);
-                                           });
-    return parseData(ret, tokenizer, parsed);
+                                           }, true);
+    return parseData(ret, tokenizer, error);
 }
 
 } //Namespace
