@@ -82,12 +82,28 @@ struct Token
     DataRef value;
 };
 
+DataRef stringContentOfDataRef(const DataRef &ref, Token::Type type)
+{
+    assert(type == Token::String || type == Token::Ascii);
+    switch(type) {
+        case Token::String:
+            return DataRef(ref.data+1, ref.size -2);
+        case Token::Ascii:
+            return ref;
+        default:
+            break;
+    }
+    assert(false); //Can only use function with Token types String or Ascii
+    return ref;
+}
 struct IntermediateToken
 {
     IntermediateToken()
     { }
 
     void clear() {
+        if (!active)
+            return;
         active = false;
         name_type_set = false;
         data_type_set = false;
@@ -166,6 +182,7 @@ public:
 
     void addData(const char *data, size_t size);
     size_t registered_buffers() const;
+    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
     Error nextToken(Token &next_token);
@@ -195,13 +212,15 @@ private:
                                size_t *chars_ahead);
     Error findDelimiter(const DataRef &json_data, size_t *chars_ahead);
     Error findTokenEnd(const DataRef &json_data, size_t *chars_ahead);
+    void requestMoreData();
     void releaseFirstDataRef();
     Error populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data);
     static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
 
     std::vector<DataRef> data_list;
-    std::vector<std::function<void(const char *)>> release_callback_list;
+    std::vector<std::function<void(const char *)>> release_callbacks;
+    std::vector<std::function<void(Tokenizer &)>> need_more_data_callabcks;
     size_t cursor_index = 0;
     size_t current_data_start = 0;
     InTokenState token_state = FindingName;
@@ -337,15 +356,19 @@ inline size_t Tokenizer::registered_buffers() const
     return data_list.size();
 }
 
-inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> function)
+inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
 {
-    release_callback_list.push_back(function);
+    need_more_data_callabcks.push_back(callback);
+}
+inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
+{
+    release_callbacks.push_back(callback);
 }
 
 inline Error Tokenizer::nextToken(Token &next_token)
 {
     if (data_list.empty()) {
-        releaseFirstDataRef();
+        requestMoreData();
     }
 
     if (data_list.empty()) {
@@ -363,7 +386,9 @@ inline Error Tokenizer::nextToken(Token &next_token)
         if (error != Error::NoError) {
             releaseFirstDataRef();
         }
-
+        if (error == Error::NeedMoreData) {
+            requestMoreData();
+        }
     }
 
     continue_after_need_more_data = error == Error::NeedMoreData;
@@ -578,6 +603,14 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
     return Error::NeedMoreData;
 }
 
+inline void Tokenizer::requestMoreData()
+{
+    for (auto function : need_more_data_callabcks)
+    {
+        function(*this);
+    }
+}
+
 inline void Tokenizer::releaseFirstDataRef()
 {
     const char *data_to_release = 0;
@@ -586,8 +619,8 @@ inline void Tokenizer::releaseFirstDataRef()
         data_to_release = json_data.data;
         data_list.erase(data_list.begin());
     }
-    for (auto it = release_callback_list.begin(); it != release_callback_list.end(); ++it){
-        (*it)(data_to_release);
+    for (auto function : release_callbacks) {
+        function(data_to_release);
     }
     cursor_index = 0;
     current_data_start = 0;
@@ -803,6 +836,179 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
         }
     }
     return Error::NeedMoreData;
+}
+
+#define JT_FIELD(name) JT::make_memberinfo(#name, &T::name)
+#define JT_SUPER_CLASSES(...) JT::member_fields_tuple<__VA_ARGS__>::create()
+
+#define JT_STRUCT(type, ...) \
+    template<typename T> \
+    struct json_tools_base \
+    { \
+       static decltype(std::make_tuple(__VA_ARGS__)) _fields() \
+       { auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+    };
+
+#define JT_STRUCT_WITH_SUPER(type, super_list, ...) \
+    template<typename T> \
+    struct json_tools_base \
+    { \
+        static decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) _fields() \
+        { auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
+    };
+
+template <typename T>
+struct has_json_tools_base {
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename C>
+    static yes& test(typename C::template json_tools_base<C>*);
+
+    template <typename>
+    static no& test(...);
+
+    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+};
+
+template<typename T, typename U>
+struct memberinfo
+{
+    const char *name;
+    size_t name_size;
+    T U::* member;
+};
+
+template<typename T, typename U, size_t N_SIZE>
+constexpr memberinfo<T, U> make_memberinfo(const char (&name)[N_SIZE], T U::* member)
+{
+    return {name, N_SIZE - 1, member};
+}
+
+template<typename... Args>
+struct member_fields_tuple;
+
+template<typename T, typename... Args>
+struct member_fields_tuple<T, Args...>
+{
+    static auto create() -> decltype(std::tuple_cat(T::template json_tools_base<T>::_fields(), member_fields_tuple<Args...>::create()))
+    {
+        static_assert(has_json_tools_base<T>::value, "Type is not a json struct type");
+        return std::tuple_cat(T::template json_tools_base<T>::_fields(), member_fields_tuple<Args...>::create());
+    }
+};
+
+template<>
+struct member_fields_tuple<>
+{
+    static auto create() -> decltype(std::make_tuple())
+    {
+        return std::make_tuple();
+    }
+};
+
+template<typename T, typename Field>
+bool unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
+{
+    if (memcmp(field.name, token.name.data, field.name_size) == 0)
+    {
+        std::string name(token.name.data, token.name.size);
+        fprintf(stderr, "found name %s\n", name.c_str());
+        unpackToken(to_type.*field.member, tokenizer, token);
+        return true;
+    }
+    return false;
+}
+
+template<typename T, typename Fields, size_t INDEX>
+struct FieldChecker
+{
+    static bool unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    {
+        if (unpackField(to_type, std::get<INDEX>(fields), tokenizer, token))
+            return true;
+
+        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, tokenizer, token);
+    }
+};
+
+template<typename T, typename Fields>
+struct FieldChecker<T, Fields, 0>
+{
+    static bool unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    {
+        return unpackField(to_type, std::get<0>(fields), tokenizer, token);
+    }
+};
+
+template<typename T>
+bool unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+{
+    //static_assert(has_json_tools_base<T>::value, "Given type has no unpackToken specialisation or a specified the JT_STRUCT with its fields\n");
+
+    if (token.value_type != JT::Token::ObjectStart)
+        return false;
+    JT::Error error = tokenizer.nextToken(token);
+    if (error != JT::Error::NoError)
+        return false;
+    auto fields = T::template json_tools_base<T>::_fields();
+    for(;token.value_type != JT::Token::ObjectEnd; tokenizer.nextToken(token))
+    {
+        //arguably a bit evil
+        token.name = stringContentOfDataRef(token.name, token.name_type);
+        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token);
+
+    }
+    return true;
+}
+
+template<>
+bool unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
+{
+    if (token.value_type != Token::String && token.value_type != Token::Ascii)
+        return false;
+
+    DataRef ref = stringContentOfDataRef(token.value, token.value_type);
+    to_type = std::string(ref.data, ref.size);
+    return true;
+}
+
+template<>
+bool unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
+{
+    to_type = 4;
+    return true;
+}
+
+template<>
+bool unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
+{
+    to_type = true;
+    return true;
+}
+
+template<typename T>
+T parseData(T &to_type, Tokenizer &tokenizer, bool &parsed)
+{
+    Token token;
+    Error error = tokenizer.nextToken(token);
+    if (error != JT::Error::NoError)
+        return to_type;
+    parsed = unpackToken<T>(to_type, tokenizer, token);
+    return to_type;
+}
+
+template<typename T>
+T parseData(const char *json_data, size_t size, bool &parsed)
+{
+    T ret;
+    parsed = false;
+    Tokenizer tokenizer;
+    //just doing this to ensure code works
+    tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
+                                               tokenizer.addData(json_data, size);
+                                           });
+    return parseData(ret, tokenizer, parsed);
 }
 
 } //Namespace
