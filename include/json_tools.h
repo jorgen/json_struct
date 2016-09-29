@@ -835,6 +835,230 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
     return Error::NeedMoreData;
 }
 
+inline SerializerOptions::SerializerOptions(bool pretty, bool ascii)
+    : m_shift_size(4)
+    , m_depth(0)
+    , m_pretty(pretty)
+    , m_ascii(ascii)
+    , m_token_delimiter(",")
+{
+    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
+    m_postfix = m_pretty? std::string("\n") : std::string("");
+}
+
+inline int SerializerOptions::shiftSize() const { return m_shift_size; }
+
+inline int SerializerOptions::depth() const { return m_depth; }
+
+inline bool SerializerOptions::pretty() const { return m_pretty; }
+inline void SerializerOptions::setPretty(bool pretty)
+{
+    m_pretty = pretty;
+    m_postfix = m_pretty? std::string("\n") : std::string("");
+    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
+    setDepth(m_depth);
+}
+
+inline bool SerializerOptions::ascii() const { return m_ascii; }
+inline void SerializerOptions::setAscii(bool ascii)
+{
+    m_ascii = ascii;
+}
+
+inline void SerializerOptions::skipDelimiter(bool skip)
+{
+    if (skip)
+        m_token_delimiter = "";
+    else
+        m_token_delimiter = ",";
+}
+
+inline void SerializerOptions::setDepth(int depth)
+{
+    m_depth = depth;
+    m_prefix = m_pretty? std::string(depth * m_shift_size, ' ') : std::string();
+}
+
+inline const std::string &SerializerOptions::prefix() const { return m_prefix; }
+inline const std::string &SerializerOptions::tokenDelimiter() const { return m_token_delimiter; }
+inline const std::string &SerializerOptions::valueDelimiter() const { return m_value_delimiter; }
+inline const std::string &SerializerOptions::postfix() const { return m_postfix; }
+
+inline bool SerializerBuffer::append(const char *data, size_t size)
+{
+    if (used + size > this->size)
+        return false;
+
+    memcpy(buffer + used, data, size);
+    used += size;
+    return true;
+}
+
+inline Serializer::Serializer()
+{
+}
+
+inline Serializer::Serializer(char *buffer, size_t size)
+{
+    appendBuffer(buffer,size);
+}
+
+inline void Serializer::appendBuffer(char *buffer, size_t size)
+{
+    m_all_buffers.push_back({buffer,size,0});
+    m_unused_buffers.push_back(&m_all_buffers.back());
+}
+
+inline void Serializer::setOptions(const SerializerOptions &option)
+{
+    m_option = option;
+}
+
+inline bool Serializer::write(const Token &in_token)
+{
+    const Token &token =
+        m_token_transformer == nullptr? in_token : m_token_transformer(in_token);
+    if (!m_token_start) {
+        if (token.value_type != Token::ObjectEnd
+                && token.value_type != Token::ArrayEnd) {
+            if (!write(m_option.tokenDelimiter()))
+                return false;
+        }
+    }
+
+    if (m_first) {
+        m_first = false;
+    } else {
+        if (!write(m_option.postfix()))
+            return false;
+    }
+
+    if (token.value_type == Token::ObjectEnd
+            || token.value_type == Token::ArrayEnd) {
+        m_option.setDepth(m_option.depth() - 1);
+    }
+
+    if (!write(m_option.prefix()))
+        return false;
+
+    if (token.name.size) {
+        if (!write(token.name_type, token.name))
+            return false;
+
+        if (!write(m_option.valueDelimiter()))
+            return false;
+    }
+
+    if (!write(token.value_type, token.value))
+        return false;
+
+    m_token_start = (token.value_type == Token::ObjectStart
+            || token.value_type == Token::ArrayStart);
+    if (m_token_start) {
+        m_option.setDepth(m_option.depth() + 1);
+    }
+    return true;
+}
+
+inline void Serializer::registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer)
+{
+    this->m_token_transformer = token_transformer;
+}
+
+inline void Serializer::addRequestBufferCallback(std::function<void(Serializer *)> callback)
+{
+    m_request_buffer_callbacks.push_back(callback);
+}
+
+inline const std::vector<SerializerBuffer> &Serializer::buffers() const
+{
+    return m_all_buffers;
+}
+
+inline void Serializer::clearBuffers()
+{
+    m_all_buffers.clear();
+    m_unused_buffers.clear();
+}
+
+inline void Serializer::askForMoreBuffers()
+{
+    for (auto it = m_request_buffer_callbacks.begin();
+            it != m_request_buffer_callbacks.end();
+            ++it) {
+        (*it)(this);
+    }
+}
+
+inline void Serializer::markCurrentSerializerBufferFull()
+{
+    m_unused_buffers.erase(m_unused_buffers.begin());
+    if (m_unused_buffers.size() == 0)
+        askForMoreBuffers();
+}
+
+inline bool Serializer::writeAsString(const DataRef &data)
+{
+    bool written;
+    if (*data.data != '"') {
+        written = write("\"",1);
+        if (!written)
+            return false;
+    }
+
+    written = write(data.data,data.size);
+    if (!written)
+        return false;
+
+    if (*data.data != '"') {
+        if (!written)
+            return false;
+        written = write("\"",1);
+    }
+    return written;
+}
+
+inline bool Serializer::write(Token::Type type, const DataRef &data)
+{
+    bool written;
+    switch (type) {
+        case Token::String:
+            written = writeAsString(data);
+            break;
+        case Token::Ascii:
+            if (!m_option.ascii())
+                written = writeAsString(data);
+            else
+                written = write(data.data,data.size);
+            break;
+        default:
+            written = write(data.data,data.size);
+            break;
+    }
+    return written;
+}
+
+inline bool Serializer::write(const char *data, size_t size)
+{
+    if(!size)
+        return true;
+    if (m_unused_buffers.size() == 0)
+        askForMoreBuffers();
+    size_t written = 0;
+    while(m_unused_buffers.size() && written < size) {
+        SerializerBuffer *first = m_unused_buffers.front();
+        size_t free = first->free();
+        if (!free) {
+            markCurrentSerializerBufferFull();
+            continue;
+        }
+        size_t to_write = std::min(size, free);
+        first->append(data + written, to_write);
+        written += to_write;
+    }
+    return written == size;
+}
+
 #define JT_FIELD(name) JT::make_memberinfo(#name, &T::name)
 #define JT_SUPER_CLASSES(...) JT::member_fields_tuple<__VA_ARGS__>::create()
 
@@ -905,7 +1129,7 @@ struct member_fields_tuple<>
 };
 
 template<typename T, typename Field>
-Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
+inline Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
 {
     if (memcmp(field.name, token.name.data, field.name_size) == 0)
     {
@@ -940,7 +1164,7 @@ struct FieldChecker<T, Fields, 0>
 };
 
 template<typename T>
-Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
 {
     static_assert(has_json_tools_base<T>::value, "Given type has no unpackToken specialisation or a specified the JT_STRUCT with its fields\n");
 
@@ -963,21 +1187,21 @@ Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
 }
 
 template<>
-Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
+inline Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = std::string(token.value.data, token.value.size);
     return Error::NoError;
 }
 
 template<>
-Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
+inline Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = 4;
     return Error::NoError;
 }
 
 template<>
-Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
+inline Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = true;
     return Error::NoError;
