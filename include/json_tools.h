@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <stdlib.h>
 
 #include <assert.h>
 
@@ -159,6 +160,10 @@ enum class Error {
     NodeNotFound,
     MissingPropertyName,
     UnknownPropertyName,
+    FailedToParseBoolen,
+    FailedToParseDouble,
+    FailedToParseFloat,
+    FailedToParseInt,
     UnknownError,
     UserDefinedErrors
 };
@@ -183,7 +188,7 @@ public:
     std::string currentErrorStringContext();
 
     static std::string makeErrorString(Error error, const std::string &contextString);
-    
+
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
 private:
     enum InTokenState {
@@ -1246,7 +1251,6 @@ inline Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &t
     if (memcmp(field.name, token.name.data, field.name_size) == 0)
     {
         std::string name(token.name.data, token.name.size);
-        fprintf(stderr, "found name %s\n", name.c_str());
         return unpackToken(to_type.*field.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
@@ -1301,21 +1305,68 @@ template<>
 inline Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = std::string(token.value.data, token.value.size);
-    return Error();
+    return Error::NoError;
 }
 
 template<>
 inline Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 {
-    to_type = 4;
-    return Error();
+    char *pointer;
+    to_type = strtod(token.value.data, &pointer);
+    if (token.value.data == pointer)
+        return Error::FailedToParseFloat;
+    return Error::NoError;
+}
+
+template<>
+inline Error unpackToken(float &to_type, Tokenizer &tokenizer, Token &token)
+{
+    char *pointer;
+    to_type = strtof(token.value.data, &pointer);
+    if (token.value.data == pointer)
+        return Error::FailedToParseFloat;
+    return Error::NoError;
+}
+
+template<>
+inline Error unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
+{
+    char *pointer;
+    to_type = strtol(token.value.data, &pointer, 10);
+    if (token.value.data == pointer)
+        return Error::FailedToParseInt;
+    return Error::NoError;
 }
 
 template<>
 inline Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 {
-    to_type = true;
-    return Error();
+    if (memcmp("true", token.value.data, sizeof("true") - 1))
+        to_type = true;
+    else if (memcmp("false", token.value.data, sizeof("false") - 1))
+        to_type = false;
+    else
+        return Error::FailedToParseBoolen;
+
+    return Error::NoError;
+}
+
+template<typename T>
+inline Error unpackToken(std::vector<T> &to_type, Tokenizer &tokenizer, Token &token)
+{
+    if (token.value_type != JT::Token::ArrayStart)
+        return Error::ExpectedArrayStart;
+    Error error = tokenizer.nextToken(token);
+    while(token.value_type != JT::Token::ArrayEnd)
+    {
+        to_type.push_back(T());
+        error = unpackToken<T>(to_type.back(), tokenizer, token);
+        if (error != JT::Error::NoError)
+            break;
+        error = tokenizer.nextToken(token);
+    }
+
+    return error;
 }
 
 template<typename T>
