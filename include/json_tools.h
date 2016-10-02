@@ -183,6 +183,8 @@ public:
     std::string currentErrorStringContext();
 
     static std::string makeErrorString(Error error, const std::string &contextString);
+    
+    void setErrorContextConfig(size_t lineContext, size_t rangeContext);
 private:
     enum InTokenState {
         FindingName,
@@ -232,6 +234,9 @@ private:
     std::function<void(Token &next_token)> token_transformer;
     TypeChecker type_checker;
     std::string current_error_context_string;
+    size_t line_context = 4;
+    size_t line_range_context = 256;
+    size_t range_context = 38;
 };
 
 class SerializerOptions
@@ -437,6 +442,12 @@ inline std::string Tokenizer::makeErrorString(Error error, const std::string &co
     };
 
     return std::string("Error: ") + error_strings[(int)error] + "\n" + contextString;
+}
+    
+inline void Tokenizer::setErrorContextConfig(size_t lineContext, size_t rangeContext)
+{
+    line_context = lineContext;
+    range_context = rangeContext;
 }
 
 inline void Tokenizer::resetForNewToken()
@@ -885,8 +896,8 @@ inline std::string Tokenizer::makeErrorContextString() const
     std::string retString;
 
     const DataRef &json_data = data_list.front();
-    const size_t stop_back = cursor_index - std::min(cursor_index, size_t(256));
-    const size_t stop_forward = std::min(cursor_index + 256, json_data.size);
+    const size_t stop_back = cursor_index - std::min(cursor_index, line_range_context);
+    const size_t stop_forward = std::min(cursor_index + line_range_context, json_data.size);
     assert(cursor_index <= json_data.size);
     size_t lines_back = 0;
     size_t lines_forward = 0;
@@ -900,7 +911,7 @@ inline std::string Tokenizer::makeErrorContextString() const
             lines_back++;
             if (lines_back == 1)
                 error_line_starts_at = cursor_back + 1;
-            else if (lines_back == 2) {
+            else if (lines_back == line_context) {
                 break;
             }
         }
@@ -911,7 +922,7 @@ inline std::string Tokenizer::makeErrorContextString() const
             lines_forward++;
             if (lines_forward == 1)
                 error_line_stops_at = cursor_forward;
-            if (lines_forward == 2)
+            if (lines_forward == line_context)
                 break;
         } else if (*(json_data.data + cursor_forward) == '\0' && cursor_forward != cursor_index)
         {
@@ -926,11 +937,11 @@ inline std::string Tokenizer::makeErrorContextString() const
         std::string after_error(json_data.data + error_line_stops_at + 1, cursor_forward - error_line_stops_at);
         retString = error_line + point + after_error;
     } else {
-        const size_t first = cursor_index - std::min(cursor_index, size_t(38));
-        const size_t last = std::min(cursor_index + 38, std::min(json_data.size, cursor_forward));
+        const size_t first = cursor_index - std::min(cursor_index, range_context);
+        const size_t last = std::min(cursor_index + range_context, std::min(json_data.size, cursor_forward));
         std::string json(json_data.data + first, last - first);
         std::string point(last - first, ' ');
-        point[cursor_index] = '^';
+        point[cursor_index - first] = '^';
         retString = json + '\n' + point;
     }
     return retString;
