@@ -1,0 +1,30 @@
+{
+    "StringNode" : "Some test data",
+    "NumberNode" : 4676.4,
+    "NullNode" : null,
+    "BooleanTrue" : true,
+    "StringNode" : "Some more data",
+    "BooleanFalse" : false,
+    "Object" : {
+        "SomeSubObjectProp": "RED"
+    },
+    "mesa" : {
+        "scm" : "git",
+        "branch" : "master"
+    },
+    "Array" : [
+        "String",
+        null,
+        true,
+        {
+            "SomeOtherObjectProp" : "GREEN"
+        }
+    ],
+    "Object" : {
+        "SomeSubObjectProp": "Green"
+    },
+    "LastStringNode" : "More test data"
+    "json_tools" : {
+            "scm" : "something"
+    }
+}
