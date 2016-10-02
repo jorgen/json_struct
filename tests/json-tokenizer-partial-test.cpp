@@ -50,11 +50,11 @@ static int check_json_partial_1()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "\"color\"", JT::Token::String, "\"red\"") == 0));
+    assert((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -90,11 +90,11 @@ static int check_json_partial_2()
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
     std::string foo(token.name.data, token.name.size);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "\"color\"", JT::Token::String, "\"red\"") == 0));
+    assert((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -129,11 +129,11 @@ static int check_json_partial_3()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "\"color\"", JT::Token::String, "\"red\"") == 0));
+    assert((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -168,11 +168,11 @@ static int check_json_partial_4()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "\"color\"", JT::Token::String, "\"red\"") == 0));
+    assert((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -207,11 +207,11 @@ static int check_json_partial_5()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "color", JT::Token::String, "\"red\"") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "color", JT::Token::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -246,7 +246,7 @@ static int check_json_partial_6()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -284,7 +284,7 @@ static int check_json_partial_7()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
@@ -326,23 +326,23 @@ static int check_json_partial_8()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::String, "\"array\"", JT::Token::ArrayStart, "[") == 0));
+    assert((assert_token(token, JT::Token::String, "array", JT::Token::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "\"one\"") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "one") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "\"two\"") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "two") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "\"three\"") == 0));
+    assert((assert_token(token, JT::Token::Ascii, "", JT::Token::String, "three") == 0));
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);

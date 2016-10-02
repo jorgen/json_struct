@@ -46,7 +46,7 @@ static int check_fail_json_with_ascii_property()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::IlligalPropertyName);
@@ -73,7 +73,7 @@ static int check_fail_json_with_ascii_data()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::IlligalDataValue);
@@ -100,7 +100,7 @@ static int check_fail_json_with_new_line_seperator()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::InvalidToken);
@@ -127,11 +127,11 @@ static int check_fail_json_with_comma_before_obj_end()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"color\"", JT::Token::String, "\"red\"") == 0);
+    assert(assert_token(token,JT::Token::String,"color", JT::Token::String, "red") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::ExpectedDataToken);
@@ -158,7 +158,7 @@ static int check_fail_json_with_illigal_chars()
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::NoError);
-    assert(assert_token(token,JT::Token::String,"\"foo\"", JT::Token::String, "\"bar\"") == 0);
+    assert(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     assert(error == JT::Error::EncounteredIlligalChar);

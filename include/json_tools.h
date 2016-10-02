@@ -27,6 +27,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include <assert.h>
 
@@ -140,25 +141,26 @@ private:
 };
 
 enum class Error {
-        NoError,
-        NeedMoreData,
-        InvalidToken,
-        ExpectedPropertyName,
-        ExpectedDelimiter,
-        ExpectedDataToken,
-        ExpectedObjectStart,
-        ExpectedObjectEnd,
-        ExpectedArrayStart,
-        ExpectedArrayEnd,
-        IlligalPropertyName,
-        IlligalPropertyType,
-        IlligalDataValue,
-        EncounteredIlligalChar,
-        CouldNotCreateNode,
-        NodeNotFound,
-        MissingPropertyName,
-        UnknownPropertyName,
-        UnknownError
+    NoError,
+    NeedMoreData,
+    InvalidToken,
+    ExpectedPropertyName,
+    ExpectedDelimiter,
+    ExpectedDataToken,
+    ExpectedObjectStart,
+    ExpectedObjectEnd,
+    ExpectedArrayStart,
+    ExpectedArrayEnd,
+    IlligalPropertyName,
+    IlligalPropertyType,
+    IlligalDataValue,
+    EncounteredIlligalChar,
+    CouldNotCreateNode,
+    NodeNotFound,
+    MissingPropertyName,
+    UnknownPropertyName,
+    UnknownError,
+    UserDefinedErrors
 };
 
 class Tokenizer
@@ -178,7 +180,9 @@ public:
 
     Error nextToken(Token &next_token);
     void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
+    std::string currentErrorStringContext();
 
+    static std::string makeErrorString(Error error, const std::string &contextString);
 private:
     enum InTokenState {
         FindingName,
@@ -208,6 +212,7 @@ private:
     Error populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data);
     static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
+    std::string makeErrorContextString() const;
 
     std::vector<DataRef> data_list;
     std::vector<std::function<void(const char *)>> release_callbacks;
@@ -226,6 +231,7 @@ private:
     IntermediateToken intermediate_token;
     std::function<void(Token &next_token)> token_transformer;
     TypeChecker type_checker;
+    std::string current_error_context_string;
 };
 
 class SerializerOptions
@@ -369,10 +375,14 @@ inline Error Tokenizer::nextToken(Token &next_token)
     if (!continue_after_need_more_data)
         resetForNewToken();
 
+    current_error_context_string.clear();
     Error error = Error::NeedMoreData;
     while (error == Error::NeedMoreData && data_list.size()) {
         const DataRef &json_data = data_list.front();
         error = populateNextTokenFromDataRef(next_token, json_data);
+
+        if (error != Error::NoError && error != Error::NeedMoreData)
+            current_error_context_string = makeErrorContextString();
 
         if (error != Error::NoError) {
             releaseFirstDataRef();
@@ -394,6 +404,39 @@ inline Error Tokenizer::nextToken(Token &next_token)
 inline void Tokenizer::registerTokenTransformer(std::function<void(Token &next_token)> token_transformer)
 {
     token_transformer = token_transformer;
+}
+
+inline std::string Tokenizer::currentErrorStringContext()
+{
+    return current_error_context_string;
+}
+
+inline std::string Tokenizer::makeErrorString(Error error, const std::string &contextString)
+{
+    static const char * const error_strings[] = {
+        "NoError",
+        "NeedMoreData",
+        "InvalidToken",
+        "ExpectedPropertyName",
+        "ExpectedDelimiter",
+        "ExpectedDataToken",
+        "ExpectedObjectStart",
+        "ExpectedObjectEnd",
+        "ExpectedArrayStart",
+        "ExpectedArrayEnd",
+        "IlligalPropertyName",
+        "IlligalPropertyType",
+        "IlligalDataValue",
+        "EncounteredIlligalChar",
+        "CouldNotCreateNode",
+        "NodeNotFound",
+        "MissingPropertyName",
+        "UnknownPropertyName",
+        "UnknownError",
+        "UserDefinedError"
+    };
+
+    return std::string("Error: ") + error_strings[(int)error] + "\n" + contextString;
 }
 
 inline void Tokenizer::resetForNewToken()
@@ -557,6 +600,8 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
         case ' ':
         case '\n':
             break;
+        case '\0':
+            break;
         default:
             return Error::ExpectedDelimiter;
             break;
@@ -628,7 +673,7 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, co
     data.size = 0;
     data.data = json_data.data + cursor_index;
     if (property_state == NoStartFound) {
-        Error error = findStartOfNextValue(type, json_data, &diff);
+        error = findStartOfNextValue(type, json_data, &diff);
         if (error != Error::NoError) {
             *type = Token::Error;
             return error;
@@ -758,7 +803,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
                     intermediate_token.name_type = tmp_token.name_type;
                     intermediate_token.active = true;
                 }
-                return Error::NeedMoreData;
+                return error;
             }
             cursor_index += diff;
             resetForNewValue();
@@ -833,6 +878,62 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
         }
     }
     return Error::NeedMoreData;
+}
+
+inline std::string Tokenizer::makeErrorContextString() const
+{
+    std::string retString;
+
+    const DataRef &json_data = data_list.front();
+    const size_t stop_back = cursor_index - std::min(cursor_index, size_t(256));
+    const size_t stop_forward = std::min(cursor_index + 256, json_data.size);
+    assert(cursor_index <= json_data.size);
+    size_t lines_back = 0;
+    size_t lines_forward = 0;
+    size_t error_line_starts_at = cursor_index;
+    size_t error_line_stops_at = stop_forward;
+    size_t cursor_back;
+    size_t cursor_forward;
+    for (cursor_back = cursor_index - 1; cursor_back > stop_back; cursor_back--)
+    {
+        if (*(json_data.data + cursor_back) == '\n') {
+            lines_back++;
+            if (lines_back == 1)
+                error_line_starts_at = cursor_back + 1;
+            else if (lines_back == 2) {
+                break;
+            }
+        }
+    }
+    for (cursor_forward = cursor_index; cursor_forward < stop_forward; cursor_forward++)
+    {
+        if (*(json_data.data + cursor_forward) == '\n') {
+            lines_forward++;
+            if (lines_forward == 1)
+                error_line_stops_at = cursor_forward;
+            if (lines_forward == 2)
+                break;
+        } else if (*(json_data.data + cursor_forward) == '\0' && cursor_forward != cursor_index)
+        {
+            break;
+        }
+    }
+    if (lines_back != 0 || lines_forward != 0) {
+        std::string point(error_line_stops_at - error_line_starts_at + 2, ' ');
+        point[cursor_index - error_line_starts_at] = '^';
+        point.back() = '\n';
+        std::string error_line(json_data.data + cursor_back, error_line_stops_at + 1 - cursor_back);
+        std::string after_error(json_data.data + error_line_stops_at + 1, cursor_forward - error_line_stops_at);
+        retString = error_line + point + after_error;
+    } else {
+        const size_t first = cursor_index - std::min(cursor_index, size_t(38));
+        const size_t last = std::min(cursor_index + 38, std::min(json_data.size, cursor_forward));
+        std::string json(json_data.data + first, last - first);
+        std::string point(last - first, ' ');
+        point[cursor_index] = '^';
+        retString = json + '\n' + point;
+    }
+    return retString;
 }
 
 inline SerializerOptions::SerializerOptions(bool pretty, bool ascii)
@@ -1135,8 +1236,7 @@ inline Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &t
     {
         std::string name(token.name.data, token.name.size);
         fprintf(stderr, "found name %s\n", name.c_str());
-        unpackToken(to_type.*field.member, tokenizer, token);
-        return Error::NoError;
+        return unpackToken(to_type.*field.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
 }
@@ -1170,7 +1270,7 @@ inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
 
     if (token.value_type != JT::Token::ObjectStart)
         return Error::ExpectedObjectStart;
-    JT::Error error = tokenizer.nextToken(token);
+    Error error = tokenizer.nextToken(token);
     if (error != JT::Error::NoError)
         return error;
     auto fields = T::template json_tools_base<T>::_fields();
@@ -1183,28 +1283,28 @@ inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
         if (error != Error::NoError)
             return error;
     }
-    return Error::NoError;
+    return error;
 }
 
 template<>
 inline Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = std::string(token.value.data, token.value.size);
-    return Error::NoError;
+    return Error();
 }
 
 template<>
 inline Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = 4;
-    return Error::NoError;
+    return Error();
 }
 
 template<>
 inline Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = true;
-    return Error::NoError;
+    return Error();
 }
 
 template<typename T>
