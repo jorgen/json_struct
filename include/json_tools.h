@@ -1191,7 +1191,7 @@ inline bool Serializer::write(const char *data, size_t size)
     template<typename T> \
     struct json_tools_base \
     { \
-        static decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) _fields() \
+        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_fields() \
         { auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
     };
 
@@ -1209,18 +1209,17 @@ struct has_json_tools_base {
     static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
-template<typename T, typename U>
+template<typename T, typename U, size_t NAME_SIZE>
 struct memberinfo
 {
     const char *name;
-    size_t name_size;
     T U::* member;
 };
 
 template<typename T, typename U, size_t N_SIZE>
-constexpr memberinfo<T, U> make_memberinfo(const char (&name)[N_SIZE], T U::* member)
+constexpr memberinfo<T, U, N_SIZE - 1> make_memberinfo(const char (&name)[N_SIZE], T U::* member)
 {
-    return {name, N_SIZE - 1, member};
+    return {name, member};
 }
 
 template<typename... Args>
@@ -1245,13 +1244,13 @@ struct member_fields_tuple<>
     }
 };
 
-template<typename T, typename Field>
-inline Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &token)
+template<typename T, typename MI_T, typename MI_M, size_t MI_S>
+inline Error unpackField(T &to_type, const memberinfo<MI_T, MI_M, MI_S> &memberinfo, Tokenizer &tokenizer, Token &token)
 {
-    if (memcmp(field.name, token.name.data, field.name_size) == 0)
+    if (memcmp(memberinfo.name, token.name.data, MI_S) == 0)
     {
         std::string name(token.name.data, token.name.size);
-        return unpackToken(to_type.*field.member, tokenizer, token);
+        return unpackToken(to_type.*memberinfo.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
 }
@@ -1259,7 +1258,7 @@ inline Error unpackField(T &to_type, Field field, Tokenizer &tokenizer, Token &t
 template<typename T, typename Fields, size_t INDEX>
 struct FieldChecker
 {
-    static Error unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token)
     {
         Error error = unpackField(to_type, std::get<INDEX>(fields), tokenizer, token);
         if (error != Error::UnknownPropertyName)
@@ -1272,7 +1271,7 @@ struct FieldChecker
 template<typename T, typename Fields>
 struct FieldChecker<T, Fields, 0>
 {
-    static Error unpackFields(T &to_type, Fields fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token)
     {
         return unpackField(to_type, std::get<0>(fields), tokenizer, token);
     }
