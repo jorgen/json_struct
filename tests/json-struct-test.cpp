@@ -43,7 +43,8 @@ const char json_data1[] = u8R"({
             3,
             6
         ]
-    }
+    },
+    "OptionalButWithData" : 17.5
     })";
 
 struct SubStruct
@@ -64,13 +65,20 @@ struct JsonData1
     double NumberNode;
     bool BooleanTrue;
     bool BooleanFalse;
+    JT::optional<int> OptionalInt;
+    JT::optional<double> OptionalButWithData;
     SubStruct TestStruct;
+    std::string unassigned_field;
+
     JT_STRUCT(JsonData2,
               JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
               JT_FIELD(BooleanTrue),
               JT_FIELD(BooleanFalse),
-              JT_FIELD(TestStruct));
+              JT_FIELD(OptionalInt),
+              JT_FIELD(OptionalButWithData),
+              JT_FIELD(TestStruct),
+              JT_FIELD(unassigned_field));
 };
 
 static int check_json_tree_nodes()

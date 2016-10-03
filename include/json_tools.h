@@ -164,6 +164,7 @@ enum class Error {
     FailedToParseDouble,
     FailedToParseFloat,
     FailedToParseInt,
+    MissingRequiredField,
     UnknownError,
     UserDefinedErrors
 };
@@ -1176,6 +1177,29 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
+template<typename T>
+struct optional
+{
+    T data;
+    T &operator()() { return data; }
+    const T &operator()() const { return data; }
+    typedef bool has_jt_optional_value;
+};
+
+template <typename T>
+struct has_jt_optional_value{
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename C>
+    static constexpr yes& test(typename C::has_jt_optional_value*);
+
+    template <typename>
+    static constexpr no& test(...);
+
+    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+};
+
 #define JT_FIELD(name) JT::make_memberinfo(#name, &T::name)
 #define JT_SUPER_CLASSES(...) JT::member_fields_tuple<__VA_ARGS__>::create()
 
@@ -1201,10 +1225,10 @@ struct has_json_tools_base {
     typedef char no[2];
 
     template <typename C>
-    static yes& test(typename C::template json_tools_base<C>*);
+    static constexpr yes& test(typename C::template json_tools_base<C>*);
 
     template <typename>
-    static no& test(...);
+    static constexpr no& test(...);
 
     static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
@@ -1216,8 +1240,8 @@ struct memberinfo
     T U::* member;
 };
 
-template<typename T, typename U, size_t N_SIZE>
-constexpr memberinfo<T, U, N_SIZE - 1> make_memberinfo(const char (&name)[N_SIZE], T U::* member)
+template<typename T, typename U, size_t NAME_SIZE>
+constexpr memberinfo<T, U, NAME_SIZE - 1> make_memberinfo(const char (&name)[NAME_SIZE], T U::* member)
 {
     return {name, member};
 }
@@ -1245,35 +1269,61 @@ struct member_fields_tuple<>
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline Error unpackField(T &to_type, const memberinfo<MI_T, MI_M, MI_S> &memberinfo, Tokenizer &tokenizer, Token &token)
+inline Error unpackField(T &to_type, const memberinfo<MI_T, MI_M, MI_S> &memberinfo, Tokenizer &tokenizer, Token &token, size_t index, bool *assigned_fields)
 {
     if (memcmp(memberinfo.name, token.name.data, MI_S) == 0)
     {
+        assigned_fields[index] = true;
         std::string name(token.name.data, token.name.size);
         return unpackToken(to_type.*memberinfo.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
 }
 
+template<typename MI_T, typename MI_M, size_t MI_S>
+inline Error verifyField(const memberinfo<MI_T, MI_M, MI_S> &memberinfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
+{
+    if (assigned_fields[index])
+        return Error::NoError;
+    if (has_jt_optional_value<MI_T>::value)
+        return Error::NoError;
+    missing_fields.push_back(std::string(memberinfo.name, MI_S));
+    return Error::MissingRequiredField;
+}
+
 template<typename T, typename Fields, size_t INDEX>
 struct FieldChecker
 {
-    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token, bool *assigned_fields)
     {
-        Error error = unpackField(to_type, std::get<INDEX>(fields), tokenizer, token);
+        Error error = unpackField(to_type, std::get<INDEX>(fields), tokenizer, token, INDEX, assigned_fields);
         if (error != Error::UnknownPropertyName)
             return error;
 
-        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, tokenizer, token);
+        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
+    }
+
+    static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
+    {
+        Error fieldError = verifyField(std::get<INDEX>(fields), INDEX, assigned_fields, missing_fields);
+        Error error = FieldChecker<T, Fields, INDEX - 1>::verifyFields(fields, assigned_fields, missing_fields);
+        if (fieldError != Error::NoError)
+            return fieldError;
+        return error;
     }
 };
 
 template<typename T, typename Fields>
 struct FieldChecker<T, Fields, 0>
 {
-    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token)
+    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token, bool *assigned_fields)
     {
-        return unpackField(to_type, std::get<0>(fields), tokenizer, token);
+        return unpackField(to_type, std::get<0>(fields), tokenizer, token, 0, assigned_fields);
+    }
+
+    static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
+    {
+        return verifyField(std::get<0>(fields), 0, assigned_fields, missing_fields);
     }
 };
 
@@ -1288,14 +1338,24 @@ inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
     if (error != JT::Error::NoError)
         return error;
     auto fields = T::template json_tools_base<T>::_fields();
+    bool assigned_fields[std::tuple_size<decltype(fields)>::value];
+    memset(assigned_fields, 0, sizeof(assigned_fields));
     while(token.value_type != JT::Token::ObjectEnd)
     {
-        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token);
+        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
         if (error != Error::NoError)
             return error;
         error = tokenizer.nextToken(token);
         if (error != Error::NoError)
             return error;
+    }
+    assert(error == Error::NoError);
+    std::vector<std::string> unassigned_required_fields;
+    FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
+    if (unassigned_required_fields.size()) {
+        for(auto unassigned_field : unassigned_required_fields) {
+            fprintf(stderr, "required unassigned field: %s\n", unassigned_field.c_str());
+        }
     }
     return error;
 }
@@ -1335,6 +1395,12 @@ inline Error unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
     if (token.value.data == pointer)
         return Error::FailedToParseInt;
     return Error::NoError;
+}
+
+template<typename T>
+inline Error unpackToken(optional<T> &to_type, Tokenizer &tokenizer, Token &token)
+{
+    return unpackToken<T>(to_type(), tokenizer, token);
 }
 
 template<>
