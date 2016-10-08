@@ -1186,6 +1186,17 @@ struct optional
     typedef bool has_jt_optional_value;
 };
 
+template<typename T>
+struct default_initialize
+{
+    default_initialize()
+        : data(T())
+    {}
+    T data;
+    T &operator()() { return data; }
+    const T &operator()() const { return data; }
+};
+
 template <typename T>
 struct has_jt_optional_value{
     typedef char yes[1];
@@ -1207,8 +1218,8 @@ struct has_jt_optional_value{
     template<typename T> \
     struct json_tools_base \
     { \
-       static decltype(std::make_tuple(__VA_ARGS__)) _fields() \
-       { auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(std::make_tuple(__VA_ARGS__)) _fields() \
+       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
 #define JT_STRUCT_WITH_SUPER(type, super_list, ...) \
@@ -1216,7 +1227,7 @@ struct has_jt_optional_value{
     struct json_tools_base \
     { \
         static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_fields() \
-        { auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
+        { static auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
     };
 
 template <typename T>
@@ -1238,6 +1249,7 @@ struct memberinfo
 {
     const char *name;
     T U::* member;
+    typedef T type;
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
@@ -1268,14 +1280,26 @@ struct member_fields_tuple<>
     }
 };
 
+template<typename T, typename dummy>
+class TokenParser
+{
+public:
+    static inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+    {
+        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation%s\n");
+        return Error::NoError;
+    }
+};
+
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
 inline Error unpackField(T &to_type, const memberinfo<MI_T, MI_M, MI_S> &memberinfo, Tokenizer &tokenizer, Token &token, size_t index, bool *assigned_fields)
 {
+    std::string name(token.name.data, token.name.size);
     if (memcmp(memberinfo.name, token.name.data, MI_S) == 0)
     {
         assigned_fields[index] = true;
         std::string name(token.name.data, token.name.size);
-        return unpackToken(to_type.*memberinfo.member, tokenizer, token);
+        return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberinfo.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
 }
@@ -1328,47 +1352,49 @@ struct FieldChecker<T, Fields, 0>
 };
 
 template<typename T>
-inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+class TokenParser<T, typename std::enable_if<has_json_tools_base<T>::value, T>::type>
 {
-    static_assert(has_json_tools_base<T>::value, "Given type has no unpackToken specialisation or a specified the JT_STRUCT with its fields\n");
-
-    if (token.value_type != JT::Token::ObjectStart)
-        return Error::ExpectedObjectStart;
-    Error error = tokenizer.nextToken(token);
-    if (error != JT::Error::NoError)
-        return error;
-    auto fields = T::template json_tools_base<T>::_fields();
-    bool assigned_fields[std::tuple_size<decltype(fields)>::value];
-    memset(assigned_fields, 0, sizeof(assigned_fields));
-    while(token.value_type != JT::Token::ObjectEnd)
+public:
+    static inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
     {
-        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
-        if (error != Error::NoError)
+        if (token.value_type != JT::Token::ObjectStart)
+            return Error::ExpectedObjectStart;
+        Error error = tokenizer.nextToken(token);
+        if (error != JT::Error::NoError)
             return error;
-        error = tokenizer.nextToken(token);
-        if (error != Error::NoError)
-            return error;
-    }
-    assert(error == Error::NoError);
-    std::vector<std::string> unassigned_required_fields;
-    FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
-    if (unassigned_required_fields.size()) {
-        for(auto unassigned_field : unassigned_required_fields) {
-            fprintf(stderr, "required unassigned field: %s\n", unassigned_field.c_str());
+        auto fields = T::template json_tools_base<T>::_fields();
+        bool assigned_fields[std::tuple_size<decltype(fields)>::value];
+        memset(assigned_fields, 0, sizeof(assigned_fields));
+        while(token.value_type != JT::Token::ObjectEnd)
+        {
+            error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
+            if (error != Error::NoError)
+                return error;
+            error = tokenizer.nextToken(token);
+            if (error != Error::NoError)
+                return error;
         }
+        assert(error == Error::NoError);
+        std::vector<std::string> unassigned_required_fields;
+        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
+        if (unassigned_required_fields.size()) {
+            for(auto unassigned_field : unassigned_required_fields) {
+                fprintf(stderr, "required unassigned field: %s\n", unassigned_field.c_str());
+            }
+        }
+        return error;
     }
-    return error;
-}
+};
 
 template<>
-inline Error unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
 {
     to_type = std::string(token.value.data, token.value.size);
     return Error::NoError;
 }
 
 template<>
-inline Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<double, double>::unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 {
     char *pointer;
     to_type = strtod(token.value.data, &pointer);
@@ -1378,7 +1404,7 @@ inline Error unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
 }
 
 template<>
-inline Error unpackToken(float &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<float, float>::unpackToken(float &to_type, Tokenizer &tokenizer, Token &token)
 {
     char *pointer;
     to_type = strtof(token.value.data, &pointer);
@@ -1388,7 +1414,7 @@ inline Error unpackToken(float &to_type, Tokenizer &tokenizer, Token &token)
 }
 
 template<>
-inline Error unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<int, int>::unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
 {
     char *pointer;
     to_type = strtol(token.value.data, &pointer, 10);
@@ -1398,13 +1424,17 @@ inline Error unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
 }
 
 template<typename T>
-inline Error unpackToken(optional<T> &to_type, Tokenizer &tokenizer, Token &token)
+class TokenParser<optional<T>, optional<T>>
 {
-    return unpackToken<T>(to_type(), tokenizer, token);
-}
+public:
+    static inline Error unpackToken(optional<T> &to_type, Tokenizer &tokenizer, Token &token)
+    {
+        return TokenParser<T,T>::unpackToken(to_type.data, tokenizer, token);
+    }
+};
 
 template<>
-inline Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 {
     if (memcmp("true", token.value.data, sizeof("true") - 1))
         to_type = true;
@@ -1417,22 +1447,26 @@ inline Error unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
 }
 
 template<typename T>
-inline Error unpackToken(std::vector<T> &to_type, Tokenizer &tokenizer, Token &token)
+class TokenParser<std::vector<T>, std::vector<T>>
 {
-    if (token.value_type != JT::Token::ArrayStart)
-        return Error::ExpectedArrayStart;
-    Error error = tokenizer.nextToken(token);
-    while(token.value_type != JT::Token::ArrayEnd)
+public:
+    static inline Error unpackToken(std::vector<T> &to_type, Tokenizer &tokenizer, Token &token)
     {
-        to_type.push_back(T());
-        error = unpackToken<T>(to_type.back(), tokenizer, token);
-        if (error != JT::Error::NoError)
-            break;
-        error = tokenizer.nextToken(token);
-    }
+        if (token.value_type != JT::Token::ArrayStart)
+            return Error::ExpectedArrayStart;
+        Error error = tokenizer.nextToken(token);
+        while(token.value_type != JT::Token::ArrayEnd)
+        {
+            to_type.push_back(T());
+            error = TokenParser<T,T>::unpackToken(to_type.back(), tokenizer, token);
+            if (error != JT::Error::NoError)
+                break;
+            error = tokenizer.nextToken(token);
+        }
 
-    return error;
-}
+        return error;
+    }
+};
 
 template<typename T>
 T parseData(T &to_type, Tokenizer &tokenizer, Error &error)
@@ -1441,7 +1475,7 @@ T parseData(T &to_type, Tokenizer &tokenizer, Error &error)
     error = tokenizer.nextToken(token);
     if (error != JT::Error::NoError)
         return to_type;
-    error = unpackToken<T>(to_type, tokenizer, token);
+    error = TokenParser<T,T>::unpackToken(to_type, tokenizer, token);
     return to_type;
 }
 

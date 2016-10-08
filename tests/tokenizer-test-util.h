@@ -20,12 +20,8 @@
  * OF THIS SOFTWARE.
  */
 
-#ifdef NDEBUG
-#error "These tests uses assert. Please remove define NDEBUG"
-#endif
-
 #include "json_tools.h"
-#include <assert.h>
+#include "assert.h"
 #include <string>
 
 static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::string property, JT::Token::Type value_type, std::string value)

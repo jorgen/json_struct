@@ -23,7 +23,7 @@
 #ifndef JSON_TEST_DATA_H
 #define JSON_TEST_DATA_H
 
-#include <assert.h>
+#include "assert.h"
 
 //#include "json_tree.h"
 

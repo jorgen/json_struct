@@ -20,14 +20,10 @@
  * OF THIS SOFTWARE.
  */
 
-#ifdef NDEBUG
-#error "These tests uses assert. Please remove define NDEBUG"
-#endif
-
 #include "json_tools.h"
 
 
-#include <assert.h>
+#include "assert.h"
 
 const char json_data1[] = u8R"({
     "StringNode" : "Some test data",
@@ -44,7 +40,7 @@ const char json_data1[] = u8R"({
             6
         ]
     },
-    "OptionalButWithData" : 17.5
+    "OptionalButWithData" : [ 17.5 ]
     })";
 
 struct SubStruct
@@ -66,9 +62,9 @@ struct JsonData1
     bool BooleanTrue;
     bool BooleanFalse;
     JT::optional<int> OptionalInt;
-    JT::optional<double> OptionalButWithData;
     SubStruct TestStruct;
-    std::string unassigned_field;
+    JT::optional<std::vector<double>> OptionalButWithData;
+
 
     JT_STRUCT(JsonData2,
               JT_FIELD(StringNode),
@@ -77,18 +73,19 @@ struct JsonData1
               JT_FIELD(BooleanFalse),
               JT_FIELD(OptionalInt),
               JT_FIELD(OptionalButWithData),
-              JT_FIELD(TestStruct),
-              JT_FIELD(unassigned_field));
+              JT_FIELD(TestStruct));
 };
 
 static int check_json_tree_nodes()
 {
     JT::Error error;
     JsonData1 data = JT::parseData<JsonData1>(json_data1, sizeof(json_data1), error);
+
+    float foo;
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
-    assert(error == JT::Error::NoError);
-    assert(data.StringNode == "Some test data");
+    JT_ASSERT(error == JT::Error::NoError);
+    JT_ASSERT(data.StringNode == "Some test data");
     return 0;
 }
 
