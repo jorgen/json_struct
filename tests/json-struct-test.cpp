@@ -38,7 +38,8 @@ const char json_data1[] = u8R"({
             6,
             3,
             6
-        ]
+        ],
+        "optional_float" : 300
     },
     "OptionalButWithData" : [ 17.5 ]
     })";
@@ -48,11 +49,12 @@ struct SubStruct
     std::string SubString;
     int SubNumber;
     std::vector<double> Array;
-
+    JT::OptionalChecked<float> optional_float;
     JT_STRUCT(SubStruct,
               JT_FIELD(SubString),
               JT_FIELD(SubNumber),
-              JT_FIELD(Array));
+              JT_FIELD(Array),
+              JT_FIELD(optional_float));
 };
 
 struct JsonData1
@@ -61,9 +63,9 @@ struct JsonData1
     double NumberNode;
     bool BooleanTrue;
     bool BooleanFalse;
-    JT::optional<int> OptionalInt;
+    JT::Optional<int> OptionalInt;
     SubStruct TestStruct;
-    JT::optional<std::vector<double>> OptionalButWithData;
+    JT::Optional<std::vector<double>> OptionalButWithData;
 
 
     JT_STRUCT(JsonData2,
@@ -84,8 +86,8 @@ static int check_json_tree_nodes()
     float foo;
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
-    JT_ASSERT(error == JT::Error::NoError);
     JT_ASSERT(data.StringNode == "Some test data");
+    JT_ASSERT(error == JT::Error::NoError);
     return 0;
 }
 

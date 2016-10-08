@@ -1178,32 +1178,21 @@ inline bool Serializer::write(const char *data, size_t size)
 }
 
 template<typename T>
-struct optional
+struct Optional
 {
     T data;
     T &operator()() { return data; }
     const T &operator()() const { return data; }
-    typedef bool has_jt_optional_value;
-};
-
-template<typename T>
-struct default_initialize
-{
-    default_initialize()
-        : data(T())
-    {}
-    T data;
-    T &operator()() { return data; }
-    const T &operator()() const { return data; }
+    typedef bool HasJTOpitonalValue;
 };
 
 template <typename T>
-struct has_jt_optional_value{
+struct HasJTOpitonalValue{
     typedef char yes[1];
     typedef char no[2];
 
     template <typename C>
-    static constexpr yes& test(typename C::has_jt_optional_value*);
+    static constexpr yes& test(typename C::HasJTOpitonalValue*);
 
     template <typename>
     static constexpr no& test(...);
@@ -1211,12 +1200,40 @@ struct has_jt_optional_value{
     static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
-#define JT_FIELD(name) JT::make_memberinfo(#name, &T::name)
-#define JT_SUPER_CLASSES(...) JT::member_fields_tuple<__VA_ARGS__>::create()
+template<typename T>
+struct OptionalChecked
+{
+    OptionalChecked()
+        : data()
+        , assigned(false)
+    { }
+
+    OptionalChecked<T> &operator= (const T &other)
+    {
+        data = other;
+        assigned = true;
+    }
+
+    T data;
+    bool assigned;
+};
+
+struct parse_context
+{
+    Tokenizer tokenizer;
+    Token token;
+    Error error;
+    std::vector<std::string> missing_fields;
+    std::vector<std::string> unassigned_fields;
+    std::vector<std::string> unassigned_Optional;
+};
+
+#define JT_FIELD(name) JT::makeMemberInfo(#name, &T::name)
+#define JT_SUPER_CLASSES(...) JT::MemberFieldsTuple<__VA_ARGS__>::create()
 
 #define JT_STRUCT(type, ...) \
     template<typename T> \
-    struct json_tools_base \
+    struct JsonToolsBase \
     { \
        static const decltype(std::make_tuple(__VA_ARGS__)) _fields() \
        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
@@ -1224,19 +1241,19 @@ struct has_jt_optional_value{
 
 #define JT_STRUCT_WITH_SUPER(type, super_list, ...) \
     template<typename T> \
-    struct json_tools_base \
+    struct JsonToolsBase \
     { \
         static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_fields() \
         { static auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
     };
 
 template <typename T>
-struct has_json_tools_base {
+struct HasJsonToolsBase {
     typedef char yes[1];
     typedef char no[2];
 
     template <typename C>
-    static constexpr yes& test(typename C::template json_tools_base<C>*);
+    static constexpr yes& test(typename C::template JsonToolsBase<C>*);
 
     template <typename>
     static constexpr no& test(...);
@@ -1245,7 +1262,7 @@ struct has_json_tools_base {
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
-struct memberinfo
+struct memberInfo
 {
     const char *name;
     T U::* member;
@@ -1253,26 +1270,26 @@ struct memberinfo
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
-constexpr memberinfo<T, U, NAME_SIZE - 1> make_memberinfo(const char (&name)[NAME_SIZE], T U::* member)
+constexpr memberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::* member)
 {
     return {name, member};
 }
 
 template<typename... Args>
-struct member_fields_tuple;
+struct MemberFieldsTuple;
 
 template<typename T, typename... Args>
-struct member_fields_tuple<T, Args...>
+struct MemberFieldsTuple<T, Args...>
 {
-    static auto create() -> decltype(std::tuple_cat(T::template json_tools_base<T>::_fields(), member_fields_tuple<Args...>::create()))
+    static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::_fields(), MemberFieldsTuple<Args...>::create()))
     {
-        static_assert(has_json_tools_base<T>::value, "Type is not a json struct type");
-        return std::tuple_cat(T::template json_tools_base<T>::_fields(), member_fields_tuple<Args...>::create());
+        static_assert(HasJsonToolsBase<T>::value, "Type is not a json struct type");
+        return std::tuple_cat(T::template JsonToolsBase<T>::_fields(), MemberFieldsTuple<Args...>::create());
     }
 };
 
 template<>
-struct member_fields_tuple<>
+struct MemberFieldsTuple<>
 {
     static auto create() -> decltype(std::make_tuple())
     {
@@ -1280,7 +1297,7 @@ struct member_fields_tuple<>
     }
 };
 
-template<typename T, typename dummy>
+template<typename T, typename specifier>
 class TokenParser
 {
 public:
@@ -1292,26 +1309,26 @@ public:
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline Error unpackField(T &to_type, const memberinfo<MI_T, MI_M, MI_S> &memberinfo, Tokenizer &tokenizer, Token &token, size_t index, bool *assigned_fields)
+inline Error unpackField(T &to_type, const memberInfo<MI_T, MI_M, MI_S> &memberInfo, Tokenizer &tokenizer, Token &token, size_t index, bool *assigned_fields)
 {
     std::string name(token.name.data, token.name.size);
-    if (memcmp(memberinfo.name, token.name.data, MI_S) == 0)
+    if (memcmp(memberInfo.name, token.name.data, MI_S) == 0)
     {
         assigned_fields[index] = true;
         std::string name(token.name.data, token.name.size);
-        return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberinfo.member, tokenizer, token);
+        return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, tokenizer, token);
     }
     return Error::UnknownPropertyName;
 }
 
 template<typename MI_T, typename MI_M, size_t MI_S>
-inline Error verifyField(const memberinfo<MI_T, MI_M, MI_S> &memberinfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
+inline Error verifyField(const memberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
 {
     if (assigned_fields[index])
         return Error::NoError;
-    if (has_jt_optional_value<MI_T>::value)
+    if (HasJTOpitonalValue<MI_T>::value)
         return Error::NoError;
-    missing_fields.push_back(std::string(memberinfo.name, MI_S));
+    missing_fields.push_back(std::string(memberInfo.name, MI_S));
     return Error::MissingRequiredField;
 }
 
@@ -1352,7 +1369,7 @@ struct FieldChecker<T, Fields, 0>
 };
 
 template<typename T>
-class TokenParser<T, typename std::enable_if<has_json_tools_base<T>::value, T>::type>
+class TokenParser<T, typename std::enable_if<HasJsonToolsBase<T>::value, T>::type>
 {
 public:
     static inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
@@ -1362,7 +1379,7 @@ public:
         Error error = tokenizer.nextToken(token);
         if (error != JT::Error::NoError)
             return error;
-        auto fields = T::template json_tools_base<T>::_fields();
+        auto fields = T::template JsonToolsBase<T>::_fields();
         bool assigned_fields[std::tuple_size<decltype(fields)>::value];
         memset(assigned_fields, 0, sizeof(assigned_fields));
         while(token.value_type != JT::Token::ObjectEnd)
@@ -1424,11 +1441,22 @@ inline Error TokenParser<int, int>::unpackToken(int &to_type, Tokenizer &tokeniz
 }
 
 template<typename T>
-class TokenParser<optional<T>, optional<T>>
+class TokenParser<Optional<T>, Optional<T>>
 {
 public:
-    static inline Error unpackToken(optional<T> &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(Optional<T> &to_type, Tokenizer &tokenizer, Token &token)
     {
+        return TokenParser<T,T>::unpackToken(to_type.data, tokenizer, token);
+    }
+};
+
+template<typename T>
+class TokenParser<OptionalChecked<T>, OptionalChecked<T>>
+{
+public:
+    static inline Error unpackToken(OptionalChecked<T> &to_type, Tokenizer &tokenizer, Token &token)
+    {
+        to_type.assigned = true;
         return TokenParser<T,T>::unpackToken(to_type.data, tokenizer, token);
     }
 };
