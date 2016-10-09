@@ -1185,21 +1185,7 @@ struct Optional
     T data;
     T &operator()() { return data; }
     const T &operator()() const { return data; }
-    typedef bool HasJTOpitonalValue;
-};
-
-template <typename T>
-struct HasJTOpitonalValue{
-    typedef char yes[1];
-    typedef char no[2];
-
-    template <typename C>
-    static constexpr yes& test(typename C::HasJTOpitonalValue*);
-
-    template <typename>
-    static constexpr no& test(...);
-
-    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+    typedef bool HasJTOptionalValue;
 };
 
 template<typename T>
@@ -1218,6 +1204,21 @@ struct OptionalChecked
 
     T data;
     bool assigned;
+    typedef bool HasJTOptionalValue;
+};
+
+template <typename T>
+struct HasJTOptionalValue{
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename C>
+    static constexpr yes& test(typename C::HasJTOptionalValue*);
+
+    template <typename>
+    static constexpr no& test(...);
+
+    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
 struct ParseContext
@@ -1328,7 +1329,7 @@ inline Error verifyField(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t 
 {
     if (assigned_fields[index])
         return Error::NoError;
-    if (HasJTOpitonalValue<MI_T>::value)
+    if (HasJTOptionalValue<MI_T>::value)
         return Error::NoError;
     missing_fields.push_back(std::string(memberInfo.name, MI_S));
     return Error::MissingRequiredField;
