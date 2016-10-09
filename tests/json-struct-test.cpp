@@ -23,7 +23,7 @@
 #include "json_tools.h"
 
 
-#include "assert.h"
+#include "assert.h"	
 
 const char json_data1[] = u8R"({
     "StringNode" : "Some test data",
@@ -50,6 +50,7 @@ struct SubStruct
     int SubNumber;
     std::vector<double> Array;
     JT::OptionalChecked<float> optional_float;
+    JT::OptionalChecked<double> optional_double;
     JT_STRUCT(SubStruct,
               JT_FIELD(SubString),
               JT_FIELD(SubNumber),
@@ -61,34 +62,36 @@ struct JsonData1
 {
     std::string StringNode;
     double NumberNode;
-    bool BooleanTrue;
+    //bool BooleanTrue;
     bool BooleanFalse;
     JT::Optional<int> OptionalInt;
     SubStruct TestStruct;
     JT::Optional<std::vector<double>> OptionalButWithData;
-
+    float unassigned_value;
 
     JT_STRUCT(JsonData2,
               JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
-              JT_FIELD(BooleanTrue),
+//              JT_FIELD(BooleanTrue),
               JT_FIELD(BooleanFalse),
               JT_FIELD(OptionalInt),
+              JT_FIELD(TestStruct),
               JT_FIELD(OptionalButWithData),
-              JT_FIELD(TestStruct));
+              JT_FIELD(unassigned_value));
+              
 };
 
 static int check_json_tree_nodes()
 {
-    JT::Error error;
-    JsonData1 data = JT::parseData<JsonData1>(json_data1, sizeof(json_data1), error);
+    JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
+    JsonData1 data = JT::parseData<JsonData1>(context);
 
     float foo;
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
 
     JT_ASSERT(data.StringNode == "Some test data");
-    JT_ASSERT(error == JT::Error::NoError);
+    JT_ASSERT(context.error == JT::Error::NoError);
     return 0;
 }
 

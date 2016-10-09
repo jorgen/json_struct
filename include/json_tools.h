@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright © 2012 Jørgen Lind
 
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -158,13 +158,12 @@ enum class Error {
     EncounteredIlligalChar,
     CouldNotCreateNode,
     NodeNotFound,
-    MissingPropertyName,
-    UnknownPropertyName,
+    MissingPropertyMember,
     FailedToParseBoolen,
     FailedToParseDouble,
     FailedToParseFloat,
     FailedToParseInt,
-    MissingRequiredField,
+    UnassignedRequiredMember,
     UnknownError,
     UserDefinedErrors
 };
@@ -441,8 +440,7 @@ inline std::string Tokenizer::makeErrorString(Error error, const std::string &co
         "EncounteredIlligalChar",
         "CouldNotCreateNode",
         "NodeNotFound",
-        "MissingPropertyName",
-        "UnknownPropertyName",
+        "MissingPropertyMember",
         "UnknownError",
         "UserDefinedError"
     };
@@ -1225,10 +1223,11 @@ struct ParseContext
 {
     Tokenizer tokenizer;
     Token token;
-    Error error;
-    std::vector<std::string> missing_fields;
-    std::vector<std::string> unassigned_fields;
-    std::vector<std::string> unassigned_optional;
+    Error error = Error::NoError;
+    std::vector<std::string> missing_members;
+    std::vector<std::string> unassigned_required_members;
+    bool allow_missing_members = true;
+    bool allow_unnasigned_required__members = true;
 };
 
 #define JT_FIELD(name) JT::makeMemberInfo(#name, &T::name)
@@ -1306,7 +1305,7 @@ class TokenParser
 public:
     static inline Error unpackToken(T &to_type, ParseContext &context)
     {
-        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation%s\n");
+        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
         return Error::NoError;
     }
 };
@@ -1314,14 +1313,12 @@ public:
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
 inline Error unpackField(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_fields)
 {
-    std::string name(context.token.name.data, context.token.name.size);
     if (memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
         assigned_fields[index] = true;
-        std::string name(context.token.name.data, context.token.name.size);
         return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
     }
-    return Error::UnknownPropertyName;
+    return Error::MissingPropertyMember;
 }
 
 template<typename MI_T, typename MI_M, size_t MI_S>
@@ -1332,7 +1329,7 @@ inline Error verifyField(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t 
     if (HasJTOptionalValue<MI_T>::value)
         return Error::NoError;
     missing_fields.push_back(std::string(memberInfo.name, MI_S));
-    return Error::MissingRequiredField;
+    return Error::UnassignedRequiredMember;
 }
 
 template<typename T, typename Fields, size_t INDEX>
@@ -1341,7 +1338,7 @@ struct FieldChecker
     static Error unpackFields(T &to_type, const Fields &fields, ParseContext &context, bool *assigned_fields)
     {
         Error error = unpackField(to_type, std::get<INDEX>(fields), context, INDEX, assigned_fields);
-        if (error != Error::UnknownPropertyName)
+        if (error != Error::MissingPropertyMember)
             return error;
 
         return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, context, assigned_fields);
@@ -1387,20 +1384,26 @@ public:
         memset(assigned_fields, 0, sizeof(assigned_fields));
         while(context.token.value_type != JT::Token::ObjectEnd)
         {
+            std::string token_name(context.token.name.data, context.token.name.size);
             error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, context, assigned_fields);
-            if (error != Error::NoError)
+            if (error == Error::MissingPropertyMember) {
+                context.missing_members.push_back(token_name);
+                if (!context.allow_missing_members)
+                    return error;
+            } else if (error != Error::NoError) {
                 return error;
+            }
             error = context.tokenizer.nextToken(context.token);
             if (error != Error::NoError)
                 return error;
         }
         assert(error == Error::NoError);
         std::vector<std::string> unassigned_required_fields;
-        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
-        if (unassigned_required_fields.size()) {
-            for(auto unassigned_field : unassigned_required_fields) {
-                fprintf(stderr, "required unassigned field: %s\n", unassigned_field.c_str());
-            }
+        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
+        if (error == Error::UnassignedRequiredMember) {
+            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_fields.begin(), unassigned_required_fields.end());
+            if (context.allow_unnasigned_required__members)
+                error = Error::NoError;
         }
         return error;
     }
@@ -1501,6 +1504,15 @@ public:
     }
 };
 
+inline ParseContext makeParseContextForData(const char *json_data, size_t size)
+{
+    ParseContext ret;
+    ret.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
+                                                   tokenizer.addData(json_data, size);
+                                                   }, true);
+    return ret;
+}
+
 template<typename T>
 void parseData(T &to_type, ParseContext &context)
 {
@@ -1512,19 +1524,10 @@ void parseData(T &to_type, ParseContext &context)
 }
 
 template<typename T>
-T parseData(const char *json_data, size_t size, Error &error)
+T parseData(ParseContext &context)
 {
     T ret;
-    ParseContext context;
-    Tokenizer tokenizer;
-    //just doing this to ensure code works
-    context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
-                                                   tokenizer.addData(json_data, size);
-                                                   }, true);
     parseData(ret, context);
-    error = context.error;
-    if (context.error != JT::Error::NoError)
-        fprintf(stderr, "Error: %s\n", context.tokenizer.currentErrorStringContext().c_str());
     return ret;
 }
 } //Namespace
