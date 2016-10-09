@@ -1220,14 +1220,14 @@ struct OptionalChecked
     bool assigned;
 };
 
-struct parse_context
+struct ParseContext
 {
     Tokenizer tokenizer;
     Token token;
     Error error;
     std::vector<std::string> missing_fields;
     std::vector<std::string> unassigned_fields;
-    std::vector<std::string> unassigned_Optional;
+    std::vector<std::string> unassigned_optional;
 };
 
 #define JT_FIELD(name) JT::makeMemberInfo(#name, &T::name)
@@ -1264,7 +1264,7 @@ struct HasJsonToolsBase {
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
-struct memberInfo
+struct MemberInfo
 {
     const char *name;
     T U::* member;
@@ -1272,7 +1272,7 @@ struct memberInfo
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
-constexpr memberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::* member)
+constexpr MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::* member)
 {
     return {name, member};
 }
@@ -1303,7 +1303,7 @@ template<typename T, typename specifier>
 class TokenParser
 {
 public:
-    static inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(T &to_type, ParseContext &context)
     {
         static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation%s\n");
         return Error::NoError;
@@ -1311,20 +1311,20 @@ public:
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline Error unpackField(T &to_type, const memberInfo<MI_T, MI_M, MI_S> &memberInfo, Tokenizer &tokenizer, Token &token, size_t index, bool *assigned_fields)
+inline Error unpackField(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_fields)
 {
-    std::string name(token.name.data, token.name.size);
-    if (memcmp(memberInfo.name, token.name.data, MI_S) == 0)
+    std::string name(context.token.name.data, context.token.name.size);
+    if (memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
         assigned_fields[index] = true;
-        std::string name(token.name.data, token.name.size);
-        return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, tokenizer, token);
+        std::string name(context.token.name.data, context.token.name.size);
+        return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
     }
     return Error::UnknownPropertyName;
 }
 
 template<typename MI_T, typename MI_M, size_t MI_S>
-inline Error verifyField(const memberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
+inline Error verifyField(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
 {
     if (assigned_fields[index])
         return Error::NoError;
@@ -1337,13 +1337,13 @@ inline Error verifyField(const memberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t 
 template<typename T, typename Fields, size_t INDEX>
 struct FieldChecker
 {
-    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token, bool *assigned_fields)
+    static Error unpackFields(T &to_type, const Fields &fields, ParseContext &context, bool *assigned_fields)
     {
-        Error error = unpackField(to_type, std::get<INDEX>(fields), tokenizer, token, INDEX, assigned_fields);
+        Error error = unpackField(to_type, std::get<INDEX>(fields), context, INDEX, assigned_fields);
         if (error != Error::UnknownPropertyName)
             return error;
 
-        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
+        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, context, assigned_fields);
     }
 
     static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
@@ -1359,9 +1359,9 @@ struct FieldChecker
 template<typename T, typename Fields>
 struct FieldChecker<T, Fields, 0>
 {
-    static Error unpackFields(T &to_type, const Fields &fields, Tokenizer &tokenizer, Token &token, bool *assigned_fields)
+    static Error unpackFields(T &to_type, const Fields &fields, ParseContext &context, bool *assigned_fields)
     {
-        return unpackField(to_type, std::get<0>(fields), tokenizer, token, 0, assigned_fields);
+        return unpackField(to_type, std::get<0>(fields), context, 0, assigned_fields);
     }
 
     static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
@@ -1374,22 +1374,22 @@ template<typename T>
 class TokenParser<T, typename std::enable_if<HasJsonToolsBase<T>::value, T>::type>
 {
 public:
-    static inline Error unpackToken(T &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(T &to_type, ParseContext &context)
     {
-        if (token.value_type != JT::Token::ObjectStart)
+        if (context.token.value_type != JT::Token::ObjectStart)
             return Error::ExpectedObjectStart;
-        Error error = tokenizer.nextToken(token);
+        Error error = context.tokenizer.nextToken(context.token);
         if (error != JT::Error::NoError)
             return error;
         auto fields = T::template JsonToolsBase<T>::_fields();
         bool assigned_fields[std::tuple_size<decltype(fields)>::value];
         memset(assigned_fields, 0, sizeof(assigned_fields));
-        while(token.value_type != JT::Token::ObjectEnd)
+        while(context.token.value_type != JT::Token::ObjectEnd)
         {
-            error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, tokenizer, token, assigned_fields);
+            error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, context, assigned_fields);
             if (error != Error::NoError)
                 return error;
-            error = tokenizer.nextToken(token);
+            error = context.tokenizer.nextToken(context.token);
             if (error != Error::NoError)
                 return error;
         }
@@ -1406,38 +1406,38 @@ public:
 };
 
 template<>
-inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_type, ParseContext &context)
 {
-    to_type = std::string(token.value.data, token.value.size);
+    to_type = std::string(context.token.value.data, context.token.value.size);
     return Error::NoError;
 }
 
 template<>
-inline Error TokenParser<double, double>::unpackToken(double &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseContext &context)
 {
     char *pointer;
-    to_type = strtod(token.value.data, &pointer);
-    if (token.value.data == pointer)
+    to_type = strtod(context.token.value.data, &pointer);
+    if (context.token.value.data == pointer)
         return Error::FailedToParseFloat;
     return Error::NoError;
 }
 
 template<>
-inline Error TokenParser<float, float>::unpackToken(float &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<float, float>::unpackToken(float &to_type, ParseContext &context)
 {
     char *pointer;
-    to_type = strtof(token.value.data, &pointer);
-    if (token.value.data == pointer)
+    to_type = strtof(context.token.value.data, &pointer);
+    if (context.token.value.data == pointer)
         return Error::FailedToParseFloat;
     return Error::NoError;
 }
 
 template<>
-inline Error TokenParser<int, int>::unpackToken(int &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<int, int>::unpackToken(int &to_type, ParseContext &context)
 {
     char *pointer;
-    to_type = strtol(token.value.data, &pointer, 10);
-    if (token.value.data == pointer)
+    to_type = strtol(context.token.value.data, &pointer, 10);
+    if (context.token.value.data == pointer)
         return Error::FailedToParseInt;
     return Error::NoError;
 }
@@ -1446,9 +1446,9 @@ template<typename T>
 class TokenParser<Optional<T>, Optional<T>>
 {
 public:
-    static inline Error unpackToken(Optional<T> &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(Optional<T> &to_type, ParseContext &context)
     {
-        return TokenParser<T,T>::unpackToken(to_type.data, tokenizer, token);
+        return TokenParser<T,T>::unpackToken(to_type.data, context);
     }
 };
 
@@ -1456,19 +1456,19 @@ template<typename T>
 class TokenParser<OptionalChecked<T>, OptionalChecked<T>>
 {
 public:
-    static inline Error unpackToken(OptionalChecked<T> &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(OptionalChecked<T> &to_type, ParseContext &context)
     {
         to_type.assigned = true;
-        return TokenParser<T,T>::unpackToken(to_type.data, tokenizer, token);
+        return TokenParser<T,T>::unpackToken(to_type.data, context);
     }
 };
 
 template<>
-inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, Tokenizer &tokenizer, Token &token)
+inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, ParseContext &context)
 {
-    if (memcmp("true", token.value.data, sizeof("true") - 1))
+    if (memcmp("true", context.token.value.data, sizeof("true") - 1))
         to_type = true;
-    else if (memcmp("false", token.value.data, sizeof("false") - 1))
+    else if (memcmp("false", context.token.value.data, sizeof("false") - 1))
         to_type = false;
     else
         return Error::FailedToParseBoolen;
@@ -1480,18 +1480,20 @@ template<typename T>
 class TokenParser<std::vector<T>, std::vector<T>>
 {
 public:
-    static inline Error unpackToken(std::vector<T> &to_type, Tokenizer &tokenizer, Token &token)
+    static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
     {
-        if (token.value_type != JT::Token::ArrayStart)
+        if (context.token.value_type != JT::Token::ArrayStart)
             return Error::ExpectedArrayStart;
-        Error error = tokenizer.nextToken(token);
-        while(token.value_type != JT::Token::ArrayEnd)
+        Error error = context.tokenizer.nextToken(context.token);
+        while(context.token.value_type != JT::Token::ArrayEnd)
         {
             to_type.push_back(T());
-            error = TokenParser<T,T>::unpackToken(to_type.back(), tokenizer, token);
+            error = TokenParser<T,T>::unpackToken(to_type.back(), context);
             if (error != JT::Error::NoError)
                 break;
-            error = tokenizer.nextToken(token);
+            error = context.tokenizer.nextToken(context.token);
+            if (error != JT::Error::NoError)
+                break;
         }
 
         return error;
@@ -1499,27 +1501,30 @@ public:
 };
 
 template<typename T>
-T parseData(T &to_type, Tokenizer &tokenizer, Error &error)
+void parseData(T &to_type, ParseContext &context)
 {
-    Token token;
-    error = tokenizer.nextToken(token);
-    if (error != JT::Error::NoError)
-        return to_type;
-    error = TokenParser<T,T>::unpackToken(to_type, tokenizer, token);
-    return to_type;
+    context.error = context.tokenizer.nextToken(context.token);
+    if (context.error != JT::Error::NoError)
+        return;
+    context.error = TokenParser<T,T>::unpackToken(to_type, context);
+    return;
 }
 
 template<typename T>
 T parseData(const char *json_data, size_t size, Error &error)
 {
     T ret;
+    ParseContext context;
     Tokenizer tokenizer;
     //just doing this to ensure code works
-    tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
-                                               tokenizer.addData(json_data, size);
-                                           }, true);
-    return parseData(ret, tokenizer, error);
+    context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
+                                                   tokenizer.addData(json_data, size);
+                                                   }, true);
+    parseData(ret, context);
+    error = context.error;
+    if (context.error != JT::Error::NoError)
+        fprintf(stderr, "Error: %s\n", context.tokenizer.currentErrorStringContext().c_str());
+    return ret;
 }
-
 } //Namespace
 #endif //JSON_TOOLS_H
