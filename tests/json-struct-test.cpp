@@ -34,7 +34,7 @@ const char json_data1[] = u8R"({
         "SubString" : "Some other string",
         "SubNumber" : 500,
         "Array" : [
-            5,
+            5,	
             6,
             3,
             6
@@ -86,6 +86,7 @@ static int check_json_tree_nodes()
     float foo;
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
+
     JT_ASSERT(data.StringNode == "Some test data");
     JT_ASSERT(error == JT::Error::NoError);
     return 0;
