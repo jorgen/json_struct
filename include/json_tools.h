@@ -1213,6 +1213,21 @@ inline bool Serializer::write(const char *data, size_t size)
 template<typename T>
 struct Optional
 {
+    Optional()
+        : data()
+    {
+    }
+    Optional(const T &t)
+        : data(t)
+    {
+    }
+
+    Optional<T> &operator= (const T &other)
+    {
+        data = other;
+        return *this;
+    }
+
     T data;
     T &operator()() { return data; }
     const T &operator()() const { return data; }
@@ -1226,11 +1241,15 @@ struct OptionalChecked
         : data()
         , assigned(false)
     { }
-
+    OptionalChecked(const T &t)
+        : data(t)
+        , assigned(true)
+    { }
     OptionalChecked<T> &operator= (const T &other)
     {
         data = other;
         assigned = true;
+        return *this;
     }
 
     T data;

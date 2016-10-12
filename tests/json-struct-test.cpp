@@ -39,7 +39,8 @@ const char json_data1[] = u8R"({
             3,
             6
         ],
-        "optional_float" : 300
+        "optional_float" : 300,
+        "this_property_does_not_exist" : true
     },
     "OptionalButWithData" : [ 17.5 ]
     })";
@@ -51,18 +52,20 @@ struct SubStruct
     std::vector<double> Array;
     JT::OptionalChecked<float> optional_float;
     JT::OptionalChecked<double> optional_double;
+    JT::Optional<double> optional_with_value = 4.5;
     JT_STRUCT(SubStruct,
               JT_FIELD(SubString),
               JT_FIELD(SubNumber),
               JT_FIELD(Array),
-              JT_FIELD(optional_float));
+              JT_FIELD(optional_float),
+              JT_FIELD(optional_with_value));
 };
 
 struct JsonData1
 {
     std::string StringNode;
     double NumberNode;
-    //bool BooleanTrue;
+    bool BooleanTrue;
     bool BooleanFalse;
     JT::Optional<int> OptionalInt;
     SubStruct TestStruct;
@@ -72,7 +75,7 @@ struct JsonData1
     JT_STRUCT(JsonData2,
               JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
-//              JT_FIELD(BooleanTrue),
+              JT_FIELD(BooleanTrue),
               JT_FIELD(BooleanFalse),
               JT_FIELD(OptionalInt),
               JT_FIELD(TestStruct),
@@ -90,6 +93,9 @@ static int check_json_tree_nodes()
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
 
+    fprintf(stderr, "optional with default value %f\n", data.TestStruct.optional_with_value());
+    data.TestStruct.optional_with_value = 5;
+    fprintf(stderr, "optional with default value second %f\n", data.TestStruct.optional_with_value());
     JT_ASSERT(data.StringNode == "Some test data");
     JT_ASSERT(context.error == JT::Error::NoError);
     return 0;
