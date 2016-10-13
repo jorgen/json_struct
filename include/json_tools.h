@@ -181,7 +181,7 @@ public:
         line = 0;
         character = 0;
         error = Error::NoError;
-        error_lines.clear();
+        lines.clear();
     }
 };
 
@@ -204,8 +204,7 @@ public:
     void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
     std::string currentErrorStringContext();
 
-    static std::string makeErrorString(Error error, const std::string &contextString);
-
+    std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
 private:
     enum InTokenState {
@@ -236,7 +235,7 @@ private:
     Error populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data);
     static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
-    std::string makeErrorContextString() const;
+    void updateErrorContext(Error error);
 
     std::vector<DataRef> data_list;
     std::vector<std::function<void(const char *)>> release_callbacks;
@@ -411,7 +410,7 @@ inline Error Tokenizer::nextToken(Token &next_token)
         error = populateNextTokenFromDataRef(next_token, json_data);
 
         if (error != Error::NoError && error != Error::NeedMoreData)
-            current_error_context_string = makeErrorContextString();
+            updateErrorContext(error);
 
         if (error != Error::NoError) {
             releaseFirstDataRef();
@@ -440,9 +439,9 @@ inline std::string Tokenizer::currentErrorStringContext()
     return current_error_context_string;
 }
 
-inline std::string Tokenizer::makeErrorString(Error error, const std::string &contextString)
+inline std::string Tokenizer::makeErrorString() const
 {
-    static const char * const error_strings[] = {
+    static const char *error_strings[] = {
         "NoError",
         "NeedMoreData",
         "InvalidToken",
@@ -460,11 +459,28 @@ inline std::string Tokenizer::makeErrorString(Error error, const std::string &co
         "CouldNotCreateNode",
         "NodeNotFound",
         "MissingPropertyMember",
+        "FailedToParseBoolen",
+        "FailedToParseDouble",
+        "FailedToParseFloat",
+        "FailedToParseInt",
+        "UnassignedRequiredMember",
         "UnknownError",
-        "UserDefinedError"
     };
+    static_assert(sizeof(error_strings) / sizeof*error_strings == size_t(Error::UserDefinedErrors) , "Please add missing error message");
 
-    return std::string("Error: ") + error_strings[(int)error] + "\n" + contextString;
+    std::string retString("Error ");
+    retString += error_strings[int(error_context.error)] + std::string(":\n");
+    for (int i = 0; i < error_context.lines.size(); i++)
+    {
+        retString += error_context.lines[i] + "\n";
+        if (i == error_context.line) {
+            std::string pointing(error_context.character + 1, ' ');
+            pointing[error_context.character - 1] = '^';
+            pointing[error_context.character] = '\n';
+            retString += pointing;
+        }
+    }
+    return retString;
 }
     
 inline void Tokenizer::setErrorContextConfig(size_t lineContext, size_t rangeContext)
@@ -920,13 +936,13 @@ struct lines
 {
     size_t start;
     size_t end;
-}
+};
 
-inline void Tokenizer::setErrorContext() const
+inline void Tokenizer::updateErrorContext(Error error)
 {
-    std::string retString;
-
-    _lines.push_back({0, cursor_index});
+    error_context.error = error;
+    std::vector<lines> lines;
+    lines.push_back({0, cursor_index});
     const DataRef &json_data = data_list.front();
     const size_t stop_back = cursor_index - std::min(cursor_index, line_range_context);
     const size_t stop_forward = std::min(cursor_index + line_range_context, json_data.size);
@@ -935,55 +951,51 @@ inline void Tokenizer::setErrorContext() const
     size_t lines_forward = 0;
     size_t cursor_back;
     size_t cursor_forward;
-    size_t error_at_char = 0;
     for (cursor_back = cursor_index - 1; cursor_back > stop_back; cursor_back--)
     {
         if (*(json_data.data + cursor_back) == '\n') {
-            _lines.front().start = cursor_back + 1;
+            lines.front().start = cursor_back + 1;
             lines_back++;
             if (lines_back == 1)
                 error_context.character = cursor_index - cursor_back;
-
-            if (lines_back == line_context)
+            if (lines_back == line_context) {
+                lines_back--;
                 break;
-            _lines.push_front({0, cursor_back});
+            }
+
+            lines.insert(lines.begin(), {0, cursor_back});
         }
     }
-    if (_lines.front().start == 0)
-        _lines.front().start = cursor_back;
+    if (lines.front().start == 0)
+        lines.front().start = cursor_back;
     for (cursor_forward = cursor_index; cursor_forward < stop_forward; cursor_forward++)
     {
         if (*(json_data.data + cursor_forward) == '\n') {
-            _lines.back().end = cursor_forward;
+            lines.back().end = cursor_forward;
             lines_forward++;
             if (lines_forward == line_context)
                 break;
-            _lines.push_back({cursor_forward, 0});
+            lines.push_back({cursor_forward, 0});
         }
     }
-    if (_lines.back().end == 0)
-        _lines.back().end = cursor_forward - 1;
+    if (lines.back().end == 0)
+        lines.back().end = cursor_forward - 1;
 
-    if (_lines.size()) {
-        error_context.lines.reserve(_lines.size());
-        for (auto &line : _lines)
+    if (lines.size() > 1) {
+        error_context.lines.reserve(lines.size());
+        for (auto &line : lines)
         {
             error_context.lines.push_back(std::string(json_data.data + line.start, line.end - line.start));
         }
-    }
-
-    if (lines_back != 0 || lines_forward != 0) {
-        std::string point(error_at_char, ' ');
-        point[error_at_char] = '^';
+        error_context.line = lines_back;
     } else {
-        const size_t first = cursor_index - std::min(cursor_index, range_context);
-        const size_t last = std::min(cursor_index + range_context, std::min(json_data.size, cursor_forward));
-        std::string json(json_data.data + first, last - first);
-        std::string point(last - first, ' ');
-        point[cursor_index - first] = '^';
-        retString = json + '\n' + point;
+        error_context.line = 0;
+
+        size_t left = cursor_index > range_context ? cursor_index - range_context : 0;
+        size_t right = cursor_index + range_context > json_data.size ? json_data.size : cursor_index + range_context;
+        error_context.character = cursor_index - left;
+        error_context.lines.push_back(std::string(json_data.data + left, right - left));
     }
-    return retString;
 }
 
 inline SerializerOptions::SerializerOptions(bool pretty, bool ascii)
