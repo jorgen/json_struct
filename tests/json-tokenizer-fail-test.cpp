@@ -35,7 +35,7 @@ static int check_fail_json_with_ascii_property()
 {
     JT::Error error;
     JT::Tokenizer tokenizer;
-    tokenizer.addData(json_with_ascii_property, sizeof(json_with_ascii_property));
+    tokenizer.addData(json_with_ascii_property);
 
     JT::Token token;
     error = tokenizer.nextToken(token);
@@ -47,6 +47,7 @@ static int check_fail_json_with_ascii_property()
     JT_ASSERT(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
+    fprintf(stderr, "Error %s\n", tokenizer.makeErrorString().c_str());
     JT_ASSERT(error == JT::Error::IlligalPropertyName);
 
     return 0;
@@ -62,7 +63,7 @@ static int check_fail_json_with_ascii_data()
 {
     JT::Error error;
     JT::Tokenizer tokenizer;
-    tokenizer.addData(json_with_ascii_data, sizeof(json_with_ascii_data));
+    tokenizer.addData(json_with_ascii_data);
 
     JT::Token token;
     error = tokenizer.nextToken(token);
@@ -89,7 +90,7 @@ static int check_fail_json_with_new_line_seperator()
 {
     JT::Error error;
     JT::Tokenizer tokenizer;
-    tokenizer.addData(json_with_new_line_seperator, sizeof(json_with_new_line_seperator));
+    tokenizer.addData(json_with_new_line_seperator);
 
     JT::Token token;
     error = tokenizer.nextToken(token);

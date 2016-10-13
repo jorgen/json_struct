@@ -196,6 +196,8 @@ public:
     void allowSuperfluousComma(bool allow);
 
     void addData(const char *data, size_t size);
+    template<size_t N>
+    void addData(const char (&data)[N]);
     size_t registered_buffers() const;
     void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback, bool oneShotCallback);
     void registerRelaseCallback(std::function<void(const char *)> callback);
@@ -373,6 +375,12 @@ inline void Tokenizer::allowSuperfluousComma(bool allow)
 inline void Tokenizer::addData(const char *data, size_t data_size)
 {
     data_list.push_back(DataRef(data, data_size));
+}
+
+template<size_t N>
+inline void Tokenizer::addData(const char (&data)[N])
+{
+    data_list.push_back(DataRef::asDataRef(data));
 }
 
 inline size_t Tokenizer::registered_buffers() const
