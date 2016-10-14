@@ -1380,6 +1380,11 @@ public:
         static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
         return Error::NoError;
     }
+
+    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
+    }
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
@@ -1404,6 +1409,15 @@ inline Error verifyField(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t 
     return Error::UnassignedRequiredMember;
 }
 
+template<typename T, typename MI_T, typename MI_M, size_t MI_S>
+inline void serializeField(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer serializer)
+{
+    token.name.data = memberInfo.name;
+    token.name.size = MI_S - 1;
+
+    TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
+}
+
 template<typename T, typename Fields, size_t INDEX>
 struct FieldChecker
 {
@@ -1424,6 +1438,11 @@ struct FieldChecker
             return fieldError;
         return error;
     }
+    static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
+    {
+        serializeField(from_type, std::get<INDEX>(fields), token, serializer);
+        FieldChecker<T, Fields, INDEX -1>::serializeFields(from_type, fields, token, serializer);
+    }
 };
 
 template<typename T, typename Fields>
@@ -1437,6 +1456,11 @@ struct FieldChecker<T, Fields, 0>
     static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
     {
         return verifyField(std::get<0>(fields), 0, assigned_fields, missing_fields);
+    }
+
+    static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
+    {
+        serializeField(from_type, std::get<0>(fields), token, serializer);
     }
 };
 
@@ -1479,6 +1503,17 @@ public:
         }
         return error;
     }
+
+    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
+    {
+        static const char objectStart[] = "{";
+        static const char objectEnd[] = "}";
+        token.value_type = Token::ObjectStart;
+        token.value = DataRef::asDataRef(objectStart);
+        serializer.write(token);
+        auto fields = T::template JsonToolsBase<T>::_fields();
+        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::serializeFields(from_type, fields, token, serializer);
+    }
 };
 
 template<>
@@ -1486,6 +1521,12 @@ inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_
 {
     to_type = std::string(context.token.value.data, context.token.value.size);
     return Error::NoError;
+}
+
+template<>
+inline void TokenParser<std::string, std::string>::serializeToken(const std::string &, Token &token, Serializer &serializer)
+{
+    fprintf(stderr, "serialize string\n");
 }
 
 template<>
@@ -1506,6 +1547,12 @@ inline Error TokenParser<float, float>::unpackToken(float &to_type, ParseContext
     if (context.token.value.data == pointer)
         return Error::FailedToParseFloat;
     return Error::NoError;
+}
+
+template<>
+inline void TokenParser<float, float>::serializeToken(const float &, Token &token, Serializer &serializer)
+{
+    fprintf(stderr, "serialize float\n");
 }
 
 template<>
@@ -1602,5 +1649,16 @@ T parseData(ParseContext &context)
     parseData(ret, context);
     return ret;
 }
+
+template<typename T>
+std::string serializeStruct(const T &from_type)
+{
+    char out_buffer[512];
+    Serializer serializer(out_buffer, sizeof(out_buffer));
+    Token token;
+    TokenParser<T,T>::serializeToken(from_type, token, serializer);
+    return std::string();
+}
+
 } //Namespace
 #endif //JSON_TOOLS_H

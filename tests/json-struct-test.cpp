@@ -82,6 +82,14 @@ struct JsonData1
               
 };
 
+struct SimpleData
+{
+    std::string member1 = "Foobar";
+    float member2 = 45;
+    JT_STRUCT(JT_FIELD(member1)
+             ,JT_FIELD(member2));
+};
+
 static int check_json_tree_nodes()
 {
     JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
@@ -96,6 +104,10 @@ static int check_json_tree_nodes()
     fprintf(stderr, "optional with default value second %f\n", data.TestStruct.optional_with_value());
     JT_ASSERT(data.StringNode == "Some test data");
     JT_ASSERT(context.error == JT::Error::NoError);
+
+    SimpleData simpleData;
+    std::string json = JT::serializeStruct(simpleData);
+
     return 0;
 }
 
