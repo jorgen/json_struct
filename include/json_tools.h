@@ -1305,7 +1305,7 @@ struct ParseContext
 #define JT_FIELD(name) JT::makeMemberInfo(#name, &T::name)
 #define JT_SUPER_CLASSES(...) JT::MemberFieldsTuple<__VA_ARGS__>::create()
 
-#define JT_STRUCT(type, ...) \
+#define JT_STRUCT(...) \
     template<typename T> \
     struct JsonToolsBase \
     { \
@@ -1313,7 +1313,7 @@ struct ParseContext
        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
-#define JT_STRUCT_WITH_SUPER(type, super_list, ...) \
+#define JT_STRUCT_WITH_SUPER(super_list, ...) \
     template<typename T> \
     struct JsonToolsBase \
     { \

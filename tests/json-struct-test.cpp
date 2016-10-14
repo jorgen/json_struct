@@ -53,8 +53,7 @@ struct SubStruct
     JT::OptionalChecked<float> optional_float;
     JT::OptionalChecked<double> optional_double;
     JT::Optional<double> optional_with_value = 4.5;
-    JT_STRUCT(SubStruct,
-              JT_FIELD(SubString),
+    JT_STRUCT(JT_FIELD(SubString),
               JT_FIELD(SubNumber),
               JT_FIELD(Array),
               JT_FIELD(optional_float),
@@ -72,8 +71,7 @@ struct JsonData1
     JT::Optional<std::vector<double>> OptionalButWithData;
     float unassigned_value;
 
-    JT_STRUCT(JsonData2,
-              JT_FIELD(StringNode),
+    JT_STRUCT(JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
               JT_FIELD(BooleanTrue),
               JT_FIELD(BooleanFalse),
