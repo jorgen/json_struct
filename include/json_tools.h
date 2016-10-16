@@ -266,18 +266,24 @@ private:
 class SerializerOptions
 {
 public:
-    SerializerOptions(bool pretty = false, bool ascii = false);
+    enum Style
+    {
+        Pretty,
+        Compact
+    };
+
+    SerializerOptions(Style style = Pretty);
 
     int shiftSize() const;
 
-    bool pretty() const;
-    void setPretty(bool pretty);
+    Style style() const;
+    void setStyle(Style style);
+
+    bool convertAsciiToString() const;
+    void setConvertAsciiToString(bool set);
 
     int depth() const;
     void setDepth(int depth);
-
-    bool ascii() const;
-    void setAscii(bool ascii);
 
     void skipDelimiter(bool skip);
 
@@ -289,8 +295,8 @@ public:
 private:
     int m_shift_size;
     int m_depth;
-    bool m_pretty;
-    bool m_ascii;
+    Style m_style;
+    bool m_convert_ascii_to_string;
 
     std::string m_prefix;
     std::string m_token_delimiter;
@@ -1006,34 +1012,40 @@ inline void Tokenizer::updateErrorContext(Error error)
     }
 }
 
-inline SerializerOptions::SerializerOptions(bool pretty, bool ascii)
+inline SerializerOptions::SerializerOptions(Style style)
+    
     : m_shift_size(4)
     , m_depth(0)
-    , m_pretty(pretty)
-    , m_ascii(ascii)
+    , m_style(style)
+    , m_convert_ascii_to_string(true)
     , m_token_delimiter(",")
 {
-    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
-    m_postfix = m_pretty? std::string("\n") : std::string("");
+    m_value_delimiter = m_style == Pretty ? std::string(" : ") : std::string(":");
+    m_postfix = m_style == Pretty ? std::string("\n") : std::string("");
 }
 
 inline int SerializerOptions::shiftSize() const { return m_shift_size; }
 
 inline int SerializerOptions::depth() const { return m_depth; }
 
-inline bool SerializerOptions::pretty() const { return m_pretty; }
-inline void SerializerOptions::setPretty(bool pretty)
+inline SerializerOptions::Style SerializerOptions::style() const { return m_style; }
+
+inline bool SerializerOptions::convertAsciiToString() const
 {
-    m_pretty = pretty;
-    m_postfix = m_pretty? std::string("\n") : std::string("");
-    m_value_delimiter = m_pretty? std::string(" : ") : std::string(":");
-    setDepth(m_depth);
+    return m_convert_ascii_to_string;
 }
 
-inline bool SerializerOptions::ascii() const { return m_ascii; }
-inline void SerializerOptions::setAscii(bool ascii)
+inline void SerializerOptions::setConvertAsciiToString(bool set)
 {
-    m_ascii = ascii;
+    m_convert_ascii_to_string = set;
+}
+
+inline void SerializerOptions::setStyle(Style style)
+{
+    m_style = style;
+    m_postfix = m_style == Pretty ? std::string("\n") : std::string("");
+    m_value_delimiter = m_style == Pretty ? std::string(" : ") : std::string(":");
+    setDepth(m_depth);
 }
 
 inline void SerializerOptions::skipDelimiter(bool skip)
@@ -1047,7 +1059,7 @@ inline void SerializerOptions::skipDelimiter(bool skip)
 inline void SerializerOptions::setDepth(int depth)
 {
     m_depth = depth;
-    m_prefix = m_pretty? std::string(depth * m_shift_size, ' ') : std::string();
+    m_prefix = m_style == Pretty ? std::string(depth * m_shift_size, ' ') : std::string();
 }
 
 inline const std::string &SerializerOptions::prefix() const { return m_prefix; }
@@ -1197,7 +1209,7 @@ inline bool Serializer::write(Token::Type type, const DataRef &data)
             written = writeAsString(data);
             break;
         case Token::Ascii:
-            if (!m_option.ascii())
+            if (!m_option.convertAsciiToString())
                 written = writeAsString(data);
             else
                 written = write(data.data,data.size);

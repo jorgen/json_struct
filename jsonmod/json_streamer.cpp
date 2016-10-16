@@ -305,9 +305,9 @@ void JsonStreamer::writeOutBuffer(const JT::SerializerBuffer &buffer)
 void JsonStreamer::setStreamerOptions(bool compact)
 {
     JT::SerializerOptions options = m_serializer.options();
-    options.setPretty(!compact);
+    options.setStyle(compact? JT::SerializerOptions::Compact : JT::SerializerOptions::Pretty);
     options.skipDelimiter((m_config.hasProperty() && !m_config.hasValue() && !m_config.createObject()) && !compact);
-    options.setAscii(m_config.hasProperty() && !compact);
+    options.setConvertAsciiToString(m_config.hasProperty() && !compact);
     m_serializer.setOptions(options);
 }
 
