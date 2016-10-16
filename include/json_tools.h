@@ -204,7 +204,6 @@ public:
 
     Error nextToken(Token &next_token);
     void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
-    std::string currentErrorStringContext();
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
@@ -256,7 +255,6 @@ private:
     IntermediateToken intermediate_token;
     std::function<void(Token &next_token)> token_transformer;
     TypeChecker type_checker;
-    std::string current_error_context_string;
     ErrorContext error_context;
     size_t line_context = 4;
     size_t line_range_context = 256;
@@ -446,11 +444,6 @@ inline Error Tokenizer::nextToken(Token &next_token)
 inline void Tokenizer::registerTokenTransformer(std::function<void(Token &next_token)> token_transformer)
 {
     token_transformer = token_transformer;
-}
-
-inline std::string Tokenizer::currentErrorStringContext()
-{
-    return current_error_context_string;
 }
 
 inline std::string Tokenizer::makeErrorString() const
