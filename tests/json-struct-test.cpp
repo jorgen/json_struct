@@ -42,7 +42,11 @@ const char json_data1[] = u8R"({
         "optional_float" : 300,
         "this_property_does_not_exist" : true
     },
-    "OptionalButWithData" : [ 17.5 ]
+    "OptionalButWithData" : [ 17.5 ],
+    "subStruct2" : {
+        "Field1" : 4,
+        "Field2" : true
+    }
     })";
 
 struct SubStruct
@@ -60,6 +64,14 @@ struct SubStruct
               JT_FIELD(optional_with_value));
 };
 
+struct SubStruct2
+{
+    float Field1;
+    bool Field2;
+    JT_STRUCT(JT_FIELD(Field1),
+              JT_FIELD(Field2));
+};
+
 struct JsonData1
 {
     std::string StringNode;
@@ -70,6 +82,7 @@ struct JsonData1
     SubStruct TestStruct;
     JT::Optional<std::vector<double>> OptionalButWithData;
     float unassigned_value;
+    std::unique_ptr<SubStruct2> subStruct2;
 
     JT_STRUCT(JT_FIELD(StringNode),
               JT_FIELD(NumberNode),
@@ -78,8 +91,9 @@ struct JsonData1
               JT_FIELD(OptionalInt),
               JT_FIELD(TestStruct),
               JT_FIELD(OptionalButWithData),
-              JT_FIELD(unassigned_value));
-              
+              JT_FIELD(unassigned_value),
+              JT_FIELD(subStruct2));
+
 };
 
 struct SimpleData
@@ -95,7 +109,6 @@ static int check_json_tree_nodes()
     JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
     JsonData1 data = JT::parseData<JsonData1>(context);
 
-    float foo;
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
 
@@ -106,8 +119,8 @@ static int check_json_tree_nodes()
     JT_ASSERT(context.error == JT::Error::NoError);
 
     SimpleData simpleData;
-    std::string json = JT::serializeStruct(simpleData);
-
+    std::string json = JT::serializeStruct(data);
+    fprintf(stderr, "%s\n", json.c_str());
     return 0;
 }
 
