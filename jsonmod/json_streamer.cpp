@@ -250,7 +250,7 @@ void JsonStreamer::stream()
             requestFlushOutBuffer(&m_serializer);
             char new_line[] = "\n";
             write(m_output_file, new_line, sizeof new_line - 1);
-            fprintf(stderr, "Error while parsing json. \n%s\n", m_tokenizer.makeErrorString(tokenizer_error, m_tokenizer.currentErrorStringContext()).c_str());
+            fprintf(stderr, "Error while parsing json. \n%s\n", m_tokenizer.makeErrorString().c_str());
             break;
         }
     }
