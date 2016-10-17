@@ -1299,6 +1299,12 @@ struct HasJTOptionalValue{
     static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
+template <typename T>
+struct HasJTOptionalValue<std::unique_ptr<T>>
+{
+    static constexpr const bool value = true;
+};
+
 struct ParseContext
 {
     Tokenizer tokenizer;
