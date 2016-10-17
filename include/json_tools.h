@@ -1203,7 +1203,7 @@ inline bool Serializer::write(Token::Type type, const DataRef &data)
             written = writeAsString(data);
             break;
         case Token::Ascii:
-            if (!m_option.convertAsciiToString())
+            if (m_option.convertAsciiToString())
                 written = writeAsString(data);
             else
                 written = write(data.data,data.size);
