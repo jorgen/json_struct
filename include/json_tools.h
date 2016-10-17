@@ -1455,7 +1455,7 @@ struct FieldChecker
     }
     static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
     {
-        serializeField(from_type, std::get<INDEX>(fields), token, serializer);
+        serializeField(from_type, std::get<std::tuple_size<Fields>::value - INDEX - 1>(fields), token, serializer);
         FieldChecker<T, Fields, INDEX -1>::serializeFields(from_type, fields, token, serializer);
     }
 };
@@ -1475,7 +1475,7 @@ struct FieldChecker<T, Fields, 0>
 
     static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
     {
-        serializeField(from_type, std::get<0>(fields), token, serializer);
+        serializeField(from_type, std::get<std::tuple_size<Fields>::value - 1>(fields), token, serializer);
     }
 };
 
