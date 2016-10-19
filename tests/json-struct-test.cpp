@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Jorgen Lind
+ * Copyright © 2016 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -22,8 +22,7 @@
 
 #include "json_tools.h"
 
-
-#include "assert.h"	
+#include "assert.h"
 
 const char json_data1[] = u8R"({
     "StringNode" : "Some test data",

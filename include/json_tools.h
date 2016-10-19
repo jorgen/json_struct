@@ -1811,5 +1811,94 @@ std::string serializeStruct(const T &from_type)
     return ret_string;
 }
 
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+struct FunctorInfo
+{
+    typedef Ret (T::*Function)(const Arg &);
+    const char *name;
+    Function function;
+};
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+constexpr FunctorInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctorInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
+{
+    return {name, function};
+}
+
+#define JT_FUNCTOR(name) JT::makeFunctorInfo(#name, &T::name)
+#define JT_FUNCTOR_CONTAINER(...) \
+    template<typename T> \
+    struct JsonToolsFunctorContainer \
+    { \
+        static const decltype(std::make_tuple(__VA_ARGS__)) functors() \
+        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+    };
+
+template<typename T, typename Ret, typename U, typename Arg, size_t NAME_SIZE>
+bool callFunctorHandler(T &container, ParseContext &context, FunctorInfo<Ret,U,Arg,NAME_SIZE> &functorInfo)
+{
+    if (memcmp(functorInfo.name, context.token.name.data, NAME_SIZE) == 0)
+    {
+        Arg arg;
+        context.error = TokenParser<Arg,Arg>::unpackToken(arg, context);
+        if (context.error != Error::NoError)
+            return false;;
+
+       (container.*functorInfo.function)(arg);
+       return true;
+    }
+    return false;
+}
+
+template<typename T, typename Functors, size_t INDEX>
+struct FunctorHandler
+{
+    static void call(T &container, ParseContext &context, Functors &functors)
+    {
+        auto functor = std::get<INDEX>(functors);
+        if (callFunctorHandler(container, context, functor))
+            return;
+        if (context.error != Error::NoError)
+            return;
+        FunctorHandler<T, Functors, INDEX - 1>::call(container, context, functors);
+    }
+};
+
+template<typename T, typename Functors>
+struct FunctorHandler<T, Functors, 0>
+{
+    static void call(T &container, ParseContext &context, Functors &functors)
+    {
+        auto functor = std::get<0>(functors);
+        callFunctorHandler(container, context, functor);
+    }
+};
+
+template<typename T>
+void callFunctor(T &container, ParseContext &context)
+{
+    context.error = context.tokenizer.nextToken(context.token);
+    if (context.error != JT::Error::NoError)
+        return;
+    if (context.token.value_type != JT::Token::ObjectStart)
+        return;
+    context.error = context.tokenizer.nextToken(context.token);
+    if (context.error != JT::Error::NoError)
+        return;
+    auto functors = T::template JsonToolsFunctorContainer<T>::functors();
+    FunctorHandler<T, decltype(functors), std::tuple_size<decltype(functors)>::value - 1>::call(container, context, functors);
+}
+
+template<typename T>
+void callFunctor(T &container, const char *json_data, size_t size)
+{
+    ParseContext context;
+    context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
+                                                   tokenizer.addData(json_data, size);
+                                                   }, true);
+    callFunctor(container, context);
+    if (context.error != Error::NoError) {
+        fprintf(stderr, "callFunctor failed \n%s\n", context.tokenizer.makeErrorString().c_str());
+    }
+}
 } //Namespace
 #endif //JSON_TOOLS_H
