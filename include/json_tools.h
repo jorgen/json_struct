@@ -1885,7 +1885,15 @@ void callFunction(T &container, ParseContext &context)
     if (context.error != JT::Error::NoError)
         return;
     auto functions = T::template JsonToolsFunctionContainer<T>::functions();
-    FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
+    while (context.token.value_type != JT::Token::ObjectEnd)
+    {
+        FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
+        if (context.error != JT::Error::NoError)
+            return;
+        context.error = context.tokenizer.nextToken(context.token);
+        if (context.error != JT::Error::NoError)
+            return;
+    }
 }
 
 template<typename T>

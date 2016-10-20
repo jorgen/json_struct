@@ -29,7 +29,12 @@ const char json[] = u8R"({
         "number" : 45,
         "valid" : "false"
     },
-    "execute_two" : 99
+    "execute_two" : 99,
+    "execute_three" : [
+        4,
+        6,
+        8
+    ]
 })";
 
 struct SimpleData
@@ -52,8 +57,15 @@ struct CallFunction
         fprintf(stderr, "execute two executed %f\n", data);
     }
 
+    void execute_three(const std::vector<double> &data)
+    {
+        fprintf(stderr, "execute three\n");
+        for (auto x : data)
+            fprintf(stderr, "\t%f\n", x);
+    }
     JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
-                          JT_FUNCTION(execute_two));
+                          JT_FUNCTION(execute_two),
+                          JT_FUNCTION(execute_three));
 };
 
 int main()
