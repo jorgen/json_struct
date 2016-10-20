@@ -1316,14 +1316,14 @@ struct ParseContext
     bool allow_unnasigned_required__members = true;
 };
 
-#define JT_FIELD(name) JT::makeMemberInfo(#name, &T::name)
-#define JT_SUPER_CLASSES(...) JT::MemberFieldsTuple<__VA_ARGS__>::create()
+#define JT_MEMBER(name) JT::makeMemberInfo(#name, &T::name)
+#define JT_SUPER_CLASSES(...) JT::MemberMembersTuple<__VA_ARGS__>::create()
 
 #define JT_STRUCT(...) \
     template<typename T> \
     struct JsonToolsBase \
     { \
-       static const decltype(std::make_tuple(__VA_ARGS__)) _fields() \
+       static const decltype(std::make_tuple(__VA_ARGS__)) _members() \
        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
@@ -1331,7 +1331,7 @@ struct ParseContext
     template<typename T> \
     struct JsonToolsBase \
     { \
-        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_fields() \
+        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_members() \
         { static auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
     };
 
@@ -1364,20 +1364,20 @@ constexpr MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME
 }
 
 template<typename... Args>
-struct MemberFieldsTuple;
+struct MemberMembersTuple;
 
 template<typename T, typename... Args>
-struct MemberFieldsTuple<T, Args...>
+struct MemberMembersTuple<T, Args...>
 {
-    static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::_fields(), MemberFieldsTuple<Args...>::create()))
+    static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::_members(), MemberMembersTuple<Args...>::create()))
     {
         static_assert(HasJsonToolsBase<T>::value, "Type is not a json struct type");
-        return std::tuple_cat(T::template JsonToolsBase<T>::_fields(), MemberFieldsTuple<Args...>::create());
+        return std::tuple_cat(T::template JsonToolsBase<T>::_members(), MemberMembersTuple<Args...>::create());
     }
 };
 
 template<>
-struct MemberFieldsTuple<>
+struct MemberMembersTuple<>
 {
     static auto create() -> decltype(std::make_tuple())
     {
@@ -1402,29 +1402,29 @@ public:
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline Error unpackField(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_fields)
+inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_members)
 {
     if (memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
-        assigned_fields[index] = true;
+        assigned_members[index] = true;
         return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
     }
     return Error::MissingPropertyMember;
 }
 
 template<typename MI_T, typename MI_M, size_t MI_S>
-inline Error verifyField(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_fields, std::vector<std::string> &missing_fields)
+inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members)
 {
-    if (assigned_fields[index])
+    if (assigned_members[index])
         return Error::NoError;
     if (HasJTOptionalValue<MI_T>::value)
         return Error::NoError;
-    missing_fields.push_back(std::string(memberInfo.name, MI_S));
+    missing_members.push_back(std::string(memberInfo.name, MI_S));
     return Error::UnassignedRequiredMember;
 }
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline void serializeField(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer &serializer)
+inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer &serializer)
 {
     token.name.data = memberInfo.name;
     token.name.size = MI_S;
@@ -1433,49 +1433,49 @@ inline void serializeField(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S
     TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
 }
 
-template<typename T, typename Fields, size_t INDEX>
-struct FieldChecker
+template<typename T, typename Members, size_t INDEX>
+struct MemberChecker
 {
-    static Error unpackFields(T &to_type, const Fields &fields, ParseContext &context, bool *assigned_fields)
+    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
     {
-        Error error = unpackField(to_type, std::get<INDEX>(fields), context, INDEX, assigned_fields);
+        Error error = unpackMember(to_type, std::get<INDEX>(members), context, INDEX, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
 
-        return FieldChecker<T, Fields, INDEX - 1>::unpackFields(to_type, fields, context, assigned_fields);
+        return MemberChecker<T, Members, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members);
     }
 
-    static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
+    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members)
     {
-        Error fieldError = verifyField(std::get<INDEX>(fields), INDEX, assigned_fields, missing_fields);
-        Error error = FieldChecker<T, Fields, INDEX - 1>::verifyFields(fields, assigned_fields, missing_fields);
-        if (fieldError != Error::NoError)
-            return fieldError;
+        Error memberError = verifyMember(std::get<INDEX>(members), INDEX, assigned_members, missing_members);
+        Error error = MemberChecker<T, Members, INDEX - 1>::verifyMembers(members, assigned_members, missing_members);
+        if (memberError != Error::NoError)
+            return memberError;
         return error;
     }
-    static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
+    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer)
     {
-        serializeField(from_type, std::get<std::tuple_size<Fields>::value - INDEX - 1>(fields), token, serializer);
-        FieldChecker<T, Fields, INDEX -1>::serializeFields(from_type, fields, token, serializer);
+        serializeMember(from_type, std::get<std::tuple_size<Members>::value - INDEX - 1>(members), token, serializer);
+        MemberChecker<T, Members, INDEX -1>::serializeMembers(from_type, members, token, serializer);
     }
 };
 
-template<typename T, typename Fields>
-struct FieldChecker<T, Fields, 0>
+template<typename T, typename Members>
+struct MemberChecker<T, Members, 0>
 {
-    static Error unpackFields(T &to_type, const Fields &fields, ParseContext &context, bool *assigned_fields)
+    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
     {
-        return unpackField(to_type, std::get<0>(fields), context, 0, assigned_fields);
+        return unpackMember(to_type, std::get<0>(members), context, 0, assigned_members);
     }
 
-    static Error verifyFields(const Fields &fields, bool *assigned_fields, std::vector<std::string> &missing_fields)
+    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members)
     {
-        return verifyField(std::get<0>(fields), 0, assigned_fields, missing_fields);
+        return verifyMember(std::get<0>(members), 0, assigned_members, missing_members);
     }
 
-    static void serializeFields(const T &from_type, const Fields &fields, Token &token, Serializer &serializer)
+    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer)
     {
-        serializeField(from_type, std::get<std::tuple_size<Fields>::value - 1>(fields), token, serializer);
+        serializeMember(from_type, std::get<std::tuple_size<Members>::value - 1>(members), token, serializer);
     }
 };
 
@@ -1490,13 +1490,13 @@ public:
         Error error = context.tokenizer.nextToken(context.token);
         if (error != JT::Error::NoError)
             return error;
-        auto fields = T::template JsonToolsBase<T>::_fields();
-        bool assigned_fields[std::tuple_size<decltype(fields)>::value];
-        memset(assigned_fields, 0, sizeof(assigned_fields));
+        auto members = T::template JsonToolsBase<T>::_members();
+        bool assigned_members[std::tuple_size<decltype(members)>::value];
+        memset(assigned_members, 0, sizeof(assigned_members));
         while(context.token.value_type != JT::Token::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
-            error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::unpackFields(to_type, fields, context, assigned_fields);
+            error = MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members);
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
                 if (!context.allow_missing_members)
@@ -1509,10 +1509,10 @@ public:
                 return error;
         }
         assert(error == Error::NoError);
-        std::vector<std::string> unassigned_required_fields;
-        error = FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::verifyFields(fields, assigned_fields, unassigned_required_fields);
+        std::vector<std::string> unassigned_required_members;
+        error = MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members);
         if (error == Error::UnassignedRequiredMember) {
-            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_fields.begin(), unassigned_required_fields.end());
+            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
             if (context.allow_unnasigned_required__members)
                 error = Error::NoError;
         }
@@ -1526,8 +1526,8 @@ public:
         token.value_type = Token::ObjectStart;
         token.value = DataRef::asDataRef(objectStart);
         serializer.write(token);
-        auto fields = T::template JsonToolsBase<T>::_fields();
-        FieldChecker<T, decltype(fields), std::tuple_size<decltype(fields)>::value - 1>::serializeFields(from_type, fields, token, serializer);
+        auto members = T::template JsonToolsBase<T>::_members();
+        MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer);
         token.name.size = 0;
         token.name.data = "";
         token.name_type = Token::String;
@@ -1812,69 +1812,69 @@ std::string serializeStruct(const T &from_type)
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-struct FunctorInfo
+struct FunctionInfo
 {
     typedef Ret (T::*Function)(const Arg &);
     const char *name;
     Function function;
 };
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-constexpr FunctorInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctorInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
+constexpr FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
 {
     return {name, function};
 }
 
-#define JT_FUNCTOR(name) JT::makeFunctorInfo(#name, &T::name)
-#define JT_FUNCTOR_CONTAINER(...) \
+#define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &T::name)
+#define JT_FUNCTION_CONTAINER(...) \
     template<typename T> \
-    struct JsonToolsFunctorContainer \
+    struct JsonToolsFunctionContainer \
     { \
-        static const decltype(std::make_tuple(__VA_ARGS__)) functors() \
+        static const decltype(std::make_tuple(__VA_ARGS__)) functions() \
         { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
 template<typename T, typename Ret, typename U, typename Arg, size_t NAME_SIZE>
-bool callFunctorHandler(T &container, ParseContext &context, FunctorInfo<Ret,U,Arg,NAME_SIZE> &functorInfo)
+bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<Ret,U,Arg,NAME_SIZE> &functionInfo)
 {
-    if (memcmp(functorInfo.name, context.token.name.data, NAME_SIZE) == 0)
+    if (memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
         Arg arg;
         context.error = TokenParser<Arg,Arg>::unpackToken(arg, context);
         if (context.error != Error::NoError)
             return false;;
 
-       (container.*functorInfo.function)(arg);
+       (container.*functionInfo.function)(arg);
        return true;
     }
     return false;
 }
 
-template<typename T, typename Functors, size_t INDEX>
-struct FunctorHandler
+template<typename T, typename Functions, size_t INDEX>
+struct FunctionHandler
 {
-    static void call(T &container, ParseContext &context, Functors &functors)
+    static void call(T &container, ParseContext &context, Functions &functions)
     {
-        auto functor = std::get<INDEX>(functors);
-        if (callFunctorHandler(container, context, functor))
+        auto function = std::get<INDEX>(functions);
+        if (callFunctionHandler(container, context, function))
             return;
         if (context.error != Error::NoError)
             return;
-        FunctorHandler<T, Functors, INDEX - 1>::call(container, context, functors);
+        FunctionHandler<T, Functions, INDEX - 1>::call(container, context, functions);
     }
 };
 
-template<typename T, typename Functors>
-struct FunctorHandler<T, Functors, 0>
+template<typename T, typename Functions>
+struct FunctionHandler<T, Functions, 0>
 {
-    static void call(T &container, ParseContext &context, Functors &functors)
+    static void call(T &container, ParseContext &context, Functions &functions)
     {
-        auto functor = std::get<0>(functors);
-        callFunctorHandler(container, context, functor);
+        auto function = std::get<0>(functions);
+        callFunctionHandler(container, context, function);
     }
 };
 
 template<typename T>
-void callFunctor(T &container, ParseContext &context)
+void callFunction(T &container, ParseContext &context)
 {
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
@@ -1884,20 +1884,20 @@ void callFunctor(T &container, ParseContext &context)
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
         return;
-    auto functors = T::template JsonToolsFunctorContainer<T>::functors();
-    FunctorHandler<T, decltype(functors), std::tuple_size<decltype(functors)>::value - 1>::call(container, context, functors);
+    auto functions = T::template JsonToolsFunctionContainer<T>::functions();
+    FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
 }
 
 template<typename T>
-void callFunctor(T &container, const char *json_data, size_t size)
+void callFunction(T &container, const char *json_data, size_t size)
 {
     ParseContext context;
     context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
                                                    tokenizer.addData(json_data, size);
                                                    }, true);
-    callFunctor(container, context);
+    callFunction(container, context);
     if (context.error != Error::NoError) {
-        fprintf(stderr, "callFunctor failed \n%s\n", context.tokenizer.makeErrorString().c_str());
+        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
     }
 }
 } //Namespace

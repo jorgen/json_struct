@@ -28,7 +28,8 @@ const char json[] = u8R"({
     "execute_one" : {
         "number" : 45,
         "valid" : "false"
-    }
+    },
+    "execute_two" : 99
 })";
 
 struct SimpleData
@@ -36,27 +37,34 @@ struct SimpleData
     float number;
     bool valid;
 
-    JT_STRUCT(JT_FIELD(number),
-              JT_FIELD(valid));
+    JT_STRUCT(JT_MEMBER(number),
+              JT_MEMBER(valid));
 };
-struct FunctorContainer
+struct CallFunction
 {
     void execute_one(const SimpleData &data)
     {
         fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
     }
-    JT_FUNCTOR_CONTAINER(JT_FUNCTOR(execute_one));
+
+    void execute_two(const double &data)
+    {
+        fprintf(stderr, "execute two executed %f\n", data);
+    }
+
+    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
+                          JT_FUNCTION(execute_two));
 };
 
 int main()
 {
 
-    FunctorContainer cont;
+    CallFunction cont;
     JT::ParseContext context = JT::makeParseContextForData(json, sizeof(json));
-    JT::callFunctor(cont, context);
+    JT::callFunction(cont, context);
 
     if (context.error != JT::Error::NoError)
-        fprintf(stderr, "callFunctor failed \n%s\n", context.tokenizer.makeErrorString().c_str());
+        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
     return (int)context.error;
 }
 
