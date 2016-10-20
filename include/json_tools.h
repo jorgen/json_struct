@@ -1697,9 +1697,9 @@ public:
 template<>
 inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, ParseContext &context)
 {
-    if (memcmp("true", context.token.value.data, sizeof("true") - 1))
+    if (memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
         to_type = true;
-    else if (memcmp("false", context.token.value.data, sizeof("false") - 1))
+    else if (memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
         to_type = false;
     else
         return Error::FailedToParseBoolen;
