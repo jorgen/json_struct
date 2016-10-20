@@ -103,6 +103,7 @@ struct SimpleData
              ,JT_MEMBER(member2));
 };
 
+
 static int check_json_tree_nodes()
 {
     JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
@@ -123,14 +124,47 @@ static int check_json_tree_nodes()
     return 0;
 }
 
-static int check_json_tree_no_root()
+const char json_data2[] = u8R"({
+    "some_int" : 4,
+    "sub_object" : {
+        "more_data" : "some text",
+        "a_float" : 1.2,
+        "boolean_member" : false
+    }
+})";
+
+template<typename T>
+struct OuterStruct
 {
+    int some_int;
+    T sub_object;
+
+    JT_STRUCT(JT_MEMBER(some_int),
+              JT_MEMBER(sub_object));
+};
+
+struct SubObject
+{
+    std::string more_data;
+    float a_float;
+    bool boolean_member;
+
+    JT_STRUCT(JT_MEMBER(more_data),
+              JT_MEMBER(a_float),
+              JT_MEMBER(boolean_member));
+};
+
+static int check_json_tree_template()
+{
+    JT::ParseContext context = JT::makeParseContextForData(json_data2, sizeof(json_data2));
+    OuterStruct<SubObject> data = JT::parseData<OuterStruct<SubObject>>(context);
+    JT_ASSERT(data.sub_object.more_data == "some text");
     return 0;
 };
 
 int main(int, char **)
 {
     check_json_tree_nodes();
-    //check_json_tree_no_root();
+    check_json_tree_template();
     return 0;
 }

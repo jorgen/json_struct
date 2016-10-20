@@ -1316,11 +1316,11 @@ struct ParseContext
     bool allow_unnasigned_required__members = true;
 };
 
-#define JT_MEMBER(name) JT::makeMemberInfo(#name, &T::name)
+#define JT_MEMBER(name) JT::makeMemberInfo(#name, &JT_STRUCT_T::name)
 #define JT_SUPER_CLASSES(...) JT::MemberMembersTuple<__VA_ARGS__>::create()
 
 #define JT_STRUCT(...) \
-    template<typename T> \
+    template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
        static const decltype(std::make_tuple(__VA_ARGS__)) _members() \
@@ -1328,7 +1328,7 @@ struct ParseContext
     };
 
 #define JT_STRUCT_WITH_SUPER(super_list, ...) \
-    template<typename T> \
+    template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
         static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_members() \
