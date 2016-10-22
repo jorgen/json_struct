@@ -125,8 +125,8 @@ void JsonStreamer::stream()
             bool finished_printing_subtree = false;
             if (!m_print_subtree && m_current_depth - 1 == m_last_matching_depth) {
                 switch (token.name_type) {
-                    case JT::Token::String:
-                    case JT::Token::Ascii:
+                    case JT::Type::String:
+                    case JT::Type::Ascii:
                         if (matchAtDepth(token.name)) {
                             m_last_matching_depth++;
                             if (m_last_matching_depth == m_property.size() - 1) {
@@ -137,9 +137,9 @@ void JsonStreamer::stream()
                                 } else if (!m_config.createObject() && !m_config.printOnlyName()) {
                                     token.name.data = "";
                                     token.name.size = 0;
-                                    token.name_type = JT::Token::Ascii;
-                                    if (token.value_type == JT::Token::String) {
-                                        token.value_type = JT::Token::Ascii;
+                                    token.name_type = JT::Type::Ascii;
+                                    if (token.value_type == JT::Type::String) {
+                                        token.value_type = JT::Type::Ascii;
                                         if (*token.value.data == '"') {
                                             token.value.data++;
                                             token.value.size -= 2;
@@ -158,8 +158,8 @@ void JsonStreamer::stream()
                 }
             }
             switch(token.value_type) {
-                case JT::Token::ObjectStart:
-                case JT::Token::ArrayStart:
+                case JT::Type::ObjectStart:
+                case JT::Type::ArrayStart:
                     m_current_depth++;
                     m_found_on_depth.push_back(false);
                     if (print_token && !m_config.createObject() && !m_config.printOnlyName()) {
@@ -173,36 +173,36 @@ void JsonStreamer::stream()
                         setStreamerOptions(!m_config.prettyPrint());
                     }
                     break;
-                case JT::Token::ObjectEnd:
-                case JT::Token::ArrayEnd:
+                case JT::Type::ObjectEnd:
+                case JT::Type::ArrayEnd:
                     if (m_last_matching_depth == m_current_depth - 1
                             && m_found_on_depth.size() && !m_found_on_depth.back()) {
                         if (m_property.size() -1 == m_current_depth && m_config.hasValue()) {
                             JT::Token new_token;
-                            new_token.name_type = JT::Token::String;
+                            new_token.name_type = JT::Type::String;
                             new_token.name.data = m_property.back().c_str();
                             new_token.name.size = m_property.back().size();
-                            new_token.value_type = JT::Token::String;
+                            new_token.value_type = JT::Type::String;
                             new_token.value.data = m_config.value().c_str();
                             new_token.value.size = m_config.value().size();
                             m_serializer.write(new_token);
                         } else if (m_config.createObject()) {
                             for (size_t i = m_current_depth; i < m_property.size(); i++) {
                                 JT::Token new_token;
-                                new_token.name_type = JT::Token::String;
+                                new_token.name_type = JT::Type::String;
                                 new_token.name.data = m_property[i].c_str();
                                 new_token.name.size = m_property[i].size();
-                                new_token.value_type = JT::Token::ObjectStart;
+                                new_token.value_type = JT::Type::ObjectStart;
                                 new_token.value.data = "{";
                                 new_token.value.size = 1;
                                 m_serializer.write(new_token);
                             }
                             for (size_t i = m_property.size(); i > m_current_depth; i--) {
                                 JT::Token new_token;
-                                new_token.name_type = JT::Token::Ascii;
+                                new_token.name_type = JT::Type::Ascii;
                                 new_token.name.data = "";
                                 new_token.name.size = 0;
-                                new_token.value_type = JT::Token::ObjectEnd;
+                                new_token.value_type = JT::Type::ObjectEnd;
                                 new_token.value.data = "}";
                                 new_token.value.size = 1;
                                 m_serializer.write(new_token);

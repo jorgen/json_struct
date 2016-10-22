@@ -62,21 +62,22 @@ struct DataRef
     size_t size;
 };
 
+enum class Type : unsigned char
+{
+    Error,
+    String,
+    Ascii,
+    Number,
+    ObjectStart,
+    ObjectEnd,
+    ArrayStart,
+    ArrayEnd,
+    Bool,
+    Null
+};
+
 struct Token
 {
-    enum Type {
-        Error,
-        String,
-        Ascii,
-        Number,
-        ObjectStart,
-        ObjectEnd,
-        ArrayStart,
-        ArrayEnd,
-        Bool,
-        Null
-    };
-
     Token();
 
     Type name_type;
@@ -99,8 +100,8 @@ struct IntermediateToken
         active = false;
         name_type_set = false;
         data_type_set = false;
-        name_type = Token::Error;
-        data_type = Token::Error;
+        name_type = Type::Error;
+        data_type = Type::Error;
         name.clear();
         data.clear();
     }
@@ -108,13 +109,14 @@ struct IntermediateToken
     bool active : 1;
     bool name_type_set : 1;
     bool data_type_set : 1;
-    Token::Type name_type = Token::Error;
-    Token::Type data_type = Token::Error;
+    Type name_type = Type::Error;
+    Type data_type = Type::Error;
     std::string name;
     std::string data;
 };
 
-enum class Error {
+enum class Error : unsigned char
+{
     NoError,
     NeedMoreData,
     InvalidToken,
@@ -181,14 +183,16 @@ public:
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
 private:
-    enum InTokenState {
+    enum class InTokenState : unsigned char
+    {
         FindingName,
         FindingDelimiter,
         FindingData,
         FindingTokenEnd
     };
 
-    enum InPropertyState {
+    enum class InPropertyState : unsigned char
+    {
         NoStartFound,
         FindingEnd,
         FoundEnd
@@ -199,50 +203,50 @@ private:
     Error findStringEnd(const DataRef &json_data, size_t *chars_ahead);
     Error findAsciiEnd(const DataRef &json_data, size_t *chars_ahead);
     Error findNumberEnd(const DataRef &json_data, size_t *chars_ahead);
-    Error findStartOfNextValue(Token::Type *type,
+    Error findStartOfNextValue(Type *type,
                                const DataRef &json_data,
                                size_t *chars_ahead);
     Error findDelimiter(const DataRef &json_data, size_t *chars_ahead);
     Error findTokenEnd(const DataRef &json_data, size_t *chars_ahead);
     void requestMoreData();
     void releaseFirstDataRef();
-    Error populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data);
-    static void populate_annonymous_token(const DataRef &data, Token::Type type, Token &token);
+    Error populateFromDataRef(DataRef &data, Type *type, const DataRef &json_data);
+    static void populate_annonymous_token(const DataRef &data, Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
     void updateErrorContext(Error error);
 
+    InTokenState token_state = InTokenState::FindingName;
+    InPropertyState property_state = InPropertyState::NoStartFound;
+    Type property_type = Type::Error;
+    bool is_escaped : 1;
+    bool allow_ascii_properties : 1;
+    bool allow_new_lines : 1;
+    bool allow_superfluous_comma : 1;
+    bool expecting_prop_or_annonymous_data : 1;
+    bool continue_after_need_more_data : 1;
+    size_t cursor_index;
+    size_t current_data_start;
+    size_t line_context;
+    size_t line_range_context;
+    size_t range_context;
+    IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
     std::vector<std::function<void(const char *)>> release_callbacks;
     std::vector<std::function<void(Tokenizer &)>> need_more_data_callbacks;
-    size_t cursor_index = 0;
-    size_t current_data_start = 0;
-    InTokenState token_state = FindingName;
-    InPropertyState property_state = NoStartFound;
-    Token::Type property_type = Token::Error;
-    bool is_escaped = false;
-    bool allow_ascii_properties = false;
-    bool allow_new_lines = false;
-    bool allow_superfluous_comma = false;
-    bool expecting_prop_or_annonymous_data = false;
-    bool continue_after_need_more_data = false;
-    IntermediateToken intermediate_token;
     std::function<void(Token &next_token)> token_transformer;
     ErrorContext error_context;
-    size_t line_context = 4;
-    size_t line_range_context = 256;
-    size_t range_context = 38;
 };
 
 class SerializerOptions
 {
 public:
-    enum Style
+    enum Style : unsigned char
     {
         Pretty,
         Compact
     };
 
-    SerializerOptions(Style style = Pretty);
+    SerializerOptions(Style style = Style::Pretty);
 
     int shiftSize() const;
 
@@ -263,10 +267,10 @@ public:
     const std::string &postfix() const;
 
 private:
-    int m_shift_size;
-    int m_depth;
-    Style m_style;
-    bool m_convert_ascii_to_string;
+    unsigned char m_shift_size;
+    unsigned char m_depth;
+    Style m_style : 1;
+    bool m_convert_ascii_to_string : 1;
 
     std::string m_prefix;
     std::string m_token_delimiter;
@@ -304,7 +308,7 @@ private:
     void askForMoreBuffers();
     void markCurrentSerializerBufferFull();
     bool writeAsString(const DataRef &data);
-    bool write(Token::Type type, const DataRef &data);
+    bool write(Type type, const DataRef &data);
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 
@@ -312,24 +316,35 @@ private:
     std::vector <SerializerBuffer *> m_unused_buffers;
     std::vector <SerializerBuffer> m_all_buffers;
 
+    bool m_first : 1;
+    bool m_token_start : 1;
     SerializerOptions m_option;
-    bool m_first = true;
-    bool m_token_start = true;
     std::function<const Token&(const Token &)> m_token_transformer;
 };
 
 // IMPLEMENTATION
 
 inline Token::Token()
-    : name_type(String)
+    : name_type(Type::String)
     , name()
-    , value_type(String)
+    , value_type(Type::String)
     , value()
 {
 
 }
 
 inline Tokenizer::Tokenizer()
+    : is_escaped(false)
+    , allow_ascii_properties(false)
+    , allow_new_lines(false)
+    , allow_superfluous_comma(false)
+    , expecting_prop_or_annonymous_data(false)
+    , continue_after_need_more_data(false)
+    , cursor_index(0)
+    , current_data_start(0)
+    , line_context(4)
+    , line_range_context(256)
+    , range_context(38)
 {}
 inline Tokenizer::~Tokenizer()
 {}
@@ -474,8 +489,8 @@ inline void Tokenizer::resetForNewToken()
 
 inline void Tokenizer::resetForNewValue()
 {
-    property_state = NoStartFound;
-    property_type = Token::Error;
+    property_state = InPropertyState::NoStartFound;
+    property_type = Type::Error;
     current_data_start = 0;
 }
 
@@ -503,7 +518,7 @@ inline Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ah
 
 inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahead)
 {
-    assert(property_type == Token::Ascii);
+    assert(property_type == Type::Ascii);
     for (size_t end = cursor_index; end < json_data.size; end++) {
         char ascii_code = *(json_data.data + end);
         if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
@@ -542,12 +557,12 @@ inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ah
     return Error::NeedMoreData;
 }
 
-inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
+inline Error Tokenizer::findStartOfNextValue(Type *type,
                                       const DataRef &json_data,
                                       size_t *chars_ahead)
 {
 
-    assert(property_state == NoStartFound);
+    assert(property_state == InPropertyState::NoStartFound);
 
     for (size_t current_pos  = cursor_index; current_pos < json_data.size; current_pos++) {
         switch (*(json_data.data + current_pos)) {
@@ -557,23 +572,23 @@ inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
         case '\0':
             break;
         case '"':
-            *type = Token::String;
+            *type = Type::String;
             *chars_ahead = current_pos - cursor_index + 1;
             return Error::NoError;
         case '{':
-            *type = Token::ObjectStart;
+            *type = Type::ObjectStart;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
         case '}':
-            *type = Token::ObjectEnd;
+            *type = Type::ObjectEnd;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
         case '[':
-            *type = Token::ArrayStart;
+            *type = Type::ArrayStart;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
         case ']':
-            *type = Token::ArrayEnd;
+            *type = Type::ArrayEnd;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
         case '-':
@@ -588,14 +603,14 @@ inline Error Tokenizer::findStartOfNextValue(Token::Type *type,
         case '7':
         case '8':
         case '9':
-            *type = Token::Number;
+            *type = Type::Number;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
         default:
             char ascii_code = *(json_data.data + current_pos);
             if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
                 (ascii_code >= '^' && ascii_code <= 'z')) {
-                *type = Token::Ascii;
+                *type = Type::Ascii;
                 *chars_ahead = current_pos - cursor_index;;
                 return Error::NoError;
             } else {
@@ -614,15 +629,15 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
     for (size_t end = cursor_index; end < json_data.size; end++) {
         switch(*(json_data.data + end)) {
         case ':':
-            token_state = FindingData;
+            token_state = InTokenState::FindingData;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
         case ',':
-            token_state = FindingName;
+            token_state = InTokenState::FindingName;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
         case ']':
-            token_state = FindingName;
+            token_state = InTokenState::FindingName;
             *chars_ahead = end - cursor_index;
             return Error::NoError;
         case ' ':
@@ -698,16 +713,16 @@ inline void Tokenizer::releaseFirstDataRef()
     }
 }
 
-inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data)
+inline Error Tokenizer::populateFromDataRef(DataRef &data, Type *type, const DataRef &json_data)
 {
     size_t diff = 0;
     Error error = Error::NoError;
     data.size = 0;
     data.data = json_data.data + cursor_index;
-    if (property_state == NoStartFound) {
+    if (property_state == InPropertyState::NoStartFound) {
         error = findStartOfNextValue(type, json_data, &diff);
         if (error != Error::NoError) {
-            *type = Token::Error;
+            *type = Type::Error;
             return error;
         }
 
@@ -717,26 +732,26 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, co
         property_type = *type;
 
 
-        if (*type == Token::ObjectStart || *type == Token::ObjectEnd
-            || *type == Token::ArrayStart || *type == Token::ArrayEnd) {
+        if (*type == Type::ObjectStart || *type == Type::ObjectEnd
+            || *type == Type::ArrayStart || *type == Type::ArrayEnd) {
             data.size = 1;
-            property_state = FoundEnd;
+            property_state = InPropertyState::FoundEnd;
         } else {
-            property_state = FindingEnd;
+            property_state = InPropertyState::FindingEnd;
         }
     }
 
     int size_adjustment = 0;
-    if (property_state == FindingEnd) {
+    if (property_state == InPropertyState::FindingEnd) {
         switch (*type) {
-        case Token::String:
+        case Type::String:
             error = findStringEnd(json_data, &diff);
             size_adjustment = -1;
             break;
-        case Token::Ascii:
+        case Type::Ascii:
             error = findAsciiEnd(json_data, &diff);
             break;
-        case Token::Number:
+        case Type::Number:
             error = findNumberEnd(json_data, &diff);
             break;
         default:
@@ -749,39 +764,39 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, co
 
         cursor_index += diff;
         data.size = cursor_index - current_data_start + size_adjustment;
-        property_state = FoundEnd;
+        property_state = InPropertyState::FoundEnd;
     }
 
     return Error::NoError;
 }
 
-inline void Tokenizer::populate_annonymous_token(const DataRef &data, Token::Type type, Token &token)
+inline void Tokenizer::populate_annonymous_token(const DataRef &data, Type type, Token &token)
 {
     token.name = DataRef();
-    token.name_type = Token::Ascii;
+    token.name_type = Type::Ascii;
     token.value = data;
     token.value_type = type;
 }
 
-static Token::Type getType(Token::Type type, const char *data, size_t length)
+static Type getType(Type type, const char *data, size_t length)
 {
     static const char m_null[] = "null";
     static const char m_true[] = "true";
     static const char m_false[] = "false";
-    if (type != Token::Ascii)
+    if (type != Type::Ascii)
         return type;
     if (sizeof(m_null) - 1 == length) {
         if (memcmp(m_null, data, length) == 0) {
-            return Token::Null;
+            return Type::Null;
         } else if (memcmp(m_true, data, length) == 0) {
-            return Token::Bool;
+            return Type::Bool;
         }
     }
     if (sizeof(m_false) - 1 == length) {
         if (memcmp(m_false, data, length) == 0)
-            return Token::Bool;
+            return Type::Bool;
     }
-    return Token::Ascii;
+    return Type::Ascii;
 }
 
 inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data)
@@ -790,14 +805,14 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
     while (cursor_index < json_data.size) {
         size_t diff = 0;
         DataRef data;
-        Token::Type type;
+        Type type;
         Error error;
         switch (token_state) {
-        case FindingName:
+        case InTokenState::FindingName:
             type = intermediate_token.name_type;
             error = populateFromDataRef(data, &type, json_data);
             if (error == Error::NeedMoreData) {
-                if (property_state > NoStartFound) {
+                if (property_state > InPropertyState::NoStartFound) {
                     intermediate_token.active = true;
                     size_t to_null = strnlen(data.data , json_data.size - current_data_start);
                     intermediate_token.name.append(data.data , to_null);
@@ -817,23 +832,23 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
                 type = intermediate_token.name_type;
             }
 
-            if (type == Token::ObjectEnd || type == Token::ArrayEnd
-                || type == Token::ArrayStart || type == Token::ObjectStart) {
+            if (type == Type::ObjectEnd || type == Type::ArrayEnd
+                || type == Type::ArrayStart || type == Type::ObjectStart) {
                 switch (type) {
-                case Token::ObjectEnd:
-                case Token::ArrayEnd:
+                case Type::ObjectEnd:
+                case Type::ArrayEnd:
                     if (expecting_prop_or_annonymous_data && !allow_superfluous_comma) {
                         return Error::ExpectedDataToken;
                     }
                     populate_annonymous_token(data,type,next_token);
-                    token_state = FindingTokenEnd;
+                    token_state = InTokenState::FindingTokenEnd;
                     return Error::NoError;
 
-                case Token::ObjectStart:
-                case Token::ArrayStart:
+                case Type::ObjectStart:
+                case Type::ArrayStart:
                     populate_annonymous_token(data,type,next_token);
                     expecting_prop_or_annonymous_data = false;
-                    token_state = FindingName;
+                    token_state = InTokenState::FindingName;
                     return Error::NoError;
                 default:
                     return Error::UnknownError;
@@ -844,11 +859,11 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
 
             tmp_token.name_type = getType(type, tmp_token.name.data,
                                           tmp_token.name.size);
-            token_state = FindingDelimiter;
+            token_state = InTokenState::FindingDelimiter;
             resetForNewValue();
             break;
 
-        case FindingDelimiter:
+        case InTokenState::FindingDelimiter:
             error = findDelimiter(json_data, &diff);
             if (error != Error::NoError) {
                 if (intermediate_token.active == false) {
@@ -861,19 +876,19 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
             cursor_index += diff;
             resetForNewValue();
             expecting_prop_or_annonymous_data = false;
-            if (token_state == FindingName) {
+            if (token_state == InTokenState::FindingName) {
                 populate_annonymous_token(tmp_token.name, tmp_token.name_type, next_token);
                 return Error::NoError;
             } else {
-                if (tmp_token.name_type != Token::String) {
-                    if (!allow_ascii_properties || tmp_token.name_type != Token::Ascii) {
+                if (tmp_token.name_type != Type::String) {
+                    if (!allow_ascii_properties || tmp_token.name_type != Type::Ascii) {
                         return Error::IlligalPropertyName;
                     }
                 }
             }
             break;
 
-        case FindingData:
+        case InTokenState::FindingData:
             type = intermediate_token.data_type;
             error = populateFromDataRef(data, &type, json_data);
             if (error == Error::NeedMoreData) {
@@ -882,7 +897,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
                     intermediate_token.name_type = tmp_token.name_type;
                     intermediate_token.active = true;
                 }
-                if (property_state > NoStartFound) {
+                if (property_state > InPropertyState::NoStartFound) {
                     size_t data_length = strnlen(data.data , json_data.size - current_data_start);
                     intermediate_token.data.append(data.data, data_length);
                     if (!intermediate_token.data_type_set) {
@@ -910,23 +925,23 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
             tmp_token.value = data;
             tmp_token.value_type = getType(type, tmp_token.value.data, tmp_token.value.size);
 
-            if (tmp_token.value_type  == Token::Ascii && !allow_ascii_properties)
+            if (tmp_token.value_type  == Type::Ascii && !allow_ascii_properties)
                 return Error::IlligalDataValue;
 
-            if (type == Token::ObjectStart || type == Token::ArrayStart) {
-                token_state = FindingName;
+            if (type == Type::ObjectStart || type == Type::ArrayStart) {
+                token_state = InTokenState::FindingName;
             } else {
-                token_state = FindingTokenEnd;
+                token_state = InTokenState::FindingTokenEnd;
             }
             next_token = tmp_token;
             return Error::NoError;
-        case FindingTokenEnd:
+        case InTokenState::FindingTokenEnd:
             error = findTokenEnd(json_data, &diff);
             if (error != Error::NoError) {
                 return error;
             }
             cursor_index += diff;
-            token_state = FindingName;
+            token_state = InTokenState::FindingName;
             break;
         }
     }
@@ -1065,6 +1080,8 @@ inline bool SerializerBuffer::append(const char *data, size_t size)
 }
 
 inline Serializer::Serializer()
+    : m_first(true)
+    , m_token_start(true)
 {
 }
 
@@ -1089,8 +1106,8 @@ inline bool Serializer::write(const Token &in_token)
     const Token &token =
         m_token_transformer == nullptr? in_token : m_token_transformer(in_token);
     if (!m_token_start) {
-        if (token.value_type != Token::ObjectEnd
-                && token.value_type != Token::ArrayEnd) {
+        if (token.value_type != Type::ObjectEnd
+                && token.value_type != Type::ArrayEnd) {
             if (!write(m_option.tokenDelimiter()))
                 return false;
         }
@@ -1103,8 +1120,8 @@ inline bool Serializer::write(const Token &in_token)
             return false;
     }
 
-    if (token.value_type == Token::ObjectEnd
-            || token.value_type == Token::ArrayEnd) {
+    if (token.value_type == Type::ObjectEnd
+            || token.value_type == Type::ArrayEnd) {
         m_option.setDepth(m_option.depth() - 1);
     }
 
@@ -1122,8 +1139,8 @@ inline bool Serializer::write(const Token &in_token)
     if (!write(token.value_type, token.value))
         return false;
 
-    m_token_start = (token.value_type == Token::ObjectStart
-            || token.value_type == Token::ArrayStart);
+    m_token_start = (token.value_type == Type::ObjectStart
+            || token.value_type == Type::ArrayStart);
     if (m_token_start) {
         m_option.setDepth(m_option.depth() + 1);
     }
@@ -1188,14 +1205,14 @@ inline bool Serializer::writeAsString(const DataRef &data)
     return written;
 }
 
-inline bool Serializer::write(Token::Type type, const DataRef &data)
+inline bool Serializer::write(Type type, const DataRef &data)
 {
     bool written;
     switch (type) {
-        case Token::String:
+        case Type::String:
             written = writeAsString(data);
             break;
-        case Token::Ascii:
+        case Type::Ascii:
             if (m_option.convertAsciiToString())
                 written = writeAsString(data);
             else
@@ -1421,7 +1438,7 @@ inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_
 {
     token.name.data = memberInfo.name;
     token.name.size = MI_S;
-    token.name_type = Token::Ascii;
+    token.name_type = Type::Ascii;
 
     TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
 }
@@ -1478,7 +1495,7 @@ class TokenParser<T, typename std::enable_if<HasJsonToolsBase<T>::value, T>::typ
 public:
     static inline Error unpackToken(T &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Token::ObjectStart)
+        if (context.token.value_type != JT::Type::ObjectStart)
             return Error::ExpectedObjectStart;
         Error error = context.tokenizer.nextToken(context.token);
         if (error != JT::Error::NoError)
@@ -1486,7 +1503,7 @@ public:
         auto members = T::template JsonToolsBase<T>::_members();
         bool assigned_members[std::tuple_size<decltype(members)>::value];
         memset(assigned_members, 0, sizeof(assigned_members));
-        while(context.token.value_type != JT::Token::ObjectEnd)
+        while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
             error = MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members);
@@ -1516,15 +1533,15 @@ public:
     {
         static const char objectStart[] = "{";
         static const char objectEnd[] = "}";
-        token.value_type = Token::ObjectStart;
+        token.value_type = Type::ObjectStart;
         token.value = DataRef::asDataRef(objectStart);
         serializer.write(token);
         auto members = T::template JsonToolsBase<T>::_members();
         MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer);
         token.name.size = 0;
         token.name.data = "";
-        token.name_type = Token::String;
-        token.value_type = Token::ObjectEnd;
+        token.name_type = Type::String;
+        token.value_type = Type::ObjectEnd;
         token.value = DataRef::asDataRef(objectEnd);
         serializer.write(token);
     }
@@ -1540,7 +1557,7 @@ inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_
 template<>
 inline void TokenParser<std::string, std::string>::serializeToken(const std::string &str, Token &token, Serializer &serializer)
 {
-    token.value_type = Token::Ascii;
+    token.value_type = Type::Ascii;
     token.value.data = &str[0];
     token.value.size = str.size();
     serializer.write(token);
@@ -1568,7 +1585,7 @@ inline void TokenParser<double, double>::serializeToken(const double &d, Token &
         return;
     }
 
-    token.value_type = Token::Number;
+    token.value_type = Type::Number;
     token.value.data = buf;
     token.value.size = size;
     serializer.write(token);
@@ -1595,7 +1612,7 @@ inline void TokenParser<float, float>::serializeToken(const float &f, Token &tok
         return;
     }
 
-    token.value_type = Token::Number;
+    token.value_type = Type::Number;
     token.value.data = buf;
     token.value.size = size;
     serializer.write(token);
@@ -1621,7 +1638,7 @@ inline void TokenParser<int, int>::serializeToken(const int&d, Token &token, Ser
         return;
     }
 
-    token.value_type = Token::Number;
+    token.value_type = Type::Number;
     token.value.data = buf;
     token.value.size = size;
     serializer.write(token);
@@ -1665,7 +1682,7 @@ class TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>
 public:
     static inline Error unpackToken(std::unique_ptr<T> &to_type, ParseContext &context)
     {
-        if (context.token.value_type != Token::Null) {
+        if (context.token.value_type != Type::Null) {
             to_type.reset(new T());
             return TokenParser<T,T>::unpackToken(*to_type.get(), context);
         }
@@ -1679,7 +1696,7 @@ public:
             TokenParser<T,T>::serializeToken(*unique.get(), token, serializer);
         } else {
             const char nullChar[] = "null";
-            token.value_type = Token::Null;
+            token.value_type = Type::Null;
             token.value = DataRef::asDataRef(nullChar);
             serializer.write(token);
         }
@@ -1705,7 +1722,7 @@ inline void TokenParser<bool, bool>::serializeToken(const bool &b, Token &token,
 {
     const char trueChar[] = "true";
     const char falseChar[] = "false";
-    token.value_type = Token::Bool;
+    token.value_type = Type::Bool;
     if (b) {
         token.value = DataRef::asDataRef(trueChar);
     } else {
@@ -1720,10 +1737,10 @@ class TokenParser<std::vector<T>, std::vector<T>>
 public:
     static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Token::ArrayStart)
+        if (context.token.value_type != JT::Type::ArrayStart)
             return Error::ExpectedArrayStart;
         Error error = context.tokenizer.nextToken(context.token);
-        while(context.token.value_type != JT::Token::ArrayEnd)
+        while(context.token.value_type != JT::Type::ArrayEnd)
         {
             to_type.push_back(T());
             error = TokenParser<T,T>::unpackToken(to_type.back(), context);
@@ -1741,7 +1758,7 @@ public:
     {
         static const char arrayStart[] = "[";
         static const char arrayEnd[] = "]";
-        token.value_type = Token::ArrayStart;
+        token.value_type = Type::ArrayStart;
         token.value = DataRef::asDataRef(arrayStart);
         serializer.write(token);
 
@@ -1754,7 +1771,7 @@ public:
 
         token.name = DataRef::asDataRef("");
 
-        token.value_type = Token::ArrayEnd;
+        token.value_type = Type::ArrayEnd;
         token.value = DataRef::asDataRef(arrayEnd);
         serializer.write(token);
     }
@@ -1872,13 +1889,13 @@ void callFunction(T &container, ParseContext &context)
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
         return;
-    if (context.token.value_type != JT::Token::ObjectStart)
+    if (context.token.value_type != JT::Type::ObjectStart)
         return;
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
         return;
     auto functions = T::template JsonToolsFunctionContainer<T>::functions();
-    while (context.token.value_type != JT::Token::ObjectEnd)
+    while (context.token.value_type != JT::Type::ObjectEnd)
     {
         FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
         if (context.error != JT::Error::NoError)

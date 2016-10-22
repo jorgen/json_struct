@@ -37,135 +37,135 @@ static int check_json_with_string_and_ascii()
     JT::Token token;
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectStart);
+    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Token::String,"foo", JT::Token::String, "bar") == 0);
+    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::String, "color", JT::Token::String, "red") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::String, "color", JT::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "weather", JT::Token::String, "clear") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "weather", JT::Type::String, "clear") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "weather1", JT::Token::String, "clear1") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "weather1", JT::Type::String, "clear1") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ToBeTrue", JT::Token::Bool, "true") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ToBeTrue", JT::Type::Bool, "true") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "HeresANull", JT::Token::Null, "null") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "HeresANull", JT::Type::Null, "null") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsFalse", JT::Token::Bool, "false") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsFalse", JT::Type::Bool, "false") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "EscapedString", JT::Token::String, "contains \\\"") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "EscapedString", JT::Type::String, "contains \\\"") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsANumber", JT::Token::Number, "3.14") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsANumber", JT::Type::Number, "3.14") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsAnObject", JT::Token::ObjectStart, "{") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsAnObject", JT::Type::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsASubType", JT::Token::String, "red") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsASubType", JT::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectEnd);
+    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "AnotherProp", JT::Token::String, "prop") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "AnotherProp", JT::Type::String, "prop") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsAnotherObject", JT::Token::ObjectStart, "{") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsAnotherObject", JT::Type::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsAnotherASubType", JT::Token::String, "blue") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsAnotherASubType", JT::Type::String, "blue") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectEnd);
+    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsAnArray", JT::Token::ArrayStart, "[") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsAnArray", JT::Type::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "12.4") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::Number, "12.4") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "3") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::Number, "3") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "", JT::Token::Number, "43.2") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::Number, "43.2") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ArrayEnd);
+    JT_ASSERT(token.value_type == JT::Type::ArrayEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "ThisIsAnObjectArray", JT::Token::ArrayStart, "[") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsAnObjectArray", JT::Type::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "", JT::Token::ObjectStart, "{") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "Test1", JT::Token::String, "Test2") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "Test1", JT::Type::String, "Test2") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "Test3", JT::Token::String, "Test4") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "Test3", JT::Type::String, "Test4") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectEnd);
+    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "", JT::Token::ObjectStart, "{") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::ObjectStart, "{") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "Test5", JT::Token::Bool, "true") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "Test5", JT::Type::Bool, "true") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Token::Ascii, "Test7", JT::Token::Bool, "false") == 0));
+    JT_ASSERT((assert_token(token, JT::Type::Ascii, "Test7", JT::Type::Bool, "false") == 0));
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectEnd);
+    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ArrayEnd);
+    JT_ASSERT(token.value_type == JT::Type::ArrayEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Token::ObjectEnd);
+    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NeedMoreData);

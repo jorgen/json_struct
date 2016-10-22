@@ -24,10 +24,10 @@
 #include "assert.h"
 #include <string>
 
-static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::string property, JT::Token::Type value_type, std::string value)
+static int assert_token(const JT::Token &token, JT::Type name_type, std::string property, JT::Type value_type, std::string value)
 {
     if (token.name_type != name_type) {
-        fprintf(stderr, "token.name_type is: %d, expected %d\n", token.name_type, name_type);
+        fprintf(stderr, "token.name_type is: %hhu, expected %hhu\n", token.name_type, name_type);
         return -1;
     }
 
@@ -43,7 +43,7 @@ static int assert_token(const JT::Token &token, JT::Token::Type name_type, std::
     }
 
     if (token.value_type != value_type) {
-        fprintf(stderr, "token.value_type is: %d, expected %d\n", token.value_type, value_type);
+        fprintf(stderr, "token.value_type is: %hhu, expected %hhu\n", token.value_type, value_type);
         return -1;
     }
 
