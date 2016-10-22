@@ -1414,7 +1414,7 @@ public:
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
 inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_members)
 {
-    if (memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
+    if (MI_S == context.token.name.size && memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
         assigned_members[index] = true;
         return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
@@ -1707,9 +1707,9 @@ public:
 template<>
 inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, ParseContext &context)
 {
-    if (memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
+    if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
         to_type = true;
-    else if (memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
+    else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
         to_type = false;
     else
         return Error::FailedToParseBoolen;
@@ -1846,7 +1846,7 @@ constexpr FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char (
 template<typename T, typename Ret, typename U, typename Arg, size_t NAME_SIZE>
 bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<Ret,U,Arg,NAME_SIZE> &functionInfo)
 {
-    if (memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
+    if (context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
         Arg arg;
         context.error = TokenParser<Arg,Arg>::unpackToken(arg, context);
