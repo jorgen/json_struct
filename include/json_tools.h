@@ -200,7 +200,7 @@ public:
     template<size_t N>
     void addData(const char (&data)[N]);
     size_t registered_buffers() const;
-    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback, bool oneShotCallback);
+    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
     void registerRelaseCallback(std::function<void(const char *)> callback);
 
     Error nextToken(Token &next_token);
@@ -241,7 +241,7 @@ private:
 
     std::vector<DataRef> data_list;
     std::vector<std::function<void(const char *)>> release_callbacks;
-    std::vector<std::pair<std::function<void(Tokenizer &)>, bool>> need_more_data_callabcks;
+    std::vector<std::function<void(Tokenizer &)>> need_more_data_callbacks;
     size_t cursor_index = 0;
     size_t current_data_start = 0;
     InTokenState token_state = FindingName;
@@ -393,9 +393,9 @@ inline size_t Tokenizer::registered_buffers() const
     return data_list.size();
 }
 
-inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback, bool oneShotCallback)
+inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
 {
-    need_more_data_callabcks.push_back(std::make_pair(callback, oneShotCallback));
+    need_more_data_callbacks.push_back(callback);
 }
 inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
 {
@@ -425,10 +425,8 @@ inline Error Tokenizer::nextToken(Token &next_token)
         if (error != Error::NoError && error != Error::NeedMoreData)
             updateErrorContext(error);
 
-        if (error != Error::NoError) {
-            releaseFirstDataRef();
-        }
         if (error == Error::NeedMoreData) {
+            releaseFirstDataRef();
             requestMoreData();
         }
     }
@@ -701,29 +699,32 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
 
 inline void Tokenizer::requestMoreData()
 {
-    for (auto pairs: need_more_data_callabcks)
+
+    std::vector<std::function<void(Tokenizer &)>> callbacks;
+    std::swap(callbacks, need_more_data_callbacks);
+    for (auto &callback : callbacks)
     {
-        pairs.first(*this);
+        callback(*this);
     }
-    need_more_data_callabcks.erase(std::remove_if(need_more_data_callabcks.begin(),
-                              need_more_data_callabcks.end(),
-                              [](decltype(*need_more_data_callabcks.begin()) &pair)
-                                { return pair.second; }), need_more_data_callabcks.end());
 }
 
 inline void Tokenizer::releaseFirstDataRef()
 {
-    const char *data_to_release = 0;
-    if (!data_list.empty()) {
-        const DataRef &json_data = data_list.front();
-        data_to_release = json_data.data;
-        data_list.erase(data_list.begin());
-    }
-    for (auto function : release_callbacks) {
-        function(data_to_release);
-    }
+    if (data_list.empty())
+        return;
+
     cursor_index = 0;
     current_data_start = 0;
+
+    std::vector<std::function<void(const char *)>> callbacks;
+    std::swap(callbacks, release_callbacks);
+
+    const DataRef &json_data = data_list.front();
+    const char *data_to_release = json_data.data;
+    data_list.erase(data_list.begin());
+    for (auto &function : callbacks) {
+        function(data_to_release);
+    }
 }
 
 inline Error Tokenizer::populateFromDataRef(DataRef &data, Token::Type *type, const DataRef &json_data)
@@ -1772,7 +1773,7 @@ inline ParseContext makeParseContextForData(const char *json_data, size_t size)
     ParseContext ret;
     ret.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
                                                    tokenizer.addData(json_data, size);
-                                                   }, true);
+                                                   });
     return ret;
 }
 
