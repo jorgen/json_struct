@@ -111,37 +111,6 @@ struct IntermediateToken
     std::string data;
 };
 
-class TypeChecker
-{
-public:
-    TypeChecker()
-        : m_null("null")
-        , m_true("true")
-        , m_false("false")
-    {}
-
-    Token::Type type(Token::Type type, const char *data, size_t length) const {
-        if (type != Token::Ascii)
-            return type;
-        if (m_null.size() == length) {
-            if (strncmp(m_null.c_str(),data,length) == 0) {
-                return Token::Null;
-            } else if (strncmp(m_true.c_str(),data,length) == 0) {
-                return Token::Bool;
-            }
-        }
-        if (m_false.size() == length) {
-            if (strncmp(m_false.c_str(),data,length) == 0)
-                return Token::Bool;
-        }
-        return Token::Ascii;
-    }
-private:
-    const std::string m_null;
-    const std::string m_true;
-    const std::string m_false;
-};
-
 enum class Error {
     NoError,
     NeedMoreData,
@@ -255,7 +224,6 @@ private:
     bool continue_after_need_more_data = false;
     IntermediateToken intermediate_token;
     std::function<void(Token &next_token)> token_transformer;
-    TypeChecker type_checker;
     ErrorContext error_context;
     size_t line_context = 4;
     size_t line_range_context = 256;
@@ -792,6 +760,27 @@ inline void Tokenizer::populate_annonymous_token(const DataRef &data, Token::Typ
     token.value_type = type;
 }
 
+static Token::Type getType(Token::Type type, const char *data, size_t length)
+{
+    static const char m_null[] = "null";
+    static const char m_true[] = "true";
+    static const char m_false[] = "false";
+    if (type != Token::Ascii)
+        return type;
+    if (sizeof(m_null) == length) {
+        if (memcmp(m_null, data, length) == 0) {
+            return Token::Null;
+        } else if (memcmp(m_true, data, length) == 0) {
+            return Token::Bool;
+        }
+    }
+    if (sizeof(m_false) == length) {
+        if (memcmp(m_false, data, length) == 0)
+            return Token::Bool;
+    }
+    return Token::Ascii;
+}
+
 inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data)
 {
     Token tmp_token;
@@ -850,8 +839,8 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
                 tmp_token.name = data;
             }
 
-            tmp_token.name_type = type_checker.type(type, tmp_token.name.data,
-                                                    tmp_token.name.size);
+            tmp_token.name_type = getType(type, tmp_token.name.data,
+                                          tmp_token.name.size);
             token_state = FindingDelimiter;
             resetForNewValue();
             break;
@@ -916,7 +905,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
             }
 
             tmp_token.value = data;
-            tmp_token.value_type = type_checker.type(type, tmp_token.value.data, tmp_token.value.size);
+            tmp_token.value_type = getType(type, tmp_token.value.data, tmp_token.value.size);
 
             if (tmp_token.value_type  == Token::Ascii && !allow_ascii_properties)
                 return Error::IlligalDataValue;
