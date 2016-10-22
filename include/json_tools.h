@@ -88,6 +88,9 @@ struct Token
 struct IntermediateToken
 {
     IntermediateToken()
+        : active(false)
+        , name_type_set(false)
+        , data_type_set(false)
     { }
 
     void clear() {
@@ -102,9 +105,9 @@ struct IntermediateToken
         data.clear();
     }
 
-    bool active = false;
-    bool name_type_set = false;
-    bool data_type_set = false;
+    bool active : 1;
+    bool name_type_set : 1;
+    bool data_type_set : 1;
     Token::Type name_type = Token::Error;
     Token::Type data_type = Token::Error;
     std::string name;
