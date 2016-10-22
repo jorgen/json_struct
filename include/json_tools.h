@@ -770,14 +770,14 @@ static Token::Type getType(Token::Type type, const char *data, size_t length)
     static const char m_false[] = "false";
     if (type != Token::Ascii)
         return type;
-    if (sizeof(m_null) == length) {
+    if (sizeof(m_null) - 1 == length) {
         if (memcmp(m_null, data, length) == 0) {
             return Token::Null;
         } else if (memcmp(m_true, data, length) == 0) {
             return Token::Bool;
         }
     }
-    if (sizeof(m_false) == length) {
+    if (sizeof(m_false) - 1 == length) {
         if (memcmp(m_false, data, length) == 0)
             return Token::Bool;
     }
