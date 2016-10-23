@@ -577,6 +577,7 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
         switch (*(json_data.data + current_pos)) {
         case ' ':
         case '\n':
+        case '\r':
         case '\t':
         case '\0':
             break;
@@ -651,6 +652,7 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
             return Error::NoError;
         case ' ':
         case '\n':
+        case '\r':
         case '\t':
         case '\0':
             break;
@@ -682,6 +684,7 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
             return Error::NoError;
         case ' ':
         case '\t':
+        case '\r':
         case '\0':
             break;
         default:
