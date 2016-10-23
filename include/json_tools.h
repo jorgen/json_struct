@@ -210,7 +210,7 @@ private:
     Error findTokenEnd(const DataRef &json_data, size_t *chars_ahead);
     void requestMoreData();
     void releaseFirstDataRef();
-    Error populateFromDataRef(DataRef &data, Type *type, const DataRef &json_data);
+    Error populateFromDataRef(DataRef &data, Type &type, const DataRef &json_data);
     static void populate_annonymous_token(const DataRef &data, Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
     void updateErrorContext(Error error);
@@ -713,27 +713,27 @@ inline void Tokenizer::releaseFirstDataRef()
     }
 }
 
-inline Error Tokenizer::populateFromDataRef(DataRef &data, Type *type, const DataRef &json_data)
+inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const DataRef &json_data)
 {
     size_t diff = 0;
     Error error = Error::NoError;
     data.size = 0;
     data.data = json_data.data + cursor_index;
     if (property_state == InPropertyState::NoStartFound) {
-        error = findStartOfNextValue(type, json_data, &diff);
+        error = findStartOfNextValue(&type, json_data, &diff);
         if (error != Error::NoError) {
-            *type = Type::Error;
+            type = Type::Error;
             return error;
         }
 
         data.data = json_data.data + cursor_index + diff;
         current_data_start = cursor_index + diff;
         cursor_index += diff + 1;
-        property_type = *type;
+        property_type = type;
 
 
-        if (*type == Type::ObjectStart || *type == Type::ObjectEnd
-            || *type == Type::ArrayStart || *type == Type::ArrayEnd) {
+        if (type == Type::ObjectStart || type == Type::ObjectEnd
+            || type == Type::ArrayStart || type == Type::ArrayEnd) {
             data.size = 1;
             property_state = InPropertyState::FoundEnd;
         } else {
@@ -743,7 +743,7 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Type *type, const Dat
 
     int size_adjustment = 0;
     if (property_state == InPropertyState::FindingEnd) {
-        switch (*type) {
+        switch (type) {
         case Type::String:
             error = findStringEnd(json_data, &diff);
             size_adjustment = -1;
@@ -810,7 +810,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
         switch (token_state) {
         case InTokenState::FindingName:
             type = intermediate_token.name_type;
-            error = populateFromDataRef(data, &type, json_data);
+            error = populateFromDataRef(data, type, json_data);
             if (error == Error::NeedMoreData) {
                 if (property_state > InPropertyState::NoStartFound) {
                     intermediate_token.active = true;
@@ -890,7 +890,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
 
         case InTokenState::FindingData:
             type = intermediate_token.data_type;
-            error = populateFromDataRef(data, &type, json_data);
+            error = populateFromDataRef(data, type, json_data);
             if (error == Error::NeedMoreData) {
                 if (intermediate_token.active == false) {
                     intermediate_token.name.append(tmp_token.name.data, tmp_token.name.size);
