@@ -37,7 +37,6 @@
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #else
-#define snprintf _snprintf
 #define JT_CONSTEXPR
 #endif
 #else
@@ -1574,13 +1573,24 @@ inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseCont
     return Error::NoError;
 }
 
+int jt_snprintf(char *dst, size_t max, const char * format, ...)
+{
+    va_list list;
+#ifdef _MSC_VER
+    return _snprintf_s(dst, max, max, format, list);
+#else
+    int size = snprintf(dst, max, format, list);
+#endif
+}
 
 template<>
 inline void TokenParser<double, double>::serializeToken(const double &d, Token &token, Serializer &serializer)
 {
     //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
     char buf[1 + (308+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    int size = snprintf(buf, sizeof buf/sizeof *buf, "%f",d);
+
+    int size = jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
+
     if (size < 0) {
         fprintf(stderr, "error serializing float token\n");
         return;
@@ -1607,7 +1617,7 @@ inline void TokenParser<float, float>::serializeToken(const float &f, Token &tok
 {
     //char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
     char buf[1/*'-'*/ + (38+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    int size = snprintf(buf, sizeof buf/sizeof *buf, "%f",f);
+    int size = jt_snprintf(buf, sizeof buf/sizeof *buf, "%f",f);
     if (size < 0) {
         fprintf(stderr, "error serializing float token\n");
         return;
@@ -1633,7 +1643,7 @@ template<>
 inline void TokenParser<int, int>::serializeToken(const int&d, Token &token, Serializer &serializer)
 {
     char buf[10];
-    int size = snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
+    int size = jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
     if (size < 0) {
         fprintf(stderr, "error serializing int token\n");
         return;
