@@ -24,18 +24,19 @@
 
 #include "assert.h"
 
-const char json[] = u8R"({
-    "execute_one" : {
-        "number" : 45,
-        "valid" : "false"
-    },
-    "execute_two" : 99,
-    "execute_three" : [
-        4,
-        6,
-        8
-    ]
-})";
+const char json[] =
+"{"
+"    \"execute_one\" : {\n"
+"        \"number\" : 45,\n"
+"        \"valid\" : \"false\"\n"
+"    },"
+"    \"execute_two\" : 99,\n"
+"    \"execute_three\" : [\n"
+"        4,\n"
+"        6,\n"
+"        8\n"
+"    ]\n"
+"}\n";
 
 struct SimpleData
 {
@@ -50,11 +51,13 @@ struct CallFunction
     void execute_one(const SimpleData &data)
     {
         fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
+        called_one = true;
     }
 
     void execute_two(const double &data)
     {
         fprintf(stderr, "execute two executed %f\n", data);
+        called_two = true;
     }
 
     void execute_three(const std::vector<double> &data)
@@ -62,10 +65,15 @@ struct CallFunction
         fprintf(stderr, "execute three\n");
         for (auto x : data)
             fprintf(stderr, "\t%f\n", x);
+        called_three = true;
     }
     JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
                           JT_FUNCTION(execute_two),
                           JT_FUNCTION(execute_three));
+
+    bool called_one = false;
+    bool called_two = false;
+    bool called_three = false;
 };
 
 int main()
@@ -74,6 +82,10 @@ int main()
     CallFunction cont;
     JT::ParseContext context = JT::makeParseContextForData(json, sizeof(json));
     JT::callFunction(cont, context);
+
+    JT_ASSERT(cont.called_one);
+    JT_ASSERT(cont.called_two);
+    JT_ASSERT(cont.called_three);
 
     if (context.error != JT::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());

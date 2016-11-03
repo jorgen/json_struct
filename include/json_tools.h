@@ -33,8 +33,18 @@
 
 #include <assert.h>
 
-namespace JT {
+#ifdef _MSC_VER
+#if _MSC_VER > 1800
+#define JT_CONSTEXPR constexpr
+#else
+#define snprintf _snprintf
+#define JT_CONSTEXPR
+#endif
+#else
+#define JT_CONSTEXPR constexpr
+#endif
 
+namespace JT {
 struct DataRef
 {
     DataRef()
@@ -1301,18 +1311,18 @@ struct HasJTOptionalValue{
     typedef char no[2];
 
     template <typename C>
-    static constexpr yes& test(typename C::HasJTOptionalValue*);
+    static JT_CONSTEXPR yes& test(typename C::HasJTOptionalValue*);
 
     template <typename>
-    static constexpr no& test(...);
+    static JT_CONSTEXPR no& test(...);
 
-    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+    static JT_CONSTEXPR const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
 template <typename T>
 struct HasJTOptionalValue<std::unique_ptr<T>>
 {
-    static constexpr const bool value = true;
+    static JT_CONSTEXPR const bool value = true;
 };
 
 struct ParseContext
@@ -1351,12 +1361,12 @@ struct HasJsonToolsBase {
     typedef char no[2];
 
     template <typename C>
-    static constexpr yes& test(typename C::template JsonToolsBase<C>*);
+    static JT_CONSTEXPR yes& test(typename C::template JsonToolsBase<C>*);
 
     template <typename>
-    static constexpr no& test(...);
+    static JT_CONSTEXPR no& test(...);
 
-    static constexpr const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+    static JT_CONSTEXPR const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
@@ -1368,7 +1378,7 @@ struct MemberInfo
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
-constexpr MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::* member)
+JT_CONSTEXPR MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::* member)
 {
     return {name, member};
 }
@@ -1383,15 +1393,6 @@ struct MemberMembersTuple<T, Args...>
     {
         static_assert(HasJsonToolsBase<T>::value, "Type is not a json struct type");
         return std::tuple_cat(T::template JsonToolsBase<T>::_members(), MemberMembersTuple<Args...>::create());
-    }
-};
-
-template<>
-struct MemberMembersTuple<>
-{
-    static auto create() -> decltype(std::make_tuple())
-    {
-        return std::make_tuple();
     }
 };
 
@@ -1740,6 +1741,8 @@ public:
         if (context.token.value_type != JT::Type::ArrayStart)
             return Error::ExpectedArrayStart;
         Error error = context.tokenizer.nextToken(context.token);
+        if (error != JT::Error::NoError)
+            return error;
         while(context.token.value_type != JT::Type::ArrayEnd)
         {
             to_type.push_back(T());
@@ -1797,14 +1800,6 @@ void parseData(T &to_type, ParseContext &context)
 }
 
 template<typename T>
-T parseData(ParseContext &context)
-{
-    T ret;
-    parseData(ret, context);
-    return ret;
-}
-
-template<typename T>
 std::string serializeStruct(const T &from_type)
 {
     char out_buffer[512];
@@ -1829,7 +1824,7 @@ struct FunctionInfo
     Function function;
 };
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-constexpr FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
 {
     return {name, function};
 }

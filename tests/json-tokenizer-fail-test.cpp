@@ -165,6 +165,30 @@ static int check_fail_json_with_illigal_chars()
     return 0;
 }
 
+const char json_with_illigal_comma_in_array[] =
+"{"
+"    \"foo\": [,4,5,6]"
+"}";
+static int check_fail_json_with_empty_array()
+{
+	JT::Error error;
+	JT::Tokenizer tokenizer;
+	tokenizer.addData(json_with_illigal_comma_in_array);
+
+	JT::Token token;
+	error = tokenizer.nextToken(token);
+	JT_ASSERT(error == JT::Error::NoError);
+	JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+
+	error = tokenizer.nextToken(token);
+	JT_ASSERT(error == JT::Error::NoError);
+	JT_ASSERT(token.value_type == JT::Type::ArrayStart);
+
+	error = tokenizer.nextToken(token);
+	JT_ASSERT(error == JT::Error::EncounteredIlligalChar);
+
+	return 0;
+}
 
 
 int main(int, char **)
@@ -174,7 +198,7 @@ int main(int, char **)
     check_fail_json_with_new_line_seperator();
     check_fail_json_with_comma_before_obj_end();
     check_fail_json_with_illigal_chars();
-
+	check_fail_json_with_empty_array();
     return 0;
 }
 

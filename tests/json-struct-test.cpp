@@ -24,29 +24,29 @@
 
 #include "assert.h"
 
-const char json_data1[] = u8R"({
-    "StringNode" : "Some test data",
-    "NumberNode" : 4676.4,
-    "BooleanTrue" : true,
-    "BooleanFalse" : false,
-    "TestStruct" : {
-        "SubString" : "Some other string",
-        "SubNumber" : 500,
-        "Array" : [
-            5,	
-            6,
-            3,
-            6
-        ],
-        "optional_float" : 300,
-        "this_property_does_not_exist" : true
-    },
-    "OptionalButWithData" : [ 17.5 ],
-    "subStruct2" : {
-        "Field1" : 4,
-        "Field2" : true
-    }
-    })";
+const char json_data1[] = "{\n"
+    "\"StringNode\" : \"Some test data\",\n"
+    "\"NumberNode\" : 4676.4,\n"
+    "\"BooleanTrue\" : true,\n"
+    "\"BooleanFalse\" : false,\n"
+    "\"TestStruct\" : {\n"
+        "\"SubString\" : \"Some other string\",\n"
+        "\"SubNumber\" : 500,\n"
+        "\"Array\" : [\n"
+            "5,\n"	
+            "6,\n"
+            "3,\n"
+            "6\n"
+        "],\n"
+        "\"optional_float\" : 300,\n"
+        "\"this_property_does_not_exist\" : true\n"
+    "},\n"
+    "\"OptionalButWithData\" : [ 17.5 ],\n"
+    "\"subStruct2\" : {\n"
+        "\"Field1\" : 4,\n"
+        "\"Field2\" : true\n"
+    "}\n"
+    "}\n";
 
 struct SubStruct
 {
@@ -95,19 +95,11 @@ struct JsonData1
 
 };
 
-struct SimpleData
-{
-    std::string member1 = "Foobar";
-    float member2 = 45;
-    JT_STRUCT(JT_MEMBER(member1)
-             ,JT_MEMBER(member2));
-};
-
-
 static int check_json_tree_nodes()
 {
     JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
-    JsonData1 data = JT::parseData<JsonData1>(context);
+    JsonData1 data;
+    JT::parseData(data, context);
 
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
@@ -118,20 +110,19 @@ static int check_json_tree_nodes()
     JT_ASSERT(data.StringNode == "Some test data");
     JT_ASSERT(context.error == JT::Error::NoError);
 
-    SimpleData simpleData;
     std::string json = JT::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 }
 
-const char json_data2[] = u8R"({
-    "some_int" : 4,
-    "sub_object" : {
-        "more_data" : "some text",
-        "a_float" : 1.2,
-        "boolean_member" : false
-    }
-})";
+const char json_data2[] = "{\n"
+    "\"some_int\" : 4,\n"
+    "\"sub_object\" : {\n"
+        "\"more_data\" : \"some text\",\n"
+        "\"a_float\" : 1.2,\n"
+        "\"boolean_member\" : false\n"
+    "}\n"
+"}\n";
 
 template<typename T>
 struct OuterStruct
@@ -157,8 +148,11 @@ struct SubObject
 static int check_json_tree_template()
 {
     JT::ParseContext context = JT::makeParseContextForData(json_data2, sizeof(json_data2));
-    OuterStruct<SubObject> data = JT::parseData<OuterStruct<SubObject>>(context);
+    OuterStruct<SubObject> data;
+    JT::parseData(data, context);
     JT_ASSERT(data.sub_object.more_data == "some text");
+    std::string json = JT::serializeStruct(data);
+    fprintf(stderr, "%s\n", json.c_str());
     return 0;
 };
 
