@@ -1582,7 +1582,7 @@ static int jt_snprintf(char *dst, size_t max, const char * format, ...)
 #ifdef _MSC_VER
     return _snprintf_s(dst, max, max, format, list);
 #else
-    int size = snprintf(dst, max, format, list);
+    return snprintf(dst, max, format, list);
 #endif
 }
 
