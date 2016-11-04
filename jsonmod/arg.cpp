@@ -19,13 +19,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
  * OF THIS SOFTWARE.
 */
+#include <malloc.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include "io.h"
 #include "arg.h"
 
 #include <iostream>
-#include <stdio.h>
 
-#include <sys/stat.h>
-#include <errno.h>
+
+//#include <errno.h>
 
 void Arg::printError(const char* msg1, const option::Option& opt, const char* msg2)
 {

@@ -23,9 +23,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include "io.h"
 #include <fcntl.h>
-
 #include <errno.h>
 #include <string.h>
 
@@ -55,7 +54,7 @@ JsonStreamer::JsonStreamer(const Configuration &config)
     if (config.hasInlineSet() && config.hasInputFile()) {
         m_tmp_output = config.inputFile();
         m_tmp_output.append("XXXXXX");
-        m_output_file = mkstemp(&m_tmp_output[0]);
+        m_output_file = jt_mkstemp(m_tmp_output);
         if (m_output_file == -1) {
             fprintf(stderr, "%s\n", strerror(errno));
             m_error = true;
@@ -87,13 +86,19 @@ JsonStreamer::~JsonStreamer()
         close(m_input_file);
     }
     if (m_config.hasInlineSet() && m_config.hasInputFile()) {
+#ifndef WIN32
         fsync(m_output_file);
+#endif
         close(m_output_file);
         if (!m_error) {
-            rename(m_tmp_output.c_str(), m_config.inputFile().c_str());
+            if (unlink(m_config.inputFile().c_str())) {
+                fprintf(stderr, "unlink before renaming temproary failed %s %s %s\n", m_config.inputFile().c_str(), m_tmp_output.c_str(), strerror(errno));
+            }
+            if (rename(m_tmp_output.c_str(), m_config.inputFile().c_str()))
+                fprintf(stderr, "rename failed %s %s %s\n", m_tmp_output.c_str(), m_config.inputFile().c_str(), strerror(errno));
         } else if (m_tmp_output.length()) {
             if (unlink(m_tmp_output.c_str())) {
-                fprintf(stderr, "%s\n", strerror(errno));
+                fprintf(stderr, "unlink failed: %s %s\n", m_tmp_output.c_str(), strerror(errno));
             }
         }
     }

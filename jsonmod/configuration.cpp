@@ -24,7 +24,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <cstring>
-#include <unistd.h>
+#include "io.h"
 #include <sys/stat.h>
 
 #include <iostream>

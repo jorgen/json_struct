@@ -1573,7 +1573,7 @@ inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseCont
     return Error::NoError;
 }
 
-int jt_snprintf(char *dst, size_t max, const char * format, ...)
+static int jt_snprintf(char *dst, size_t max, const char * format, ...)
 {
     va_list list;
 #ifdef _MSC_VER

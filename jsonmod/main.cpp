@@ -19,12 +19,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
  * OF THIS SOFTWARE.
 */
+#include "io.h"
 #include "arg.h"
 #include "configuration.h"
 #include "json_streamer.h"
 
 #include <iostream>
 #include <vector>
+
+#ifdef STRICT
+#undef STRICT
+#endif
 
 enum optionIndex {
     UNKNOWN,

@@ -5,8 +5,6 @@ set (CMAKE_CXX_STANDARD 11)
 
 set(JSON_TOOLS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-if (NOT WIN32)
-    add_subdirectory(jsonmod)
-endif()
+add_subdirectory(jsonmod)
 enable_testing()
 add_subdirectory(tests)
