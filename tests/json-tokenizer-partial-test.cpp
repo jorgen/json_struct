@@ -356,6 +356,30 @@ static int check_json_partial_8()
     return 0;
 }
 
+void check_remove_callback()
+{
+    JT::Error error = JT::Error::NoError;
+    JT::Tokenizer tokenizer;
+    tokenizer.allowAsciiType(true);
+    tokenizer.allowNewLineAsTokenDelimiter(true);
+    tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
+    tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
+    bool has_been_called = false;
+    size_t id = tokenizer.registerNeedMoreDataCallback([&has_been_called] (const JT::Tokenizer &)
+                                                       {
+                                                            has_been_called = true;
+                                                       });
+    JT::Token token;
+    error = tokenizer.nextToken(token);
+    tokenizer.removeNeedMoreDataCallback(id);
+    while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
+        error = tokenizer.nextToken(token);
+
+    JT_ASSERT(error == JT::Error::NoError);
+    JT_ASSERT(has_been_called == false);
+
+}
+
 int main(int, char **)
 {
     check_json_partial_1();
@@ -366,6 +390,8 @@ int main(int, char **)
     check_json_partial_6();
     check_json_partial_7();
     check_json_partial_8();
+
+    check_remove_callback();
 
     return 0;
 }

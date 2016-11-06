@@ -64,7 +64,7 @@ struct DataRef
 
     static DataRef asDataRef(const std::string &str)
     {
-        return DataRef(str.c_str(), str.size());
+        return DataRef(&str[0], str.size());
     }
 
     const char *data;
@@ -148,6 +148,7 @@ enum class Error : unsigned char
     FailedToParseFloat,
     FailedToParseInt,
     UnassignedRequiredMember,
+    NonContigiousMemory,
     UnknownError,
     UserDefinedErrors
 };
@@ -182,12 +183,18 @@ public:
     void addData(const char *data, size_t size);
     template<size_t N>
     void addData(const char (&data)[N]);
-    size_t registered_buffers() const;
-    void registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
-    void registerRelaseCallback(std::function<void(const char *)> callback);
+    size_t registeredBuffers() const;
 
-    Error nextToken(Token &next_token);
+    size_t registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
+    void removeNeedMoreDataCallback(size_t id);
+    size_t registerRelaseCallback(std::function<void(const char *)> callback);
+    void removeReleaseCallback(size_t id);
+
     void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
+    Error nextToken(Token &next_token);
+
+    void copyFromValue(const Token &token, std::string &to_buffer);
+    void copyIncludingValue(const Token &token, std::string &to_buffer);
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
@@ -238,10 +245,12 @@ private:
     size_t line_context;
     size_t line_range_context;
     size_t range_context;
+    size_t callback_id;
     IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
-    std::vector<std::function<void(const char *)>> release_callbacks;
-    std::vector<std::function<void(Tokenizer &)>> need_more_data_callbacks;
+    std::vector<std::pair<size_t, std::function<void(const char *)>>> release_callbacks;
+    std::vector<std::pair<size_t, std::function<void(Tokenizer &)>>> need_more_data_callbacks;
+    std::vector<std::pair<size_t, std::string *>> copy_buffers;
     std::function<void(Token &next_token)> token_transformer;
     ErrorContext error_context;
 };
@@ -308,6 +317,8 @@ public:
     SerializerOptions options() const { return m_option; }
 
     bool write(const Token &token);
+    bool write(const char *data, size_t size);
+    bool write(const std::string &str) { return write(str.c_str(), str.size()); }
     void registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer);
 
     void addRequestBufferCallback(std::function<void(Serializer *)> callback);
@@ -318,8 +329,6 @@ private:
     void markCurrentSerializerBufferFull();
     bool writeAsString(const DataRef &data);
     bool write(Type type, const DataRef &data);
-    bool write(const char *data, size_t size);
-    bool write(const std::string &str) { return write(str.c_str(), str.size()); }
 
     std::vector <std::function<void(Serializer *)>> m_request_buffer_callbacks;
     std::vector <SerializerBuffer *> m_unused_buffers;
@@ -354,6 +363,7 @@ inline Tokenizer::Tokenizer()
     , line_context(4)
     , line_range_context(256)
     , range_context(38)
+    , callback_id(0)
 {}
 inline Tokenizer::~Tokenizer()
 {}
@@ -383,18 +393,41 @@ inline void Tokenizer::addData(const char (&data)[N])
     data_list.push_back(DataRef::asDataRef(data));
 }
 
-inline size_t Tokenizer::registered_buffers() const
+inline size_t Tokenizer::registeredBuffers() const
 {
     return data_list.size();
 }
 
-inline void Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
+inline size_t Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
 {
-    need_more_data_callbacks.push_back(callback);
+    need_more_data_callbacks.push_back(std::make_pair(callback_id++, callback));
+    return callback_id - 1;
 }
-inline void Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
+
+inline void Tokenizer::removeNeedMoreDataCallback(size_t id)
 {
-    release_callbacks.push_back(callback);
+    auto it = std::find_if(need_more_data_callbacks.begin(), need_more_data_callbacks.end(),
+                           [id] (const std::pair<size_t, std::function<void(Tokenizer &)>> &pair) {
+                                return id == pair.first;
+                           });
+    if (it != need_more_data_callbacks.end())
+        need_more_data_callbacks.erase(it);
+}
+
+inline size_t Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
+{
+    release_callbacks.push_back(std::make_pair(callback_id++, callback));
+    return callback_id - 1;
+}
+
+inline void Tokenizer::removeReleaseCallback(size_t id)
+{
+    auto it = std::find_if(release_callbacks.begin(), release_callbacks.end(),
+                           [id] (const std::pair<size_t, std::function<void(const char *)>> &pair) {
+                                return id == pair.first;
+                           });
+    if (it != release_callbacks.end())
+        release_callbacks.erase(it);
 }
 
 inline Error Tokenizer::nextToken(Token &next_token)
@@ -440,6 +473,40 @@ inline void Tokenizer::registerTokenTransformer(std::function<void(Token &next_t
     token_transformer = token_transformer;
 }
 
+static bool isValueInIntermediateToken(const Token &token, const IntermediateToken &intermediate)
+{
+    if (intermediate.data.size())
+        return token.value.data >= &intermediate.data[0] && token.value.data < &intermediate.data[0] + intermediate.data.size();
+    return false;
+}
+
+inline void Tokenizer::copyFromValue(const Token &token, std::string &to_buffer)
+{
+    if (isValueInIntermediateToken(token, intermediate_token)) {
+        std::string data(token.value.data, token.value.size);
+        to_buffer += data;
+        auto pair = std::make_pair(cursor_index, &to_buffer);
+        copy_buffers.push_back(pair);
+    } else {
+        assert(token.value.data > data_list.front().data && token.value.data < data_list.front().data + data_list.front().size);
+        size_t index = token.value.data - data_list.front().data;
+        auto pair = std::make_pair(index, &to_buffer);
+        copy_buffers.push_back(pair);
+    }
+
+    
+
+}
+inline void Tokenizer::copyIncludingValue(const Token &token, std::string &to_buffer)
+{
+    auto it = std::find_if(copy_buffers.begin(), copy_buffers.end(), [&to_buffer] (const std::pair<size_t, std::string *> &pair) { return &to_buffer == pair.second; });
+    assert(it != copy_buffers.end());
+    assert(it->first <= cursor_index);
+    std::string data(data_list.front().data + it->first, cursor_index - it->first);
+    to_buffer += data;
+    copy_buffers.erase(it);
+}
+
 inline std::string Tokenizer::makeErrorString() const
 {
     static const char *error_strings[] = {
@@ -465,6 +532,7 @@ inline std::string Tokenizer::makeErrorString() const
         "FailedToParseFloat",
         "FailedToParseInt",
         "UnassignedRequiredMember",
+        "NonContigiousMemory",
         "UnknownError",
     };
     static_assert(sizeof(error_strings) / sizeof*error_strings == size_t(Error::UserDefinedErrors) , "Please add missing error message");
@@ -698,11 +766,11 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
 inline void Tokenizer::requestMoreData()
 {
 
-    std::vector<std::function<void(Tokenizer &)>> callbacks;
+    std::vector<std::pair<size_t, std::function<void(Tokenizer &)>>> callbacks;
     std::swap(callbacks, need_more_data_callbacks);
     for (auto &callback : callbacks)
     {
-        callback(*this);
+        callback.second(*this);
     }
 }
 
@@ -711,17 +779,24 @@ inline void Tokenizer::releaseFirstDataRef()
     if (data_list.empty())
         return;
 
+    const DataRef &json_data = data_list.front();
+
+    for (auto &copy_pair : copy_buffers) {
+        std::string data(json_data.data + copy_pair.first, json_data.size - copy_pair.first);
+        *copy_pair.second += data;
+        copy_pair.first = 0;
+    }
+
     cursor_index = 0;
     current_data_start = 0;
 
-    std::vector<std::function<void(const char *)>> callbacks;
+    std::vector<std::pair<size_t, std::function<void(const char *)>>> callbacks;
     std::swap(callbacks, release_callbacks);
 
-    const DataRef &json_data = data_list.front();
     const char *data_to_release = json_data.data;
     data_list.erase(data_list.begin());
     for (auto &function : callbacks) {
-        function(data_to_release);
+        function.second(data_to_release);
     }
 }
 
@@ -1307,6 +1382,22 @@ struct OptionalChecked
     typedef bool HasJTOptionalValue;
 };
 
+struct JsonObjectRef : public DataRef
+{
+};
+
+struct JsonObject : public std::string
+{
+};
+
+struct JsonArrayRef : public DataRef
+{
+};
+
+struct JsonArray : public std::string
+{
+};
+
 template <typename T>
 struct HasJTOptionalValue{
     typedef char yes[1];
@@ -1492,6 +1583,30 @@ struct MemberChecker<T, Members, 0>
     }
 };
 
+static void skipToNext(Error &error, Token &token, Tokenizer &tokenizer)
+{
+    assert(error == Error::NoError);
+    Type end_type;
+    if (token.value_type == Type::ObjectStart) {
+        end_type = Type::ObjectEnd;
+    } else if (token.value_type == Type::ArrayStart) {
+        end_type = Type::ArrayEnd;
+    } else {
+        error = tokenizer.nextToken(token);
+        return;
+    }
+    while (error == Error::NoError && token.value_type !=end_type) {
+        error = tokenizer.nextToken(token);
+        if (token.value_type == Type::ObjectStart
+            || token.value_type == Type::ArrayStart) {
+            skipToNext(error, token, tokenizer);
+            if (error != Error::NoError)
+                return;
+            error = tokenizer.nextToken(token);
+        }
+    }
+}
+    
 template<typename T>
 class TokenParser<T, typename std::enable_if<HasJsonToolsBase<T>::value, T>::type>
 {
@@ -1517,7 +1632,9 @@ public:
             } else if (error != Error::NoError) {
                 return error;
             }
-            error = context.tokenizer.nextToken(context.token);
+            error = Error::NoError;
+            skipToNext(error, context.token, context.tokenizer);
+
             if (error != Error::NoError)
                 return error;
         }
@@ -1792,6 +1909,130 @@ public:
         serializer.write(token);
     }
 };
+
+template<>
+inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &to_type, ParseContext &context)
+{
+    if (context.token.value_type != JT::Type::ArrayStart)
+        return Error::ExpectedArrayStart;
+
+    bool buffer_change = false;
+    size_t id = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
+                                                               {
+                                                                    buffer_change = true;
+                                                               });
+
+    size_t level = 1;
+    Error error = Error::NoError;
+    while(error != JT::Error::NoError && level && buffer_change == false) {
+        error = context.tokenizer.nextToken(context.token);
+        if (context.token.value_type == Type::ArrayStart)
+            level++;
+        else if (context.token.value_type == Type::ArrayEnd)
+            level--;
+    }
+    if (buffer_change)
+        return Error::NonContigiousMemory;
+
+    return error;
+}
+
+template<>
+inline void TokenParser<JsonArrayRef, JsonArrayRef>::serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
+{
+    serializer.write(from_type.data, from_type.size);
+}
+
+template<>
+inline Error TokenParser<JsonArray,JsonArray>::unpackToken(JsonArray &to_type, ParseContext &context)
+{
+    if (context.token.value_type != JT::Type::ArrayStart)
+        return Error::ExpectedArrayStart;
+
+    context.tokenizer.copyFromValue(context.token, to_type);
+
+    size_t level = 1;
+    Error error = Error::NoError;
+    while(error != JT::Error::NoError && level) {
+        error = context.tokenizer.nextToken(context.token);
+        if (context.token.value_type == Type::ArrayStart)
+            level++;
+        else if (context.token.value_type == Type::ArrayStart)
+            level--;
+    }
+
+    context.tokenizer.copyIncludingValue(context.token, to_type);
+
+    return error;
+}
+
+template<>
+inline void TokenParser<JsonArray, JsonArray>::serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
+{
+    serializer.write(from_type);
+}
+
+template<>
+inline Error TokenParser<JsonObjectRef,JsonObjectRef>::unpackToken(JsonObjectRef &to_type, ParseContext &context)
+{
+    if (context.token.value_type != JT::Type::ObjectStart)
+        return Error::ExpectedObjectStart;
+
+    bool buffer_change = false;
+    size_t id = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
+                                                               {
+                                                                    buffer_change = true;
+                                                               });
+
+    size_t level = 1;
+    Error error = Error::NoError;
+    while(error != JT::Error::NoError && level && buffer_change == false) {
+        error = context.tokenizer.nextToken(context.token);
+        if (context.token.value_type == Type::ObjectStart)
+            level++;
+        else if (context.token.value_type == Type::ObjectEnd)
+            level--;
+    }
+    if (buffer_change)
+        return Error::NonContigiousMemory;
+
+    return error;
+}
+
+template<>
+inline void TokenParser<JsonObjectRef, JsonObjectRef>::serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
+{
+    serializer.write(from_type.data, from_type.size);
+}
+
+template<>
+inline Error TokenParser<JsonObject,JsonObject>::unpackToken(JsonObject &to_type, ParseContext &context)
+{
+    if (context.token.value_type != JT::Type::ObjectStart)
+        return Error::ExpectedObjectStart;
+
+    context.tokenizer.copyFromValue(context.token, to_type);
+
+    size_t level = 1;
+    Error error = Error::NoError;
+    while(error != JT::Error::NoError && level) {
+        error = context.tokenizer.nextToken(context.token);
+        if (context.token.value_type == Type::ObjectStart)
+            level++;
+        else if (context.token.value_type == Type::ObjectEnd)
+            level--;
+    }
+
+    context.tokenizer.copyIncludingValue(context.token, to_type);
+
+    return error;
+}
+
+template<>
+inline void TokenParser<JsonObject, JsonObject>::serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
+{
+    serializer.write(from_type);
+}
 
 inline ParseContext makeParseContextForData(const char *json_data, size_t size)
 {

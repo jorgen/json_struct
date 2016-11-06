@@ -45,8 +45,11 @@ const char json_data1[] = "{\n"
     "\"subStruct2\" : {\n"
         "\"Field1\" : 4,\n"
         "\"Field2\" : true\n"
+    "},\n"
+    "\"Skipped_sub_object\" : {\n"
+        "\"Field3\" : 465\n"
     "}\n"
-    "}\n";
+"}\n";
 
 struct SubStruct
 {
@@ -83,6 +86,8 @@ struct JsonData1
     float unassigned_value;
     std::unique_ptr<SubStruct2> subStruct2;
 
+    int Field3 = 243;
+    
     JT_STRUCT(JT_MEMBER(StringNode),
               JT_MEMBER(NumberNode),
               JT_MEMBER(BooleanTrue),
@@ -91,7 +96,8 @@ struct JsonData1
               JT_MEMBER(TestStruct),
               JT_MEMBER(OptionalButWithData),
               JT_MEMBER(unassigned_value),
-              JT_MEMBER(subStruct2));
+              JT_MEMBER(subStruct2),
+              JT_MEMBER(Field3));
 
 };
 
@@ -109,6 +115,8 @@ static int check_json_tree_nodes()
     fprintf(stderr, "optional with default value second %f\n", data.TestStruct.optional_with_value());
     JT_ASSERT(data.StringNode == "Some test data");
     JT_ASSERT(context.error == JT::Error::NoError);
+    
+    JT_ASSERT(data.Field3 == 243);
 
     std::string json = JT::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
