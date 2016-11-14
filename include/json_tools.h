@@ -261,7 +261,7 @@ public:
     }
 
     template<typename ...Ts>
-    void invokeCallbacks(Ts ...args)
+    void invokeCallbacks(Ts&...args)
     {
         for (auto &callbackHandler : vec)
         {
