@@ -80,7 +80,7 @@ int main()
 {
 
     CallFunction cont;
-    JT::ParseContext context = JT::makeParseContextForData(json, sizeof(json));
+    JT::ParseContext context(json);
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);

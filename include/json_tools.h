@@ -170,6 +170,140 @@ public:
     }
 };
 
+template<typename T>
+struct CallbackContainer;
+
+template<typename T>
+class RefCounter
+{
+public:
+    RefCounter()
+        : callbackContainer(nullptr)
+        , index(0)
+    {}
+
+    RefCounter(size_t index, CallbackContainer<T> *callbackContainer)
+        : index(index)
+        , callbackContainer(callbackContainer)
+    {
+        inc();
+    }
+    RefCounter(const RefCounter<T> &other)
+        : callbackContainer(other.callbackContainer)
+    {
+        inc();
+    }
+
+    RefCounter<T> &operator=(const RefCounter<T> &other)
+    {
+        dec();
+        callbackContainer = other.callbackContainer;
+        index = other.index;
+        inc();
+    }
+
+    ~RefCounter()
+    {
+        dec();
+    }
+
+private:
+    void inc();
+    void dec();
+    CallbackContainer<T> *callbackContainer;
+    size_t index;
+};
+
+template<typename T>
+class Callback
+{
+public:
+    Callback()
+        : ref(0)
+    {}
+
+    Callback(std::function<T> &callback)
+        : ref(0)
+        , callback(callback)
+    {}
+    Callback(const Callback<T> &other)
+        : ref(other.ref.load())
+        , callback(other.callback)
+    {}
+    Callback &operator=(const Callback<T> &other)
+    {
+        ref.store(other.load());
+        callback = other.callback;
+    }
+
+    void inc() { ++ref; }
+    void dec() { --ref; }
+
+    std::atomic<int> ref;
+    std::function<T> callback;
+};
+
+template<typename T>
+class CallbackContainer
+{
+public:
+    const RefCounter<T> addCallback(std::function<T> &callback)
+    {
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            if (vec[i].ref.load() == 0) {
+                vec[i].callback = callback;
+                return RefCounter<T>(i, this);
+            }
+        }
+        vec.push_back(Callback<T>(callback));
+        return RefCounter<T>(vec.size() - 1, this);
+    }
+
+    template<typename ...Ts>
+    void invokeCallbacks(Ts ...args)
+    {
+        for (auto &callbackHandler : vec)
+        {
+            if (callbackHandler.ref.load())
+            {
+                callbackHandler.callback(args...);
+            }
+        }
+    }
+    void inc(size_t index)
+    {
+        assert(index < vec.size());
+        ++vec[index].ref;
+    }
+    void dec(size_t index)
+    {
+        assert(index < vec.size());
+        assert(vec[index].ref.load() != 0);
+        --vec[index].ref;
+    }
+private:
+    std::vector<Callback<T>> vec;
+};
+
+template<typename T>
+inline void RefCounter<T>::inc()
+{
+    if(callbackContainer)
+        callbackContainer->inc(index);
+}
+
+template<typename T>
+inline void RefCounter<T>::dec()
+{
+    if(callbackContainer)
+        callbackContainer->dec(index);
+}
+
+class Tokenizer;
+typedef RefCounter<void(const char *)> ReleaseCBRef;
+typedef RefCounter<void(Tokenizer &)> NeedMoreDataCBRef;
+
 class Tokenizer
 {
 public:
@@ -185,11 +319,8 @@ public:
     void addData(const char (&data)[N]);
     size_t registeredBuffers() const;
 
-    size_t registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
-    void removeNeedMoreDataCallback(size_t id);
-    size_t registerRelaseCallback(std::function<void(const char *)> callback);
-    void removeReleaseCallback(size_t id);
-
+    NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
+    ReleaseCBRef registerReleaseCallback(std::function<void(const char *)> &callback);
     void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
     Error nextToken(Token &next_token);
 
@@ -248,8 +379,8 @@ private:
     size_t callback_id;
     IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
-    std::vector<std::pair<size_t, std::function<void(const char *)>>> release_callbacks;
-    std::vector<std::pair<size_t, std::function<void(Tokenizer &)>>> need_more_data_callbacks;
+    CallbackContainer<void(const char *)> release_callbacks;
+    CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
     std::function<void(Token &next_token)> token_transformer;
     ErrorContext error_context;
@@ -398,36 +529,14 @@ inline size_t Tokenizer::registeredBuffers() const
     return data_list.size();
 }
 
-inline size_t Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
+inline NeedMoreDataCBRef Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
 {
-    need_more_data_callbacks.push_back(std::make_pair(callback_id++, callback));
-    return callback_id - 1;
+    return need_more_data_callbacks.addCallback(callback);
 }
 
-inline void Tokenizer::removeNeedMoreDataCallback(size_t id)
+inline ReleaseCBRef Tokenizer::registerReleaseCallback(std::function<void(const char *)> &callback)
 {
-    auto it = std::find_if(need_more_data_callbacks.begin(), need_more_data_callbacks.end(),
-                           [id] (const std::pair<size_t, std::function<void(Tokenizer &)>> &pair) {
-                                return id == pair.first;
-                           });
-    if (it != need_more_data_callbacks.end())
-        need_more_data_callbacks.erase(it);
-}
-
-inline size_t Tokenizer::registerRelaseCallback(std::function<void(const char *)> callback)
-{
-    release_callbacks.push_back(std::make_pair(callback_id++, callback));
-    return callback_id - 1;
-}
-
-inline void Tokenizer::removeReleaseCallback(size_t id)
-{
-    auto it = std::find_if(release_callbacks.begin(), release_callbacks.end(),
-                           [id] (const std::pair<size_t, std::function<void(const char *)>> &pair) {
-                                return id == pair.first;
-                           });
-    if (it != release_callbacks.end())
-        release_callbacks.erase(it);
+    return release_callbacks.addCallback(callback);
 }
 
 inline Error Tokenizer::nextToken(Token &next_token)
@@ -765,13 +874,7 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
 
 inline void Tokenizer::requestMoreData()
 {
-
-    std::vector<std::pair<size_t, std::function<void(Tokenizer &)>>> callbacks;
-    std::swap(callbacks, need_more_data_callbacks);
-    for (auto &callback : callbacks)
-    {
-        callback.second(*this);
-    }
+    need_more_data_callbacks.invokeCallbacks(*this);
 }
 
 inline void Tokenizer::releaseFirstDataRef()
@@ -790,14 +893,9 @@ inline void Tokenizer::releaseFirstDataRef()
     cursor_index = 0;
     current_data_start = 0;
 
-    std::vector<std::pair<size_t, std::function<void(const char *)>>> callbacks;
-    std::swap(callbacks, release_callbacks);
-
     const char *data_to_release = json_data.data;
     data_list.erase(data_list.begin());
-    for (auto &function : callbacks) {
-        function.second(data_to_release);
-    }
+    release_callbacks.invokeCallbacks(data_to_release);
 }
 
 inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const DataRef &json_data)
@@ -1420,6 +1518,18 @@ struct HasJTOptionalValue<std::unique_ptr<T>>
 
 struct ParseContext
 {
+    ParseContext()
+    {}
+    ParseContext(const char *data, size_t size)
+    {
+        tokenizer.addData(data, size);
+    }
+    template<size_t SIZE>
+    ParseContext(const char (&data)[SIZE])
+    {
+        tokenizer.addData(data);
+    }
+    
     Tokenizer tokenizer;
     Token token;
     Error error = Error::NoError;
@@ -1917,7 +2027,7 @@ inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &t
         return Error::ExpectedArrayStart;
 
     bool buffer_change = false;
-    size_t id = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
+    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
                                                                {
                                                                     buffer_change = true;
                                                                });
@@ -1979,7 +2089,7 @@ inline Error TokenParser<JsonObjectRef,JsonObjectRef>::unpackToken(JsonObjectRef
         return Error::ExpectedObjectStart;
 
     bool buffer_change = false;
-    size_t id = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
+    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
                                                                {
                                                                     buffer_change = true;
                                                                });
@@ -2032,15 +2142,6 @@ template<>
 inline void TokenParser<JsonObject, JsonObject>::serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
 {
     serializer.write(from_type);
-}
-
-inline ParseContext makeParseContextForData(const char *json_data, size_t size)
-{
-    ParseContext ret;
-    ret.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
-                                                   tokenizer.addData(json_data, size);
-                                                   });
-    return ret;
 }
 
 template<typename T>
@@ -2159,7 +2260,7 @@ template<typename T>
 void callFunction(T &container, const char *json_data, size_t size)
 {
     ParseContext context;
-    context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
+    auto ref = context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
                                                    tokenizer.addData(json_data, size);
                                                    }, true);
     callFunction(container, context);

@@ -364,14 +364,17 @@ void check_remove_callback()
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
     tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
-    bool has_been_called = false;
-    size_t id = tokenizer.registerNeedMoreDataCallback([&has_been_called] (const JT::Tokenizer &)
-                                                       {
-                                                            has_been_called = true;
-                                                       });
     JT::Token token;
-    error = tokenizer.nextToken(token);
-    tokenizer.removeNeedMoreDataCallback(id);
+    bool has_been_called = false;
+    {
+        auto ref = tokenizer.registerNeedMoreDataCallback([&has_been_called] (const JT::Tokenizer &)
+                                                          {
+                                                          fprintf(stderr, "hello\n");
+                                                          has_been_called = true;
+                                                          });
+        error = tokenizer.nextToken(token);
+    }
+
     while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
         error = tokenizer.nextToken(token);
 

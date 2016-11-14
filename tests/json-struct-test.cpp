@@ -103,7 +103,7 @@ struct JsonData1
 
 static int check_json_tree_nodes()
 {
-    JT::ParseContext context = JT::makeParseContextForData(json_data1, sizeof(json_data1));
+    JT::ParseContext context(json_data1);
     JsonData1 data;
     JT::parseData(data, context);
 
@@ -155,7 +155,7 @@ struct SubObject
 
 static int check_json_tree_template()
 {
-    JT::ParseContext context = JT::makeParseContextForData(json_data2, sizeof(json_data2));
+    JT::ParseContext context(json_data2);
     OuterStruct<SubObject> data;
     JT::parseData(data, context);
     JT_ASSERT(data.sub_object.more_data == "some text");

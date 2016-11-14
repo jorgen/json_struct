@@ -77,7 +77,7 @@ void jt_validate_json(JT::Tokenizer &tokenizer)
     while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
         error = tokenizer.nextToken(token);
     
-    JT::ParseContext context = JT::makeParseContextForData(buffer.c_str(), buffer.size());
+    JT::ParseContext context(buffer.c_str(), buffer.size());
     fprintf(stderr, "buffer %s\n", buffer.c_str());
     SubObject subObj;
     JT::parseData(subObj, context);
@@ -105,18 +105,17 @@ void jt_partial_2()
 {
     JT::Tokenizer tokenizer;
     size_t offset = 0;
-    std::function<void (JT::Tokenizer &)> func = [&offset, &func] (JT::Tokenizer &tokenizer)
+    std::function<void (JT::Tokenizer &)> func = [&offset, &func] (JT::Tokenizer &tok)
     {
         if (offset + 2 > sizeof(json)) {
-            tokenizer.addData(json + offset, sizeof(json) - offset);
+            tok.addData(json + offset, sizeof(json) - offset);
             offset += sizeof(json) - offset;
         } else {
-            tokenizer.addData(json + offset, 2);
+            tok.addData(json + offset, 2);
             offset += 2;
         }
-        tokenizer.registerNeedMoreDataCallback(func);
     };
-    tokenizer.registerNeedMoreDataCallback(func);
+    auto ref = tokenizer.registerNeedMoreDataCallback(func);
 
     jt_validate_json(tokenizer);
 }
@@ -134,9 +133,8 @@ void jt_partial_3()
             tokenizer.addData(json + offset, 1);
             offset += 1;
         }
-        tokenizer.registerNeedMoreDataCallback(func);
     };
-    tokenizer.registerNeedMoreDataCallback(func);
+    auto ref = tokenizer.registerNeedMoreDataCallback(func);
     
     jt_validate_json(tokenizer);
 }
