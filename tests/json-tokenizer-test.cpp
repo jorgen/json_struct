@@ -73,6 +73,14 @@ static int check_json_with_string_and_ascii()
 
     error = tokenizer.nextToken(token);
     JT_ASSERT(error == JT::Error::NoError);
+    JT_ASSERT((assert_token(token, JT::Type::String, "\\\"EscapedName\\\"", JT::Type::Bool, "true") == 0));
+
+    error = tokenizer.nextToken(token);
+    JT_ASSERT(error == JT::Error::NoError);
+    JT_ASSERT((assert_token(token, JT::Type::String, "EscapedProp", JT::Type::String, "\\\"Hello\\\"") == 0));
+
+    error = tokenizer.nextToken(token);
+    JT_ASSERT(error == JT::Error::NoError);
     JT_ASSERT((assert_token(token, JT::Type::Ascii, "ThisIsANumber", JT::Type::Number, "3.14") == 0));
 
     error = tokenizer.nextToken(token);

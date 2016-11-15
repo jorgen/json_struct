@@ -763,7 +763,7 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
             break;
         case '"':
             *type = Type::String;
-            *chars_ahead = current_pos - cursor_index;
+            *chars_ahead = current_pos - cursor_index + 1;
             return Error::NoError;
         case '{':
             *type = Type::ObjectStart;
@@ -847,7 +847,6 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
-        const char *data_at = json_data.data + end;
         switch(*(json_data.data + end)) {
         case ',':
             expecting_prop_or_annonymous_data = true;
@@ -917,10 +916,6 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const Dat
 
         data.data = json_data.data + cursor_index + diff;
         current_data_start = cursor_index + diff;
-        if (type == Type::String) {
-            data.data++;
-            current_data_start++;
-        }
         cursor_index += diff + 1;
         property_type = type;
 
@@ -1807,13 +1802,13 @@ inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseCont
     return Error::NoError;
 }
 
-template<typename ...Ts>
-static int jt_snprintf(char *dst, size_t max, const char * format, Ts ...args)
+static int jt_snprintf(char *dst, size_t max, const char * format, ...)
 {
+    va_list list;
 #ifdef _MSC_VER
-    return _snprintf_s(dst, max, max, format, args...);
+    return _snprintf_s(dst, max, max, format, list);
 #else
-    return snprintf(dst, max, format, args...);
+    return snprintf(dst, max, format, list);
 #endif
 }
 

@@ -36,6 +36,8 @@ const char json_data1[] =
 "   ThisIsFalse: false,\n"
 "\n"
 "   EscapedString: \"contains \\\"\",\n"
+"    \"\\\"EscapedName\\\"\" : true,\n"
+"    \"EscapedProp\" : \"\\\"Hello\\\"\",\n"
 "   ThisIsANumber: 3.14\n"
 "   ThisIsAnObject: {\n"
 "       ThisIsASubType: \"red\"\n"
