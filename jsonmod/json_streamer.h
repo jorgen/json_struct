@@ -38,7 +38,7 @@ public:
 
     void stream();
 
-    void requestFlushOutBuffer(JT::Serializer *);
+    void requestFlushOutBuffer(JT::Serializer &);
 private:
     enum MatchingState {
         LookingForMatch,
@@ -55,6 +55,7 @@ private:
 
     JT::Tokenizer m_tokenizer;
     JT::Serializer m_serializer;
+    JT::BufferRequestCBRef m_req_buffer_ref;
 
     int m_input_file;
     int m_output_file;

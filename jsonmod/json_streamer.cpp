@@ -70,12 +70,12 @@ JsonStreamer::JsonStreamer(const Configuration &config)
 
     createPropertyVector();
 
-    std::function<void(JT::Serializer *)> callback=
+    std::function<void(JT::Serializer &)> callback=
         std::bind(&JsonStreamer::requestFlushOutBuffer, this, std::placeholders::_1);
 
     m_tokenizer.allowNewLineAsTokenDelimiter(!m_config.strict());
     m_tokenizer.allowSuperfluousComma(!m_config.strict());
-    m_serializer.addRequestBufferCallback(callback);
+    m_req_buffer_ref = m_serializer.addRequestBufferCallback(callback);
 
     setStreamerOptions(m_config.compactPrint());
 }
@@ -104,14 +104,14 @@ JsonStreamer::~JsonStreamer()
     }
 }
 
-void JsonStreamer::requestFlushOutBuffer(JT::Serializer *serializer)
+void JsonStreamer::requestFlushOutBuffer(JT::Serializer &serializer)
 {
-    JT::SerializerBuffer buffer = serializer->buffers().front();
-    serializer->clearBuffers();
+    JT::SerializerBuffer buffer = serializer.buffers().front();
+    serializer.clearBuffers();
 
     if (!(m_config.silent() && m_output_file == STDOUT_FILENO))
         writeOutBuffer(buffer);
-    serializer->appendBuffer(buffer.buffer,buffer.size);
+    serializer.appendBuffer(buffer.buffer,buffer.size);
 }
 
 void JsonStreamer::stream()
@@ -252,14 +252,14 @@ void JsonStreamer::stream()
         }
         if (tokenizer_error != JT::Error::NeedMoreData
                 && tokenizer_error != JT::Error::NoError) {
-            requestFlushOutBuffer(&m_serializer);
+            requestFlushOutBuffer(m_serializer);
             char new_line[] = "\n";
             write(m_output_file, new_line, sizeof new_line - 1);
             fprintf(stderr, "Error while parsing json. \n%s\n", m_tokenizer.makeErrorString().c_str());
             break;
         }
     }
-    requestFlushOutBuffer(&m_serializer);
+    requestFlushOutBuffer(m_serializer);
     char new_line[] = "\n";
     write(m_output_file, new_line, sizeof new_line - 1);
     if (bytes_read < 0) {

@@ -200,6 +200,7 @@ public:
         callbackContainer = other.callbackContainer;
         index = other.index;
         inc();
+        return *this;
     }
 
     ~RefCounter()
@@ -437,6 +438,8 @@ public:
     size_t used;
 };
 
+class Serializer;
+typedef RefCounter<void(Serializer &)> BufferRequestCBRef;
 class Serializer
 {
 public:
@@ -452,7 +455,7 @@ public:
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
     void registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer);
 
-    void addRequestBufferCallback(std::function<void(Serializer *)> callback);
+    const BufferRequestCBRef addRequestBufferCallback(std::function<void(Serializer &)> callback);
     const std::vector<SerializerBuffer> &buffers() const;
     void clearBuffers();
 private:
@@ -461,7 +464,7 @@ private:
     bool writeAsString(const DataRef &data);
     bool write(Type type, const DataRef &data);
 
-    std::vector <std::function<void(Serializer *)>> m_request_buffer_callbacks;
+    CallbackContainer<void(Serializer &)> m_request_buffer_callbacks;
     std::vector <SerializerBuffer *> m_unused_buffers;
     std::vector <SerializerBuffer> m_all_buffers;
 
@@ -1337,9 +1340,9 @@ inline void Serializer::registerTokenTransformer(std::function<const Token&(cons
     this->m_token_transformer = token_transformer;
 }
 
-inline void Serializer::addRequestBufferCallback(std::function<void(Serializer *)> callback)
+inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::function<void(Serializer &)> callback)
 {
-    m_request_buffer_callbacks.push_back(callback);
+    return m_request_buffer_callbacks.addCallback(callback);
 }
 
 inline const std::vector<SerializerBuffer> &Serializer::buffers() const
@@ -1355,11 +1358,7 @@ inline void Serializer::clearBuffers()
 
 inline void Serializer::askForMoreBuffers()
 {
-    for (auto it = m_request_buffer_callbacks.begin();
-            it != m_request_buffer_callbacks.end();
-            ++it) {
-        (*it)(this);
-    }
+    m_request_buffer_callbacks.invokeCallbacks(*this);
 }
 
 inline void Serializer::markCurrentSerializerBufferFull()
@@ -2160,10 +2159,10 @@ std::string serializeStruct(const T &from_type)
     char out_buffer[512];
     std::string ret_string;
     Serializer serializer(out_buffer, sizeof(out_buffer));
-    serializer.addRequestBufferCallback([&ret_string, &out_buffer](Serializer *serializer)
+    auto ref = serializer.addRequestBufferCallback([&ret_string, &out_buffer](Serializer &serializer)
                                         {
                                             ret_string += std::string(out_buffer, sizeof(out_buffer));
-                                            serializer->appendBuffer(out_buffer, sizeof(out_buffer));
+                                            serializer.appendBuffer(out_buffer, sizeof(out_buffer));
                                         });
     Token token;
     TokenParser<T,T>::serializeToken(from_type, token, serializer);
