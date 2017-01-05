@@ -79,14 +79,17 @@ struct JsonData1
     std::string StringNode;
     double NumberNode;
     bool BooleanTrue;
+    ///very special comment for BooleanFalse
     bool BooleanFalse;
     JT::Optional<int> OptionalInt;
+    /// Test structur comment
     SubStruct TestStruct;
     JT::Optional<std::vector<double>> OptionalButWithData;
     float unassigned_value;
     std::unique_ptr<SubStruct2> subStruct2;
 
     int Field3 = 243;
+    std::string NodeWithLiteral = "SOME STRING LITERAL!!!";
     
     JT_STRUCT(JT_MEMBER(StringNode),
               JT_MEMBER(NumberNode),
@@ -97,7 +100,8 @@ struct JsonData1
               JT_MEMBER(OptionalButWithData),
               JT_MEMBER(unassigned_value),
               JT_MEMBER(subStruct2),
-              JT_MEMBER(Field3));
+              JT_MEMBER(Field3),
+              JT_MEMBER(NodeWithLiteral));
 
 };
 

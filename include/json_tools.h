@@ -1550,7 +1550,7 @@ struct ParseContext
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(std::make_tuple(__VA_ARGS__)) _members() \
+       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_data_info() \
        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
@@ -1558,7 +1558,7 @@ struct ParseContext
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &_members() \
+        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &jt_static_meta_data_info() \
         { static auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
     };
 
@@ -1596,10 +1596,10 @@ struct MemberMembersTuple;
 template<typename T, typename... Args>
 struct MemberMembersTuple<T, Args...>
 {
-    static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::_members(), MemberMembersTuple<Args...>::create()))
+    JT_CONSTEXPR static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::jt_static_meta_data_info(), MemberMembersTuple<Args...>::create()))
     {
         static_assert(HasJsonToolsBase<T>::value, "Type is not a json struct type");
-        return std::tuple_cat(T::template JsonToolsBase<T>::_members(), MemberMembersTuple<Args...>::create());
+        return std::tuple_cat(T::template JsonToolsBase<T>::jt_static_meta_data_info(), MemberMembersTuple<Args...>::create());
     }
 };
 
@@ -1732,7 +1732,7 @@ public:
         Error error = context.tokenizer.nextToken(context.token);
         if (error != JT::Error::NoError)
             return error;
-        auto members = T::template JsonToolsBase<T>::_members();
+        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
         bool assigned_members[std::tuple_size<decltype(members)>::value];
         memset(assigned_members, 0, sizeof(assigned_members));
         while(context.token.value_type != JT::Type::ObjectEnd)
@@ -1770,7 +1770,7 @@ public:
         token.value_type = Type::ObjectStart;
         token.value = DataRef::asDataRef(objectStart);
         serializer.write(token);
-        auto members = T::template JsonToolsBase<T>::_members();
+        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
         MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer);
         token.name.size = 0;
         token.name.data = "";

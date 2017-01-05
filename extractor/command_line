@@ -1,0 +1,1 @@
+./extractor/extractor ../tests/json-struct-test.cpp -- -I ../include/ -I ../include/extractor/clang_headers -I ../include/extractor/c++/v1  -std=c++11
