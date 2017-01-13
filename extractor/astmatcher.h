@@ -40,19 +40,20 @@ public:
         if (const Decl *field = Result.Nodes.getNodeAs<clang::Decl>("field")) {
             SourceManager &sm = field->getASTContext().getSourceManager();
             const LangOptions &lo = field->getASTContext().getLangOpts();
+            std::string default_value;
             if (const StringLiteral *str = Result.Nodes.getNodeAs<StringLiteral>("string")) {
-                fprintf(stderr, "string literal %s\n", getLiteralText(sm, lo, str).c_str());
+                default_value = getLiteralText(sm, lo, str);
             } else if (const FloatingLiteral *f = Result.Nodes.getNodeAs<FloatingLiteral>("float")) {
-                fprintf(stderr, "float literal %s\n", getLiteralText(sm, lo, f).c_str());
+                default_value = getLiteralText(sm, lo, f);
             } else if (const IntegerLiteral *i = Result.Nodes.getNodeAs<IntegerLiteral>("int")) {
-                fprintf(stderr, "int literal %s\n", getLiteralText(sm, lo, i).c_str());
+                default_value = getLiteralText(sm, lo, i);
             } else if (const CXXBoolLiteralExpr *b = Result.Nodes.getNodeAs<CXXBoolLiteralExpr>("bool")) {
-                fprintf(stderr, "boolliteral %s\n", getLiteralText(sm, lo, b).c_str());
+                default_value = getLiteralText(sm, lo, b);
             } else if (const CXXNullPtrLiteralExpr *ptr = Result.Nodes.getNodeAs<CXXNullPtrLiteralExpr>("ptr")) {
-                fprintf(stderr, "ptr literal %s\n", getLiteralText(sm, lo, ptr).c_str());
+                default_value = getLiteralText(sm, lo, ptr);
             }
-
-
+            if (default_value.c_str())
+                fprintf(stderr, "\t\t%s\n", default_value.c_str());
         }
     }
 };
@@ -90,8 +91,9 @@ public:
         std::string comment = commentForDecl(field);
         std::string name = nameLiteral->getString().str();
 
+        fprintf(stderr, "\t %s\n", name.c_str());
         if (comment.size())
-            fprintf(stderr, "comment for field %s\n %s\n", name.c_str(), comment.c_str());
+            fprintf(stderr, "\t\t%s\n", comment.c_str());
     }
 };
 
@@ -112,14 +114,13 @@ public :
 
     void run(const MatchFinder::MatchResult &Result) override
     {
-        if (const Decl *parent = Result.Nodes.getNodeAs<clang::Decl>("return_type")) {
-            fprintf(stderr, "Finding members for node~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-            MetaMemberMatcher memberMatcher;
-            clang::ast_matchers::MatchFinder finder;
-            finder.addMatcher(MetaMemberMatcher::metaMatcher(), &memberMatcher);
-            finder.match(*parent, parent->getASTContext());
-
-
-        }
+        const RecordDecl *parent = Result.Nodes.getNodeAs<clang::RecordDecl>("parent");
+        const Decl *return_type = Result.Nodes.getNodeAs<clang::Decl>("return_type");
+        assert(parent && return_type);
+        fprintf(stderr, "%s\n", parent->getName().str().c_str());
+        MetaMemberMatcher memberMatcher;
+        clang::ast_matchers::MatchFinder finder;
+        finder.addMatcher(MetaMemberMatcher::metaMatcher(), &memberMatcher);
+        finder.match(*return_type, return_type->getASTContext());
     }
 };
