@@ -66,12 +66,29 @@ struct SubStruct
               JT_MEMBER(optional_with_value));
 };
 
+const char sub_struct3_data [] = "{\n"
+        "\"Field1\" : 4,\n"
+        "\"Field2\" : true,\n"
+        "\"Field3\" : \"432\"\n"
+    "}\n";
+
 struct SubStruct2
 {
     float Field1;
     bool Field2;
     JT_STRUCT(JT_MEMBER(Field1),
               JT_MEMBER(Field2));
+};
+
+struct SubStruct3 : public SubStruct2
+{
+    std::string Field3;
+    int Field4;
+    JT::Optional<std::string> Field5;
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SubStruct2)),
+                         JT_MEMBER(Field3),
+                         JT_MEMBER(Field4),
+                         JT_MEMBER(Field5));
 };
 
 struct JsonData1
@@ -157,6 +174,7 @@ struct SubObject
               JT_MEMBER(boolean_member));
 };
 
+
 static int check_json_tree_template()
 {
     JT::ParseContext context(json_data2);
@@ -168,9 +186,47 @@ static int check_json_tree_template()
     return 0;
 };
 
+static int check_json_tree_subclass()
+{
+    JT::ParseContext context(sub_struct3_data);
+    SubStruct3 substruct3;
+    JT::parseData(substruct3, context);
+    JT_ASSERT(substruct3.Field3 == std::string("432"));
+    return 0;
+}
+
+const char json_data3[] = "{\n"
+    "\"SuperSuper\" : 5,\n"
+    "\"Regular\": 42,\n"
+    "\"Super\" : \"This is in the Superclass\"\n"
+    "}\n";
+
+struct SuperSuperClass {
+    int SuperSuper;
+    JT_STRUCT(JT_MEMBER(SuperSuper))
+};
+
+struct SuperClass : public SuperSuperClass
+{
+    std::string Super;
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
+                            JT_SUPER_CLASS(SuperSuperClass)),
+                         JT_MEMBER(Super));
+};
+
+struct RegularClass : public SuperClass
+{
+    int Regular;
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
+                            JT_SUPER_CLASS(SuperClass)),
+                         JT_MEMBER(Regular));
+};
+
+void check_json_tree_ne
 int main(int, char **)
 {
     check_json_tree_nodes();
     check_json_tree_template();
+    check_json_tree_subclass();
     return 0;
 }

@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <memory>
-
+#include <tuple>
 #include <assert.h>
 
 #ifdef _MSC_VER
@@ -1506,12 +1506,12 @@ struct HasJTOptionalValue{
     typedef char no[2];
 
     template <typename C>
-    static JT_CONSTEXPR yes& test(typename C::HasJTOptionalValue*);
+    static JT_CONSTEXPR yes& test_in_optional(typename C::HasJTOptionalValue*);
 
     template <typename>
-    static JT_CONSTEXPR no& test(...);
+    static JT_CONSTEXPR no& test_in_optional(...);
 
-    static JT_CONSTEXPR const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+    static JT_CONSTEXPR const bool value = sizeof(test_in_optional<T>(nullptr)) == sizeof(yes);
 };
 
 template <typename T>
@@ -1533,7 +1533,7 @@ struct ParseContext
     {
         tokenizer.addData(data);
     }
-    
+
     Tokenizer tokenizer;
     Token token;
     Error error = Error::NoError;
@@ -1544,7 +1544,10 @@ struct ParseContext
 };
 
 #define JT_MEMBER(name) JT::makeMemberInfo(#name, &JT_STRUCT_T::name)
-#define JT_SUPER_CLASSES(...) JT::MemberMembersTuple<__VA_ARGS__>::create()
+
+#define JT_SUPER_CLASS(super) JT::SuperInfo<super, sizeof(#super) - 1>(#super)
+
+#define JT_SUPER_CLASSES(...) std::make_tuple(__VA_ARGS__)
 
 #define JT_STRUCT(...) \
     template<typename JT_STRUCT_T> \
@@ -1552,14 +1555,18 @@ struct ParseContext
     { \
        static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_data_info() \
        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(std::make_tuple()) &jt_static_meta_super_info() \
+       { static auto ret = std::make_tuple(); return ret; } \
     };
 
 #define JT_STRUCT_WITH_SUPER(super_list, ...) \
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-        static const decltype(std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list)) &jt_static_meta_data_info() \
-        { static auto ret = std::tuple_cat(std::make_tuple(__VA_ARGS__), super_list); return ret; } \
+       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+        static const decltype(super_list) &jt_static_meta_super_info() \
+        { static auto ret = super_list; return ret; } \
     };
 
 template <typename T>
@@ -1568,12 +1575,12 @@ struct HasJsonToolsBase {
     typedef char no[2];
 
     template <typename C>
-    static JT_CONSTEXPR yes& test(typename C::template JsonToolsBase<C>*);
+    static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
 
     template <typename>
-    static JT_CONSTEXPR no& test(...);
+    static JT_CONSTEXPR no& test_in_base(...);
 
-    static JT_CONSTEXPR const bool value = sizeof(test<T>(nullptr)) == sizeof(yes);
+    static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(nullptr)) == sizeof(yes);
 };
 
 template<typename T, typename U, size_t NAME_SIZE>
@@ -1590,17 +1597,15 @@ JT_CONSTEXPR MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char (&name)[N
     return {name, member};
 }
 
-template<typename... Args>
-struct MemberMembersTuple;
-
-template<typename T, typename... Args>
-struct MemberMembersTuple<T, Args...>
+template<typename T, size_t NAME_SIZE>
+struct SuperInfo
 {
-    JT_CONSTEXPR static auto create() -> decltype(std::tuple_cat(T::template JsonToolsBase<T>::jt_static_meta_data_info(), MemberMembersTuple<Args...>::create()))
-    {
-        static_assert(HasJsonToolsBase<T>::value, "Type is not a json struct type");
-        return std::tuple_cat(T::template JsonToolsBase<T>::jt_static_meta_data_info(), MemberMembersTuple<Args...>::create());
-    }
+    SuperInfo(const char *name)
+        : name(name)
+    {}
+    const char *name;
+    typedef T type;
+
 };
 
 template<typename T, typename specifier>
@@ -1651,6 +1656,41 @@ inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_
     TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
 }
 
+template<typename T, size_t INDEX>
+struct SuperClassHandler
+{
+    static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members);
+    static JT_CONSTEXPR size_t membersInSuperClasses();
+};
+
+template<typename T, size_t SIZE>
+struct StartSuperRecursion
+{
+    static Error start(T &to_type, ParseContext &context, bool *assigned)
+    {
+        return SuperClassHandler<T, SIZE - 1>::handleSuperClasses(to_type, context, assigned);
+    }
+
+    static JT_CONSTEXPR size_t membersInSuperClasses()
+    {
+        return SuperClassHandler<T, SIZE - 1>::membersInSuperClasses();
+    }
+};
+
+template<typename T>
+struct StartSuperRecursion<T, 0>
+{
+    static Error start(T &to_type, ParseContext &context, bool *assigned)
+    {
+        return Error::MissingPropertyMember;
+    }
+
+    static JT_CONSTEXPR size_t membersInSuperClasses()
+    {
+        return 0;
+    }
+};
+
 template<typename T, typename Members, size_t INDEX>
 struct MemberChecker
 {
@@ -1683,7 +1723,12 @@ struct MemberChecker<T, Members, 0>
 {
     static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
     {
-        return unpackMember(to_type, std::get<0>(members), context, 0, assigned_members);
+        Error error = unpackMember(to_type, std::get<0>(members), context, 0, assigned_members);
+        if (error != Error::MissingPropertyMember)
+            return error;
+
+        using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        return StartSuperRecursion<T, std::tuple_size<Super>::value>::start(to_type, context, assigned_members);
     }
 
     static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members)
@@ -1694,6 +1739,42 @@ struct MemberChecker<T, Members, 0>
     static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer)
     {
         serializeMember(from_type, std::get<std::tuple_size<Members>::value - 1>(members), token, serializer);
+    }
+};
+
+template<typename T, size_t INDEX>
+Error SuperClassHandler<T, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
+{
+    using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+    using Members = decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info());
+    auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+    Error error = MemberChecker<Super, Members, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members);
+    if (error != Error::MissingPropertyMember)
+        return error;
+    return SuperClassHandler<T, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+}
+
+template<typename T, size_t INDEX>
+JT_CONSTEXPR size_t SuperClassHandler<T, INDEX>::membersInSuperClasses()
+{
+    //using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    //using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+    //using Members = decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info());
+    //return std::tuple_size<Members>::value + SuperClassHandler<T
+    return 0;
+}
+
+template<typename T>
+struct SuperClassHandler<T, 0>
+{
+    static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
+    {
+        using Meta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<0, Meta>::type::type;
+        using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        return MemberChecker<Super, Members, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members);
     }
 };
 
