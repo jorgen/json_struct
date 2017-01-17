@@ -1279,6 +1279,9 @@ inline Serializer::Serializer()
 }
 
 inline Serializer::Serializer(char *buffer, size_t size)
+    : m_first(true)
+    , m_token_start(true)
+
 {
     appendBuffer(buffer,size);
 }
@@ -1625,7 +1628,7 @@ public:
 };
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_members)
+inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context,  size_t index, bool *assigned_members, const char *super_name)
 {
     if (MI_S == context.token.name.size && memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
@@ -1636,18 +1639,21 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &member
 }
 
 template<typename MI_T, typename MI_M, size_t MI_S>
-inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members)
+inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
 {
     if (assigned_members[index])
         return Error::NoError;
     if (HasJTOptionalValue<MI_T>::value)
         return Error::NoError;
-    missing_members.push_back(std::string(memberInfo.name, MI_S));
+
+    std::string to_push = strlen(super_name) ? std::string(super_name) + "::" : std::string();
+    to_push += std::string(memberInfo.name, MI_S);
+    missing_members.push_back(to_push);
     return Error::UnassignedRequiredMember;
 }
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer &serializer)
+inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer &serializer, const char *super_name)
 {
     token.name.data = memberInfo.name;
     token.name.size = MI_S;
@@ -1656,117 +1662,182 @@ inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_
     TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
 }
 
-template<typename T, size_t INDEX>
+template<typename T, size_t PAGE, size_t INDEX>
 struct SuperClassHandler
 {
     static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members);
+    static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members);
     static JT_CONSTEXPR size_t membersInSuperClasses();
+    static void serializeMembers(const T &from_type, Token &token, Serializer &serializer);
 };
 
-template<typename T, size_t SIZE>
+template<typename T, size_t PAGE, size_t SIZE>
 struct StartSuperRecursion
 {
     static Error start(T &to_type, ParseContext &context, bool *assigned)
     {
-        return SuperClassHandler<T, SIZE - 1>::handleSuperClasses(to_type, context, assigned);
+        return SuperClassHandler<T, PAGE, SIZE - 1>::handleSuperClasses(to_type, context, assigned);
+    }
+
+    static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
+    {
+        return SuperClassHandler<T, PAGE, SIZE - 1>::verifyMembers(assigned_members, missing_members);
     }
 
     static JT_CONSTEXPR size_t membersInSuperClasses()
     {
-        return SuperClassHandler<T, SIZE - 1>::membersInSuperClasses();
+        return SuperClassHandler<T, PAGE, SIZE - 1>::membersInSuperClasses();
+    }
+
+    static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
+    {
+        return SuperClassHandler<T, PAGE, SIZE - 1>::serializeMembers(from_type, token, serializer);
     }
 };
 
-template<typename T>
-struct StartSuperRecursion<T, 0>
+template<typename T, size_t PAGE>
+JT_CONSTEXPR size_t memberCount()
+{
+    using Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
+    using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    return std::tuple_size<Members>::value + StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<SuperMeta>::value>::membersInSuperClasses();
+}
+
+template<typename T, size_t PAGE>
+struct StartSuperRecursion<T, PAGE, 0>
 {
     static Error start(T &to_type, ParseContext &context, bool *assigned)
     {
         return Error::MissingPropertyMember;
     }
 
+    static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
+    {
+        return Error::NoError;
+    }
+
     static JT_CONSTEXPR size_t membersInSuperClasses()
     {
         return 0;
     }
+
+    static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
+    {
+    }
 };
 
-template<typename T, typename Members, size_t INDEX>
+template<typename T, typename Members, size_t PAGE, size_t INDEX>
 struct MemberChecker
 {
-    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
+    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
     {
-        Error error = unpackMember(to_type, std::get<INDEX>(members), context, INDEX, assigned_members);
+        Error error = unpackMember(to_type, std::get<INDEX>(members), context, PAGE + INDEX, assigned_members, super_name);
         if (error != Error::MissingPropertyMember)
             return error;
 
-        return MemberChecker<T, Members, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members);
+        return MemberChecker<T, Members, PAGE, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members, super_name);
     }
 
-    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members)
+    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
     {
-        Error memberError = verifyMember(std::get<INDEX>(members), INDEX, assigned_members, missing_members);
-        Error error = MemberChecker<T, Members, INDEX - 1>::verifyMembers(members, assigned_members, missing_members);
+        Error memberError = verifyMember(std::get<INDEX>(members), PAGE + INDEX, assigned_members, missing_members, super_name);
+        Error error = MemberChecker<T, Members, PAGE, INDEX - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         if (memberError != Error::NoError)
             return memberError;
         return error;
     }
-    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer)
+    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer, const char *super_name)
     {
-        serializeMember(from_type, std::get<std::tuple_size<Members>::value - INDEX - 1>(members), token, serializer);
-        MemberChecker<T, Members, INDEX -1>::serializeMembers(from_type, members, token, serializer);
+        serializeMember(from_type, std::get<std::tuple_size<Members>::value - INDEX - 1>(members), token, serializer, super_name);
+        MemberChecker<T, Members, PAGE, INDEX -1>::serializeMembers(from_type, members, token, serializer, super_name);
     }
 };
 
-template<typename T, typename Members>
-struct MemberChecker<T, Members, 0>
+template<typename T, typename Members, size_t PAGE>
+struct MemberChecker<T, Members, PAGE, 0>
 {
-    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
+    static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
     {
-        Error error = unpackMember(to_type, std::get<0>(members), context, 0, assigned_members);
+        Error error = unpackMember(to_type, std::get<0>(members), context, PAGE, assigned_members, super_name);
         if (error != Error::MissingPropertyMember)
             return error;
 
         using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        return StartSuperRecursion<T, std::tuple_size<Super>::value>::start(to_type, context, assigned_members);
+        return StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::start(to_type, context, assigned_members);
     }
 
-    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members)
+    static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
     {
-        return verifyMember(std::get<0>(members), 0, assigned_members, missing_members);
+        Error memberError = verifyMember(std::get<0>(members), PAGE, assigned_members, missing_members, super_name);
+        using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        Error superError = StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::verifyMembers(assigned_members, missing_members);
+        if (memberError != Error::NoError)
+            return memberError;
+        return superError;
     }
 
-    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer)
+    static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer, const char *super_name)
     {
-        serializeMember(from_type, std::get<std::tuple_size<Members>::value - 1>(members), token, serializer);
+        serializeMember(from_type, std::get<std::tuple_size<Members>::value - 1>(members), token, serializer, super_name);
+        using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::serializeMembers(from_type, token, serializer);
+
     }
 };
 
-template<typename T, size_t INDEX>
-Error SuperClassHandler<T, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
+template<typename T, size_t PAGE, size_t INDEX>
+Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
 {
     using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
     using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
-    using Members = decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info());
+    using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+    using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
     auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-    Error error = MemberChecker<Super, Members, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members);
+    const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+    Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members, super_name);
     if (error != Error::MissingPropertyMember)
         return error;
-    return SuperClassHandler<T, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+    return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
 }
 
-template<typename T, size_t INDEX>
-JT_CONSTEXPR size_t SuperClassHandler<T, INDEX>::membersInSuperClasses()
+template<typename T, size_t PAGE, size_t INDEX>
+Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
 {
-    //using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-    //using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
-    //using Members = decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info());
-    //return std::tuple_size<Members>::value + SuperClassHandler<T
-    return 0;
+    using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+    using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+    using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
+    auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+    const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+    Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
+    Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
+    if (error != Error::NoError)
+        return error;
+    return superError;
 }
 
-template<typename T>
-struct SuperClassHandler<T, 0>
+template<typename T, size_t PAGE, size_t INDEX>
+size_t JT_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
+{
+    using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+    return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
+}
+
+template<typename T, size_t PAGE, size_t INDEX>
+void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Token &token, Serializer &serializer)
+{
+    using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+    using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+    using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+    auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+    const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+    MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+    SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
+}
+
+template<typename T, size_t PAGE>
+struct SuperClassHandler<T, PAGE, 0>
 {
     static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
     {
@@ -1774,7 +1845,32 @@ struct SuperClassHandler<T, 0>
         using Super = typename std::tuple_element<0, Meta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        return MemberChecker<Super, Members, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members);
+        const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+        return MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members, super_name);
+    }
+    static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
+    {
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+        using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+        return MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
+    }
+    JT_CONSTEXPR static size_t membersInSuperClasses()
+    {
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+        return memberCount<Super, PAGE>();
+    }
+    static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
+    {
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+        using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
+        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name;
+        MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
     }
 };
 
@@ -1801,7 +1897,7 @@ static void skipToNext(Error &error, Token &token, Tokenizer &tokenizer)
         }
     }
 }
-    
+
 template<typename T>
 class TokenParser<T, typename std::enable_if<HasJsonToolsBase<T>::value, T>::type>
 {
@@ -1814,12 +1910,12 @@ public:
         if (error != JT::Error::NoError)
             return error;
         auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-        bool assigned_members[std::tuple_size<decltype(members)>::value];
+        bool assigned_members[memberCount<T, 0>()];
         memset(assigned_members, 0, sizeof(assigned_members));
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
-            error = MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members);
+            error = MemberChecker<T, decltype(members), 0 ,std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members, "");
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
                 if (!context.allow_missing_members)
@@ -1835,7 +1931,7 @@ public:
         }
         assert(error == Error::NoError);
         std::vector<std::string> unassigned_required_members;
-        error = MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members);
+        error = MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
         if (error == Error::UnassignedRequiredMember) {
             context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
             if (context.allow_unnasigned_required__members)
@@ -1852,7 +1948,7 @@ public:
         token.value = DataRef::asDataRef(objectStart);
         serializer.write(token);
         auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-        MemberChecker<T, decltype(members), std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer);
+        MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
         token.name.size = 0;
         token.name.data = "";
         token.name_type = Type::String;

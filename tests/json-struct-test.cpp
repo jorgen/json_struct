@@ -222,11 +222,21 @@ struct RegularClass : public SuperClass
                          JT_MEMBER(Regular));
 };
 
-void check_json_tree_ne
+void check_json_tree_deep_tree()
+{
+    JT::ParseContext context(json_data3);
+    RegularClass regular;
+    JT::parseData(regular, context);
+    JT_ASSERT(regular.SuperSuper == 5);
+    JT_ASSERT(regular.Super == "This is in the Superclass");
+    JT_ASSERT(regular.Regular == 42);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
     check_json_tree_template();
     check_json_tree_subclass();
+    check_json_tree_deep_tree();
     return 0;
 }
