@@ -80,11 +80,11 @@ int main()
     size_t member_count = JT::memberCount<Subclass, 0>();
     JT_ASSERT( member_count == 7);
     int array[JT::memberCount<Subclass,0 >()];
-    for (int i = 0; i < JT::memberCount<Subclass, 0>(); i++) {
+    for (size_t i = 0; i < JT::memberCount<Subclass, 0>(); i++) {
         array[i] = i;
     }
 
-    for (int i = 0; i < JT::memberCount<Subclass, 0>(); i++)
+    for (size_t i = 0; i < JT::memberCount<Subclass, 0>(); i++)
         fprintf(stderr, "array %d\n", array[i]);
     return 0;
 }
