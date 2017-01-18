@@ -37,11 +37,14 @@
 #ifdef _MSC_VER
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
+#define JT_HAVE_CONSTEXPR 1
 #else
 #define JT_CONSTEXPR
+#define JT_HAVE_CONSTEXPR 0
 #endif
 #else
 #define JT_CONSTEXPR constexpr
+#define JT_HAVE_CONSTEXPR 1
 #endif
 
 namespace JT {
@@ -1633,7 +1636,9 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &member
 {
     if (MI_S == context.token.name.size && memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
     {
+#if JT_HAVE_CONSTEXPR
         assigned_members[index] = true;
+#endif
         return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
     }
     return Error::MissingPropertyMember;
@@ -1642,6 +1647,7 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &member
 template<typename MI_T, typename MI_M, size_t MI_S>
 inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
 {
+#if JT_HAVE_CONSTEXPR
     if (assigned_members[index])
         return Error::NoError;
     if (HasJTOptionalValue<MI_T>::value)
@@ -1651,6 +1657,9 @@ inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t
     to_push += std::string(memberInfo.name, MI_S);
     missing_members.push_back(to_push);
     return Error::UnassignedRequiredMember;
+#else
+	return Error::NoError;
+#endif
 }
 
 template<typename T, typename MI_T, typename MI_M, size_t MI_S>
@@ -1798,7 +1807,11 @@ Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseCon
     Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type),  members, context, assigned_members, super_name);
     if (error != Error::MissingPropertyMember)
         return error;
+#if JT_HAVE_CONSTEXPR
     return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+#else
+	return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+#endif
 }
 
 template<typename T, size_t PAGE, size_t INDEX>
@@ -1811,7 +1824,11 @@ Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, s
     auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
     const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
     Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
-    Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
+#if JT_HAVE_CONSTEXPR
+	Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
+#else
+	Error superError = SuperClassHandler<T, PAGE, INDEX - 1>::verifyMembers(assigned_members, missing_members);
+#endif
     if (error != Error::NoError)
         return error;
     return superError;
@@ -1822,7 +1839,11 @@ size_t JT_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
 {
     using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
     using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+#if JT_HAVE_CONSTEXPR
     return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
+#else
+	return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE, INDEX - 1>::membersInSuperClasses();
+#endif
 }
 
 template<typename T, size_t PAGE, size_t INDEX>
@@ -1834,7 +1855,11 @@ void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Tok
     auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
     const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
     MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+#if JT_HAVE_CONSTEXPR
     SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
+#else
+	SuperClassHandler<T, PAGE, INDEX - 1>::serializeMembers(from_type, token, serializer);
+#endif
 }
 
 template<typename T, size_t PAGE>
@@ -1911,8 +1936,12 @@ public:
         if (error != JT::Error::NoError)
             return error;
         auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
+#if JT_HAVE_CONSTEXPR
         bool assigned_members[memberCount<T, 0>()];
         memset(assigned_members, 0, sizeof(assigned_members));
+#else
+		bool *assigned_members = nullptr;
+#endif
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);

@@ -261,10 +261,12 @@ int main()
 {
     testSimpleOneMember();
     testSimpleVerifyMissingMemberInStruct();
+#if JT_HAVE_CONSTEXPR
     testSimpleVerifyMissingRequiredMemberInStruct();
     testClassHIrarchyVerifyMissingDataForStruct();
-    testClassHirarchyVerifyMissingMemberInStruct();
-    testClassHirarchyVerifyMissingMemberInStruct2();
     testClassHirarchyVerifyMissingDataForStructDeep();
+    testClassHirarchyVerifyMissingMemberInStruct();
+#endif
+    testClassHirarchyVerifyMissingMemberInStruct2();
     return 0;
 }

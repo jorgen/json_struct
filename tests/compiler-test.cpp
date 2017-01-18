@@ -22,6 +22,8 @@
 
 #include <tuple>
 
+#if JT_HAVE_CONSTEXPR
+
 #define SUB_ELEM(elem) SubElem<elem>(#elem)
 #define SUB_LIST(...) std::make_tuple(__VA_ARGS__)
 
@@ -91,12 +93,13 @@ struct Cover
         ELEM(foo));
     FOO<Cover> f;
 };
-
+#endif
 int main()
 {
+#if JT_HAVE_CONSTEXP
 	Cover c;
 	Cover::FOO<Cover>::getList();
 	//Cover::FOO<Cover>::the_sublist();
-
+#endif
 	return 0;
 }

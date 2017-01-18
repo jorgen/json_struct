@@ -24,6 +24,7 @@
 
 #include "assert.h"
 
+#if JT_HAVE_CONSTEXPR
 struct A
 {
     int a;
@@ -75,8 +76,11 @@ struct Subclass : public B, public F, public G
                          JT_MEMBER(h));
 };
 
+#endif
+
 int main()
 {
+#if JT_HAVE_CONSTEXPR
     size_t member_count = JT::memberCount<Subclass, 0>();
     JT_ASSERT( member_count == 7);
     int array[JT::memberCount<Subclass,0 >()];
@@ -86,5 +90,6 @@ int main()
 
     for (size_t i = 0; i < JT::memberCount<Subclass, 0>(); i++)
         fprintf(stderr, "array %d\n", array[i]);
+#endif
     return 0;
 }
