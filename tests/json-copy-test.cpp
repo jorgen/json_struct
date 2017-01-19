@@ -139,12 +139,67 @@ void jt_partial_3()
     jt_validate_json(tokenizer);
 }
 
+const char json2[] =
+R"json({
+	"test" : true,
+	"more" : {
+		"sub_object_prop1" : true,
+		"sub_object_prop2" : 456
+	},
+	"int_value" : 65
+})json";
+
+struct Child
+{
+	bool sub_object_prop1;
+	int sub_object_prop2;
+	JT_STRUCT(JT_MEMBER(sub_object_prop1),
+			  JT_MEMBER(sub_object_prop2));
+};
+
+struct Parent
+{
+	bool test;
+	Child more;
+	int int_value;
+	JT_STRUCT(JT_MEMBER(test),
+		      JT_MEMBER(more),
+		      JT_MEMBER(int_value));
+};
+
+void jt_copy_parsed()
+{
+	JT::Tokenizer tokenizer;
+	tokenizer.addData(json2);
+
+	JT::Token token;;
+	JT::Error error = JT::Error::NoError;
+	std::vector<JT::Token> tokens;
+	while (error == JT::Error::NoError) {
+		error = tokenizer.nextToken(token);
+		tokens.push_back(token);
+	}
+
+	JT::ParseContext context;
+	context.tokenizer.addData(&tokens);
+	Parent parent;
+	JT::parseData(parent, context);
+
+	JT_ASSERT(context.error == JT::Error::NoError);
+	JT_ASSERT(parent.test == true);
+	JT_ASSERT(parent.more.sub_object_prop1 == true);
+	JT_ASSERT(parent.more.sub_object_prop2 == 456);
+	JT_ASSERT(parent.int_value == 65);
+}
+
 int main()
 {
     jt_copy_full();
     jt_partial_1();
     jt_partial_2();
     jt_partial_3();
+
+	jt_copy_parsed();
     
     return 0;
 }

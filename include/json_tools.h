@@ -94,8 +94,8 @@ struct Token
     Token();
 
     Type name_type;
-    DataRef name;
     Type value_type;
+    DataRef name;
     DataRef value;
 };
 
@@ -322,6 +322,7 @@ public:
     void addData(const char *data, size_t size);
     template<size_t N>
     void addData(const char (&data)[N]);
+    void addData(const std::vector<Token> *parsedData);
     size_t registeredBuffers() const;
 
     NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
@@ -387,6 +388,7 @@ private:
     CallbackContainer<void(const char *)> release_callbacks;
     CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
+    const std::vector<Token> *parsed_data_vector;
     std::function<void(Token &next_token)> token_transformer;
     ErrorContext error_context;
 };
@@ -502,6 +504,7 @@ inline Tokenizer::Tokenizer()
     , line_range_context(256)
     , range_context(38)
     , callback_id(0)
+    , parsed_data_vector(nullptr)
 {}
 inline Tokenizer::~Tokenizer()
 {}
@@ -531,6 +534,13 @@ inline void Tokenizer::addData(const char (&data)[N])
     data_list.push_back(DataRef::asDataRef(data));
 }
 
+void Tokenizer::addData(const std::vector<Token> *parsedData)
+{
+    assert(parsed_data_vector == 0);
+    parsed_data_vector = parsedData;
+    cursor_index = 0;
+}
+
 inline size_t Tokenizer::registeredBuffers() const
 {
     return data_list.size();
@@ -548,6 +558,15 @@ inline ReleaseCBRef Tokenizer::registerReleaseCallback(std::function<void(const 
 
 inline Error Tokenizer::nextToken(Token &next_token)
 {
+    if (parsed_data_vector) {
+        next_token = (*parsed_data_vector)[cursor_index];
+        cursor_index++;
+        if (cursor_index == parsed_data_vector->size()) {
+            cursor_index = 0;
+            parsed_data_vector = nullptr;
+        }
+        return Error::NoError;
+    }
     if (data_list.empty()) {
         requestMoreData();
     }
@@ -1608,7 +1627,7 @@ template<typename T>
 struct SuperInfo
 {
     explicit
-	SuperInfo(const std::string &name)
+    SuperInfo(const std::string &name)
         : name(name)
     {}
     const std::string name;
@@ -1658,7 +1677,7 @@ inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t
     missing_members.push_back(to_push);
     return Error::UnassignedRequiredMember;
 #else
-	return Error::NoError;
+    return Error::NoError;
 #endif
 }
 
@@ -1810,7 +1829,7 @@ Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseCon
 #if JT_HAVE_CONSTEXPR
     return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
 #else
-	return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+    return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
 #endif
 }
 
@@ -1825,9 +1844,9 @@ Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, s
     const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
     Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
 #if JT_HAVE_CONSTEXPR
-	Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
+    Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
 #else
-	Error superError = SuperClassHandler<T, PAGE, INDEX - 1>::verifyMembers(assigned_members, missing_members);
+    Error superError = SuperClassHandler<T, PAGE, INDEX - 1>::verifyMembers(assigned_members, missing_members);
 #endif
     if (error != Error::NoError)
         return error;
@@ -1842,7 +1861,7 @@ size_t JT_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
 #if JT_HAVE_CONSTEXPR
     return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
 #else
-	return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE, INDEX - 1>::membersInSuperClasses();
+    return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE, INDEX - 1>::membersInSuperClasses();
 #endif
 }
 
@@ -1858,7 +1877,7 @@ void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Tok
 #if JT_HAVE_CONSTEXPR
     SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
 #else
-	SuperClassHandler<T, PAGE, INDEX - 1>::serializeMembers(from_type, token, serializer);
+    SuperClassHandler<T, PAGE, INDEX - 1>::serializeMembers(from_type, token, serializer);
 #endif
 }
 
@@ -1940,7 +1959,7 @@ public:
         bool assigned_members[memberCount<T, 0>()];
         memset(assigned_members, 0, sizeof(assigned_members));
 #else
-		bool *assigned_members = nullptr;
+        bool *assigned_members = nullptr;
 #endif
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
