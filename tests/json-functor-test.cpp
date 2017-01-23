@@ -81,7 +81,8 @@ int main()
 
     CallFunction cont;
     JT::ParseContext context(json);
-    JT::callFunction(cont, context);
+    std::string return_json;
+    JT::callFunction(cont, context, return_json);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);

@@ -46,8 +46,8 @@ struct SubObject
 
     JT_STRUCT(JT_MEMBER(number),
               JT_MEMBER(valid));
-
 };
+
 void jt_validate_json(JT::Tokenizer &tokenizer)
 {
     JT::Token token;;

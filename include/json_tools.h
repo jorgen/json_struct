@@ -2405,6 +2405,7 @@ template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 struct FunctionInfo
 {
     typedef Ret (T::*Function)(const Arg &);
+    typedef Ret returnType;
     const char *name;
     Function function;
 };
@@ -2423,17 +2424,35 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const cha
         { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
     };
 
-template<typename T, typename Ret, typename U, typename Arg, size_t NAME_SIZE>
-bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<Ret,U,Arg,NAME_SIZE> &functionInfo)
+template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
+struct ReturnSerializer
+{
+    static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE> &functionInfo, Arg &arg, std::string &return_json)
+    {
+        return_json += serializeStruct((container.*functionInfo.function)(arg));
+    }
+};
+
+template<typename T, typename U, typename Arg, size_t NAME_SIZE>
+struct ReturnSerializer<T, U, void, Arg, NAME_SIZE>
+{
+    static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE> &functionInfo, Arg &arg, std::string &return_json)
+    {
+        (container.*functionInfo.function)(arg);
+    }
+};
+
+template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
+bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, std::string &return_json)
 {
     if (context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
         Arg arg;
         context.error = TokenParser<Arg,Arg>::unpackToken(arg, context);
         if (context.error != Error::NoError)
-            return false;;
+            return false;
 
-       (container.*functionInfo.function)(arg);
+        ReturnSerializer<T, U, Ret, Arg, NAME_SIZE>::serialize(container, functionInfo, arg, return_json);
        return true;
     }
     return false;
@@ -2442,61 +2461,64 @@ bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<Ret,U
 template<typename T, typename Functions, size_t INDEX>
 struct FunctionHandler
 {
-    static void call(T &container, ParseContext &context, Functions &functions)
+    static bool call(T &container, ParseContext &context, Functions &functions, std::string &return_json)
     {
-        auto function = std::get<INDEX>(functions);
-        if (callFunctionHandler(container, context, function))
-            return;
+        auto function = std::get<INDEX>(functions); 
+        if (callFunctionHandler(container, context, function, return_json))
+            return true;
         if (context.error != Error::NoError)
-            return;
-        FunctionHandler<T, Functions, INDEX - 1>::call(container, context, functions);
+            return false;
+        return FunctionHandler<T, Functions, INDEX - 1>::call(container, context, functions, return_json);
     }
 };
 
 template<typename T, typename Functions>
 struct FunctionHandler<T, Functions, 0>
 {
-    static void call(T &container, ParseContext &context, Functions &functions)
+    static bool call(T &container, ParseContext &context, Functions &functions, std::string &return_json)
     {
         auto function = std::get<0>(functions);
-        callFunctionHandler(container, context, function);
+        return callFunctionHandler(container, context, function, return_json);
     }
 };
 
 template<typename T>
-void callFunction(T &container, ParseContext &context)
+bool callFunction(T &container, ParseContext &context, std::string &return_json)
 {
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
-        return;
+        return false;
     if (context.token.value_type != JT::Type::ObjectStart)
-        return;
+        return false;
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
-        return;
+        return false;
     auto functions = T::template JsonToolsFunctionContainer<T>::functions();
+    bool called_all_functions = true;
     while (context.token.value_type != JT::Type::ObjectEnd)
     {
-        FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
+        called_all_functions &= FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions,return_json);
         if (context.error != JT::Error::NoError)
-            return;
+            return false;
         context.error = context.tokenizer.nextToken(context.token);
         if (context.error != JT::Error::NoError)
-            return;
+            return false;
     }
+    return called_all_functions;
 }
 
 template<typename T>
-void callFunction(T &container, const char *json_data, size_t size)
+bool  callFunction(T &container, const char *json_data, size_t size, std::string &return_json)
 {
     ParseContext context;
     auto ref = context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
                                                    tokenizer.addData(json_data, size);
                                                    }, true);
-    callFunction(container, context);
+    bool ret = callFunction(container, context, return_json);
     if (context.error != Error::NoError) {
         fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
     }
+    return ret;
 }
 } //Namespace
 #endif //JSON_TOOLS_H
