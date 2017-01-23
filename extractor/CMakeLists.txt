@@ -1,11 +1,12 @@
-find_package (LLVM REQUIRED)
-find_package (Clang REQUIRED)
 
 if (Clang_NOT_FOUND)
     return()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti")
+endif()
 add_definitions(${LLVM_DEFINITIONS})
 add_executable(extractor main.cpp
                          astvisitor.h

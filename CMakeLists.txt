@@ -5,7 +5,12 @@ set (CMAKE_CXX_STANDARD 11)
 
 set(JSON_TOOLS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+find_package (LLVM HINTS $ENV{LLVM_MODULE})
+find_package (Clang HINTS $ENV{LLVM_MODULE})
+
 add_subdirectory(jsonmod)
-#add_subdirectory(extractor)
+if (LLVM_FOUND AND Clang_FOUND)
+	add_subdirectory(extractor)
+endif()
 enable_testing()
 add_subdirectory(tests)
