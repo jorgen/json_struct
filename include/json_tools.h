@@ -534,7 +534,7 @@ inline void Tokenizer::addData(const char (&data)[N])
     data_list.push_back(DataRef::asDataRef(data));
 }
 
-void Tokenizer::addData(const std::vector<Token> *parsedData)
+inline void Tokenizer::addData(const std::vector<Token> *parsedData)
 {
     assert(parsed_data_vector == 0);
     parsed_data_vector = parsedData;
