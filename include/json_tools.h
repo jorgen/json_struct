@@ -2384,21 +2384,35 @@ void parseData(T &to_type, ParseContext &context)
     return;
 }
 
+template<size_t SIZE>
+struct SerializerContext
+{
+    char outBuffer[SIZE];
+    std::string returnString;
+    Serializer serializer;
+    BufferRequestCBRef cbRef;
+    SerializerContext()
+        : serializer(outBuffer, SIZE)
+        , cbRef(serializer.addRequestBufferCallback([this](Serializer &serializer)
+                                                    {
+                                                        returnString += std::string(outBuffer, sizeof(outBuffer));
+                                                        serializer.appendBuffer(outBuffer, sizeof(outBuffer));
+                                                    }))
+    {
+    }
+    void flush()
+    {
+        returnString += std::string(outBuffer, serializer.buffers().back().used);
+    }
+};
 template<typename T>
 std::string serializeStruct(const T &from_type)
 {
-    char out_buffer[512];
-    std::string ret_string;
-    Serializer serializer(out_buffer, sizeof(out_buffer));
-    auto ref = serializer.addRequestBufferCallback([&ret_string, &out_buffer](Serializer &serializer)
-                                        {
-                                            ret_string += std::string(out_buffer, sizeof(out_buffer));
-                                            serializer.appendBuffer(out_buffer, sizeof(out_buffer));
-                                        });
+    SerializerContext<512> serializeContext;
     Token token;
-    TokenParser<T,T>::serializeToken(from_type, token, serializer);
-    ret_string += std::string(out_buffer, serializer.buffers().back().used);
-    return ret_string;
+    TokenParser<T,T>::serializeToken(from_type, token, serializeContext.serializer);
+    serializeContext.flush();
+    return serializeContext.returnString;
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
@@ -2415,35 +2429,47 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const cha
     return {name, function};
 }
 
-#define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &T::name)
+#define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
 #define JT_FUNCTION_CONTAINER(...) \
-    template<typename T> \
+    template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        static const decltype(std::make_tuple(__VA_ARGS__)) functions() \
+        static const decltype(std::make_tuple(__VA_ARGS__)) jt_static_meta_functions_info() \
         { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(std::make_tuple()) &jt_static_meta_super_info() \
+       { static auto ret = std::make_tuple(); return ret; } \
     };
 
+#define JT_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
+    template<typename JT_CONTAINER_STRUCT_T> \
+    struct JsonToolsFunctionContainer \
+    { \
+       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(super_list) &jt_static_meta_super_info() \
+       { static auto ret = super_list; return ret; } \
+    };
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
 struct ReturnSerializer
 {
-    static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE> &functionInfo, Arg &arg, std::string &return_json)
+    static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE> &functionInfo, Arg &arg, Serializer &return_json)
     {
-        return_json += serializeStruct((container.*functionInfo.function)(arg));
+        Token token;
+        TokenParser<T, T>::serializeToken((container.*functionInfo.function)(arg), token, return_json);
     }
 };
 
 template<typename T, typename U, typename Arg, size_t NAME_SIZE>
 struct ReturnSerializer<T, U, void, Arg, NAME_SIZE>
 {
-    static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE> &functionInfo, Arg &arg, std::string &return_json)
+    static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE> &functionInfo, Arg &arg, Serializer &return_json)
     {
         (container.*functionInfo.function)(arg);
     }
 };
 
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, std::string &return_json)
+bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, Serializer &return_json)
 {
     if (context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
@@ -2458,12 +2484,35 @@ bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret
     return false;
 }
 
+template<typename T, size_t INDEX>
+struct FunctionalSuperRecursion
+{
+    static bool callFunction(T &container, ParseContext &context, Serializer &return_json);
+};
+
+template<typename T, size_t SIZE>
+struct StartFunctionalSuperRecursion
+{
+    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    {
+        return FunctionalSuperRecursion<T, SIZE - 1>::callFunction(container, context, return_json);
+    }
+};
+template<typename T>
+struct StartFunctionalSuperRecursion<T, 0>
+{
+    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    {
+        return false;
+    }
+};
+
 template<typename T, typename Functions, size_t INDEX>
 struct FunctionHandler
 {
-    static bool call(T &container, ParseContext &context, Functions &functions, std::string &return_json)
+    static bool call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
     {
-        auto function = std::get<INDEX>(functions); 
+        auto function = std::get<INDEX>(functions);
         if (callFunctionHandler(container, context, function, return_json))
             return true;
         if (context.error != Error::NoError)
@@ -2475,15 +2524,18 @@ struct FunctionHandler
 template<typename T, typename Functions>
 struct FunctionHandler<T, Functions, 0>
 {
-    static bool call(T &container, ParseContext &context, Functions &functions, std::string &return_json)
+    static bool call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
     {
         auto function = std::get<0>(functions);
-        return callFunctionHandler(container, context, function, return_json);
+        if (callFunctionHandler(container, context, function, return_json))
+            return true;
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+        return StartFunctionalSuperRecursion<T, std::tuple_size<SuperMeta>::value>::callFunction(container, context, return_json);
     }
 };
 
 template<typename T>
-bool callFunction(T &container, ParseContext &context, std::string &return_json)
+bool callFunction(T &container, ParseContext &context, Serializer &return_json)
 {
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
@@ -2493,7 +2545,7 @@ bool callFunction(T &container, ParseContext &context, std::string &return_json)
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
         return false;
-    auto functions = T::template JsonToolsFunctionContainer<T>::functions();
+    auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     bool called_all_functions = true;
     while (context.token.value_type != JT::Type::ObjectEnd)
     {
@@ -2508,7 +2560,7 @@ bool callFunction(T &container, ParseContext &context, std::string &return_json)
 }
 
 template<typename T>
-bool  callFunction(T &container, const char *json_data, size_t size, std::string &return_json)
+bool  callFunction(T &container, const char *json_data, size_t size, Serializer &return_json)
 {
     ParseContext context;
     auto ref = context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
@@ -2520,5 +2572,30 @@ bool  callFunction(T &container, const char *json_data, size_t size, std::string
     }
     return ret;
 }
+
+template<typename T, size_t INDEX>
+bool FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, ParseContext &context, Serializer &return_json)
+{
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
+        if (FunctionHandler<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions, return_json))
+            return true;
+
+        return FunctionalSuperRecursion<T, INDEX - 1>::callFunction(container, context, return_json);
+}
+
+template<typename T>
+struct FunctionalSuperRecursion<T, 0>
+{
+    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    {
+        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+        using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+        auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
+        return FunctionHandler<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions, return_json);
+    }
+};
+
 } //Namespace
 #endif //JSON_TOOLS_H

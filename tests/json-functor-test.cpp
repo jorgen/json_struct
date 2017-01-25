@@ -48,7 +48,7 @@ struct SimpleData
 };
 struct CallFunction
 {
-    void execute_one(const SimpleData &data)
+    virtual void execute_one(const SimpleData &data)
     {
         fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
         called_one = true;
@@ -76,13 +76,12 @@ struct CallFunction
     bool called_three = false;
 };
 
-int main()
+void simpleTest()
 {
-
     CallFunction cont;
     JT::ParseContext context(json);
-    std::string return_json;
-    JT::callFunction(cont, context, return_json);
+    JT::SerializerContext<512> serilizeContext;
+    JT::callFunction(cont, context, serilizeContext.serializer);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);
@@ -90,6 +89,96 @@ int main()
 
     if (context.error != JT::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
-    return (int)context.error;
+    JT_ASSERT(context.error == JT::Error::NoError);
+}
+
+struct CallFunctionSuperSuper
+{
+    void execute_one(const SimpleData &data)
+    {
+        fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
+        called_one = true;
+    }
+
+    bool called_one = false;
+
+    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one))
+};
+
+struct CallFunctionSuper : public CallFunctionSuperSuper
+{
+    void execute_two(const double &data)
+    {
+        fprintf(stderr, "execute two executed %f\n", data);
+        called_two = true;
+    }
+
+    bool called_two = false;
+    JT_FUNCTION_CONTAINER_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuperSuper)),
+                                     JT_FUNCTION(execute_two));
+};
+
+struct CallFunctionSub : public CallFunctionSuper
+{
+    void execute_three(const std::vector<double> &data)
+    {
+        fprintf(stderr, "execute three\n");
+        for (auto x : data)
+            fprintf(stderr, "\t%f\n", x);
+        called_three = true;
+    }
+
+    bool called_three = false;
+    JT_FUNCTION_CONTAINER_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuper)),
+                                     JT_FUNCTION(execute_three));
+};
+
+void inheritanceTest()
+{
+    CallFunctionSub cont;
+    JT::ParseContext context(json);
+    JT::SerializerContext<512> serilizeContext;
+    JT::callFunction(cont, context, serilizeContext.serializer);
+
+    JT_ASSERT(cont.called_one);
+    JT_ASSERT(cont.called_two);
+    JT_ASSERT(cont.called_three);
+
+    if (context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.error == JT::Error::NoError);
+}
+
+struct CallFunctionVirtualOverload : public CallFunction
+{
+    virtual void execute_one(const SimpleData &data) override
+    {
+        override_called = true;
+    }
+    bool override_called = false;
+};
+
+void virtualFunctionTest()
+{
+    CallFunctionVirtualOverload cont;
+    JT::ParseContext context(json);
+    JT::SerializerContext<512> serilizeContext;
+    JT::callFunction(cont, context, serilizeContext.serializer);
+
+    JT_ASSERT(cont.override_called);
+    JT_ASSERT(!cont.called_one);
+    JT_ASSERT(cont.called_two);
+    JT_ASSERT(cont.called_three);
+
+    if (context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.error == JT::Error::NoError);
+}
+
+int main()
+{
+    simpleTest();
+    inheritanceTest();
+    virtualFunctionTest();
 }
 
