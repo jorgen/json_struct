@@ -2455,7 +2455,7 @@ struct ReturnSerializer
     static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE> &functionInfo, Arg &arg, Serializer &return_json)
     {
         Token token;
-        TokenParser<T, T>::serializeToken((container.*functionInfo.function)(arg), token, return_json);
+        TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg), token, return_json);
     }
 };
 
@@ -2545,6 +2545,10 @@ bool callFunction(T &container, ParseContext &context, Serializer &return_json)
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
         return false;
+    Token token;
+    token.value_type = Type::ArrayStart;
+    token.value = DataRef::asDataRef("[");
+    return_json.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     bool called_all_functions = true;
     while (context.token.value_type != JT::Type::ObjectEnd)
@@ -2556,6 +2560,9 @@ bool callFunction(T &container, ParseContext &context, Serializer &return_json)
         if (context.error != JT::Error::NoError)
             return false;
     }
+    token.value_type = Type::ArrayEnd;
+    token.value = DataRef::asDataRef("]");
+    return_json.write(token);
     return called_all_functions;
 }
 

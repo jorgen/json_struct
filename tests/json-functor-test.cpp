@@ -54,18 +54,20 @@ struct CallFunction
         called_one = true;
     }
 
-    void execute_two(const double &data)
+    int execute_two(const double &data)
     {
         fprintf(stderr, "execute two executed %f\n", data);
         called_two = true;
+        return 2;
     }
 
-    void execute_three(const std::vector<double> &data)
+    int execute_three(const std::vector<double> &data)
     {
         fprintf(stderr, "execute three\n");
         for (auto x : data)
             fprintf(stderr, "\t%f\n", x);
         called_three = true;
+        return 3;
     }
     JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
                           JT_FUNCTION(execute_two),
@@ -170,6 +172,8 @@ void virtualFunctionTest()
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
+    serilizeContext.flush();
+    fprintf(stderr, "return string\n%s\n", serilizeContext.returnString.c_str());
     if (context.error != JT::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
     JT_ASSERT(context.error == JT::Error::NoError);
