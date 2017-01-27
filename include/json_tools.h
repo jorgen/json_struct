@@ -2388,22 +2388,30 @@ template<size_t SIZE>
 struct SerializerContext
 {
     char outBuffer[SIZE];
-    std::string returnString;
     Serializer serializer;
     BufferRequestCBRef cbRef;
     SerializerContext()
         : serializer(outBuffer, SIZE)
         , cbRef(serializer.addRequestBufferCallback([this](Serializer &serializer)
                                                     {
-                                                        returnString += std::string(outBuffer, sizeof(outBuffer));
+                                                        return_string += std::string(outBuffer, sizeof(outBuffer));
                                                         serializer.appendBuffer(outBuffer, sizeof(outBuffer));
                                                     }))
     {
     }
     void flush()
     {
-        returnString += std::string(outBuffer, serializer.buffers().back().used);
+        return_string += std::string(outBuffer, serializer.buffers().back().used);
+        serializer.clearBuffers();
     }
+
+    const std::string &returnString()
+    {
+        flush();
+        return return_string;
+    }
+private:
+    std::string return_string;;
 };
 template<typename T>
 std::string serializeStruct(const T &from_type)
@@ -2411,8 +2419,7 @@ std::string serializeStruct(const T &from_type)
     SerializerContext<512> serializeContext;
     Token token;
     TokenParser<T,T>::serializeToken(from_type, token, serializeContext.serializer);
-    serializeContext.flush();
-    return serializeContext.returnString;
+    return serializeContext.returnString();
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
@@ -2423,6 +2430,7 @@ struct FunctionInfo
     const char *name;
     Function function;
 };
+
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char (&name)[NAME_SIZE], Ret (T::*function)(const Arg &))
 {
@@ -2449,6 +2457,31 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const cha
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     };
+
+struct CallFunctionError
+{
+    std::string name;
+    std::vector<std::string> missing_members;
+    std::vector<std::string> unassigned_required_members;
+};
+
+template<size_t BUFFER_SIZE = 512>
+struct CallFunctionContext
+{
+    CallFunctionContext() = default;
+    CallFunctionContext(const char *data, size_t size)
+        : parse_context(data,size)
+    {}
+    template<size_t SIZE>
+    CallFunctionContext(const char(&data)[SIZE])
+        : parse_context(data)
+    {}
+
+    ParseContext parse_context;
+    std::vector<CallFunctionError> error_list;
+    SerializerContext<BUFFER_SIZE> return_serializer;
+};
+
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
 struct ReturnSerializer
 {
@@ -2534,8 +2567,18 @@ struct FunctionHandler<T, Functions, 0>
     }
 };
 
+inline void add_error(ParseContext &context, std::vector<CallFunctionError> &error_list)
+{
+    if (!context.missing_members.size() && !context.unassigned_required_members.size())
+        return;
+    error_list.push_back(CallFunctionError());
+    error_list.back().name = std::string(context.token.name.data, context.token.name.size);
+    std::swap(error_list.back().missing_members, context.missing_members);
+    std::swap(error_list.back().unassigned_required_members, context.unassigned_required_members);
+}
+
 template<typename T>
-bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+bool callFunction(T &container, ParseContext &context, Serializer &return_json, std::vector<CallFunctionError> &error_list)
 {
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
@@ -2554,6 +2597,7 @@ bool callFunction(T &container, ParseContext &context, Serializer &return_json)
     while (context.token.value_type != JT::Type::ObjectEnd)
     {
         called_all_functions &= FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions,return_json);
+        add_error(context, error_list);
         if (context.error != JT::Error::NoError)
             return false;
         context.error = context.tokenizer.nextToken(context.token);
@@ -2566,18 +2610,10 @@ bool callFunction(T &container, ParseContext &context, Serializer &return_json)
     return called_all_functions;
 }
 
-template<typename T>
-bool  callFunction(T &container, const char *json_data, size_t size, Serializer &return_json)
+template<typename T, size_t BUFFER_SIZE>
+bool  callFunction(T &container, CallFunctionContext<BUFFER_SIZE> &call_function_context)
 {
-    ParseContext context;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([json_data, size](Tokenizer &tokenizer) {
-                                                   tokenizer.addData(json_data, size);
-                                                   }, true);
-    bool ret = callFunction(container, context, return_json);
-    if (context.error != Error::NoError) {
-        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
-    }
-    return ret;
+    return callFunction(container, call_function_context.parse_context, call_function_context.return_serializer.serializer, call_function_context.error_list);
 }
 
 template<typename T, size_t INDEX>

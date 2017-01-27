@@ -81,17 +81,16 @@ struct CallFunction
 void simpleTest()
 {
     CallFunction cont;
-    JT::ParseContext context(json);
-    JT::SerializerContext<512> serilizeContext;
-    JT::callFunction(cont, context, serilizeContext.serializer);
+    JT::CallFunctionContext<512> context(json);
+    JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
-    if (context.error != JT::Error::NoError)
-        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.error == JT::Error::NoError);
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
 
 struct CallFunctionSuperSuper
@@ -138,17 +137,16 @@ struct CallFunctionSub : public CallFunctionSuper
 void inheritanceTest()
 {
     CallFunctionSub cont;
-    JT::ParseContext context(json);
-    JT::SerializerContext<512> serilizeContext;
-    JT::callFunction(cont, context, serilizeContext.serializer);
+    JT::CallFunctionContext<512> context(json);
+    JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
-    if (context.error != JT::Error::NoError)
-        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.error == JT::Error::NoError);
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
 
 struct CallFunctionVirtualOverload : public CallFunction
@@ -163,20 +161,18 @@ struct CallFunctionVirtualOverload : public CallFunction
 void virtualFunctionTest()
 {
     CallFunctionVirtualOverload cont;
-    JT::ParseContext context(json);
-    JT::SerializerContext<512> serilizeContext;
-    JT::callFunction(cont, context, serilizeContext.serializer);
+    JT::CallFunctionContext<512> context(json);
+    JT::callFunction(cont, context);
 
     JT_ASSERT(cont.override_called);
     JT_ASSERT(!cont.called_one);
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
-    serilizeContext.flush();
-    fprintf(stderr, "return string\n%s\n", serilizeContext.returnString.c_str());
-    if (context.error != JT::Error::NoError)
-        fprintf(stderr, "callFunction failed \n%s\n", context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.error == JT::Error::NoError);
+    fprintf(stderr, "return string\n%s\n", context.return_serializer.returnString().c_str());
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
 
 int main()
