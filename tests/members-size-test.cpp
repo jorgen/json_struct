@@ -81,14 +81,14 @@ struct Subclass : public B, public F, public G
 int main()
 {
 #if JT_HAVE_CONSTEXPR
-    size_t member_count = JT::memberCount<Subclass, 0>();
+    size_t member_count = JT::Internal::memberCount<Subclass, 0>();
     JT_ASSERT( member_count == 7);
-    int array[JT::memberCount<Subclass,0 >()];
-    for (size_t i = 0; i < JT::memberCount<Subclass, 0>(); i++) {
+    int array[JT::Internal::memberCount<Subclass,0 >()];
+    for (size_t i = 0; i < JT::Internal::memberCount<Subclass, 0>(); i++) {
         array[i] = i;
     }
 
-    for (size_t i = 0; i < JT::memberCount<Subclass, 0>(); i++)
+    for (size_t i = 0; i < JT::Internal::memberCount<Subclass, 0>(); i++)
         fprintf(stderr, "array %d\n", array[i]);
 #endif
     return 0;
