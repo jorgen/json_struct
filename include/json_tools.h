@@ -2461,6 +2461,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const cha
 struct CallFunctionError
 {
     std::string name;
+    Error error;
     std::vector<std::string> missing_members;
     std::vector<std::string> unassigned_required_members;
 };
@@ -2480,6 +2481,7 @@ struct CallFunctionContext
     ParseContext parse_context;
     std::vector<CallFunctionError> error_list;
     SerializerContext<BUFFER_SIZE> return_serializer;
+    bool allow_missing = false;
 };
 
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
@@ -2502,31 +2504,31 @@ struct ReturnSerializer<T, U, void, Arg, NAME_SIZE>
 };
 
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-bool callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, Serializer &return_json)
+Error callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, Serializer &return_json)
 {
     if (context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
         Arg arg;
         context.error = TokenParser<Arg,Arg>::unpackToken(arg, context);
         if (context.error != Error::NoError)
-            return false;
+            return context.error;
 
         ReturnSerializer<T, U, Ret, Arg, NAME_SIZE>::serialize(container, functionInfo, arg, return_json);
-       return true;
+       return Error::NoError;
     }
-    return false;
+    return Error::MissingPropertyMember;
 }
 
 template<typename T, size_t INDEX>
 struct FunctionalSuperRecursion
 {
-    static bool callFunction(T &container, ParseContext &context, Serializer &return_json);
+    static Error callFunction(T &container, ParseContext &context, Serializer &return_json);
 };
 
 template<typename T, size_t SIZE>
 struct StartFunctionalSuperRecursion
 {
-    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    static Error callFunction(T &container, ParseContext &context, Serializer &return_json)
     {
         return FunctionalSuperRecursion<T, SIZE - 1>::callFunction(container, context, return_json);
     }
@@ -2534,22 +2536,23 @@ struct StartFunctionalSuperRecursion
 template<typename T>
 struct StartFunctionalSuperRecursion<T, 0>
 {
-    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    static Error callFunction(T &container, ParseContext &context, Serializer &return_json)
     {
-        return false;
+        return Error::MissingPropertyMember;
     }
 };
 
 template<typename T, typename Functions, size_t INDEX>
 struct FunctionHandler
 {
-    static bool call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
+    static Error call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
     {
         auto function = std::get<INDEX>(functions);
-        if (callFunctionHandler(container, context, function, return_json))
-            return true;
+        Error error = callFunctionHandler(container, context, function, return_json);
+        if (error == Error::NoError)
+            return Error::NoError;
         if (context.error != Error::NoError)
-            return false;
+            return context.error;
         return FunctionHandler<T, Functions, INDEX - 1>::call(container, context, functions, return_json);
     }
 };
@@ -2557,11 +2560,12 @@ struct FunctionHandler
 template<typename T, typename Functions>
 struct FunctionHandler<T, Functions, 0>
 {
-    static bool call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
+    static Error call(T &container, ParseContext &context, Functions &functions, Serializer &return_json)
     {
         auto function = std::get<0>(functions);
-        if (callFunctionHandler(container, context, function, return_json))
-            return true;
+        Error error = callFunctionHandler(container, context, function, return_json);
+        if (error == Error::NoError)
+            return Error::NoError;
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         return StartFunctionalSuperRecursion<T, std::tuple_size<SuperMeta>::value>::callFunction(container, context, return_json);
     }
@@ -2578,46 +2582,45 @@ inline void add_error(ParseContext &context, std::vector<CallFunctionError> &err
 }
 
 template<typename T>
-bool callFunction(T &container, ParseContext &context, Serializer &return_json, std::vector<CallFunctionError> &error_list)
+Error callFunction(T &container, ParseContext &context, Serializer &return_json, std::vector<CallFunctionError> &error_list, bool allow_missing)
 {
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
-        return false;
+        return context.error;
     if (context.token.value_type != JT::Type::ObjectStart)
-        return false;
+        return Error::ExpectedObjectStart;
     context.error = context.tokenizer.nextToken(context.token);
     if (context.error != JT::Error::NoError)
-        return false;
+        return context.error;
     Token token;
     token.value_type = Type::ArrayStart;
     token.value = DataRef::asDataRef("[");
     return_json.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
-    bool called_all_functions = true;
     while (context.token.value_type != JT::Type::ObjectEnd)
     {
-        called_all_functions &= FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions,return_json);
+        Error error = FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions,return_json);
         add_error(context, error_list);
-        if (context.error != JT::Error::NoError)
-            return false;
+        if (error != JT::Error::NoError && (allow_missing && context.error == Error::NoError &&  error == Error::MissingPropertyMember))
+            return error;
         context.error = context.tokenizer.nextToken(context.token);
         if (context.error != JT::Error::NoError)
-            return false;
+            return context.error;
     }
     token.value_type = Type::ArrayEnd;
     token.value = DataRef::asDataRef("]");
     return_json.write(token);
-    return called_all_functions;
+    return Error::NoError;
 }
 
 template<typename T, size_t BUFFER_SIZE>
-bool  callFunction(T &container, CallFunctionContext<BUFFER_SIZE> &call_function_context)
+Error  callFunction(T &container, CallFunctionContext<BUFFER_SIZE> &call_function_context)
 {
-    return callFunction(container, call_function_context.parse_context, call_function_context.return_serializer.serializer, call_function_context.error_list);
+    return callFunction(container, call_function_context.parse_context, call_function_context.return_serializer.serializer, call_function_context.error_list, call_function_context.allow_missing);
 }
 
 template<typename T, size_t INDEX>
-bool FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, ParseContext &context, Serializer &return_json)
+Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, ParseContext &context, Serializer &return_json)
 {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
@@ -2631,7 +2634,7 @@ bool FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, ParseContext
 template<typename T>
 struct FunctionalSuperRecursion<T, 0>
 {
-    static bool callFunction(T &container, ParseContext &context, Serializer &return_json)
+    static Error callFunction(T &container, ParseContext &context, Serializer &return_json)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         using Super = typename std::tuple_element<0, SuperMeta>::type::type;
