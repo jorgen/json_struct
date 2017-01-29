@@ -18,11 +18,11 @@ static cl::extrahelp MoreHelp("\nMore help text...\n");
 int main(int argc, const char **argv)
 {
     CommonOptionsParser OptionsParser(argc, argv, MyToolCategory);
-    ClangTool Tool(OptionsParser.getCompilations(),
+    ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
     ClassWithMetaMatcher matchCallback;
     clang::ast_matchers::MatchFinder finder;
     finder.addMatcher(ClassWithMetaMatcher::metaMatcher(), &matchCallback);
-
-    return Tool.run(newFrontendActionFactory(&finder).get());
+    int tool_run =  tool.run(newFrontendActionFactory(&finder).get());
+    return 0;
 }

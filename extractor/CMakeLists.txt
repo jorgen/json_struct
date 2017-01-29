@@ -13,7 +13,9 @@ add_executable(extractor main.cpp
                          astvisitor.cpp
                          astmatcher.h
                          astmatcher.cpp)
-target_include_directories(extractor PRIVATE ${LLVM_INCLUDE_DIRS})
+target_include_directories(extractor PRIVATE
+				     ${LLVM_INCLUDE_DIRS}
+				     ${JSON_TOOLS_INCLUDE_DIR})
 target_link_libraries(extractor
                       clangTooling
                       clangBasic

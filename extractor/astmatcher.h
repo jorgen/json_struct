@@ -1,9 +1,21 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/AST/Comment.h"
+
+#include <json_tools.h>
+#include <extractor/extractor_api.h>
 
 using namespace clang;
 using namespace clang::ast_matchers;
+
+std::string normalizeTypeName(const std::string &type)
+{
+    std::string return_type = type;
+    if (return_type == "_Bool")
+        return_type = "bool";
+    return return_type;
+}
 
 template<typename T>
 static std::string getLiteralText(const SourceManager &sm, const LangOptions &langOpts, T t)
@@ -13,19 +25,55 @@ static std::string getLiteralText(const SourceManager &sm, const LangOptions &la
     return std::string(sm.getCharacterData(b), sm.getCharacterData(e) - sm.getCharacterData(b));
 }
 
-static std::string commentForDecl(const Decl *decl)
+static void commentForDecl(const Decl *decl, JT::OptionalChecked<Comment> &comment)
 {
     ASTContext& ctx = decl->getASTContext();
-    const RawComment* rc = ctx.getRawCommentForDeclNoCache(decl);
-    if (!rc)
-        return std::string();
+    ctx.getLangOpts();
+    ctx.getSourceManager();
+    comments::FullComment *fc = ctx.getCommentForDecl(decl, 0);
 
-    return rc->getBriefText(ctx);
+
+    if (!fc)
+        return;
+
+    for (auto &block : fc->getBlocks()) {
+        if (clang::comments::ParagraphComment *paragraph = clang::dyn_cast<clang::comments::ParagraphComment>(block)) {
+            comment.data.paragraphs.push_back(Paragraph());
+            Paragraph &para = comment.data.paragraphs.back();
+            comment.assigned = true;
+            auto child = paragraph->child_begin();
+            bool first = true;
+            while (child != paragraph->child_end()) {
+                if (first) {
+                    first = false;
+                    clang::comments::InlineCommandComment *inlineCommand = clang::dyn_cast<clang::comments::InlineCommandComment>(*child);
+                    if (inlineCommand) {
+                        std::string commandName = Lexer::getSourceText(clang::CharSourceRange(inlineCommand->getCommandNameRange(), true), ctx.getSourceManager(), ctx.getLangOpts()).str();
+                        commandName = commandName.substr(commandName.find('\\') + 1);
+                        if (commandName.size()) {
+                            para.command = commandName;
+                            ++child;
+                            continue;
+                        }
+                    }
+                }
+                clang::comments::TextComment *textComment = clang::dyn_cast<clang::comments::TextComment>(*child);
+                if (textComment) {
+                    comment.assigned = true;
+                    para.lines.push_back(textComment->getText().str());
+                }
+                ++child;
+            }
+        }
+    }
 }
 
 class DefaultValueMatcher : public MatchFinder::MatchCallback
 {
 public:
+    DefaultValueMatcher(Member &member)
+        : member(member)
+    {}
     static DeclarationMatcher metaMatcher()
     {
         return fieldDecl(anyOf(hasDescendant(stringLiteral(anything()).bind("string")),
@@ -40,27 +88,28 @@ public:
         if (const Decl *field = Result.Nodes.getNodeAs<clang::Decl>("field")) {
             SourceManager &sm = field->getASTContext().getSourceManager();
             const LangOptions &lo = field->getASTContext().getLangOpts();
-            std::string default_value;
             if (const StringLiteral *str = Result.Nodes.getNodeAs<StringLiteral>("string")) {
-                default_value = getLiteralText(sm, lo, str);
+                member.default_value = getLiteralText(sm, lo, str);
             } else if (const FloatingLiteral *f = Result.Nodes.getNodeAs<FloatingLiteral>("float")) {
-                default_value = getLiteralText(sm, lo, f);
+                member.default_value = getLiteralText(sm, lo, f);
             } else if (const IntegerLiteral *i = Result.Nodes.getNodeAs<IntegerLiteral>("int")) {
-                default_value = getLiteralText(sm, lo, i);
+                member.default_value = getLiteralText(sm, lo, i);
             } else if (const CXXBoolLiteralExpr *b = Result.Nodes.getNodeAs<CXXBoolLiteralExpr>("bool")) {
-                default_value = getLiteralText(sm, lo, b);
+                member.default_value = getLiteralText(sm, lo, b);
             } else if (const CXXNullPtrLiteralExpr *ptr = Result.Nodes.getNodeAs<CXXNullPtrLiteralExpr>("ptr")) {
-                default_value = getLiteralText(sm, lo, ptr);
+                member.default_value = getLiteralText(sm, lo, ptr);
             }
-            if (default_value.c_str())
-                fprintf(stderr, "\t\t%s\n", default_value.c_str());
         }
     }
+    Member &member;
 };
 
 class MetaMemberMatcher : public MatchFinder::MatchCallback
 {
 public:
+    MetaMemberMatcher(JsonStruct &json_struct)
+        : json_struct(json_struct)
+    {}
     static DeclarationMatcher metaMatcher()
     {
         return varDecl(has(exprWithCleanups(
@@ -83,18 +132,20 @@ public:
         const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
         assert(field && nameLiteral);
 
-        DefaultValueMatcher valueMatcher;
+        json_struct.members.push_back(Member());
+        Member &member = json_struct.members.back();
+        member.name = nameLiteral->getString().str();
+        commentForDecl(field, member.comment);
+
+        member.type = normalizeTypeName(field->getType().getAsString());
+
+        DefaultValueMatcher valueMatcher(member);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(DefaultValueMatcher::metaMatcher(), &valueMatcher);
         finder.match(*field, field->getASTContext());
 
-        std::string comment = commentForDecl(field);
-        std::string name = nameLiteral->getString().str();
-
-        fprintf(stderr, "\t %s\n", name.c_str());
-        if (comment.size())
-            fprintf(stderr, "\t\t%s\n", comment.c_str());
     }
+    JsonStruct &json_struct;
 };
 
 class ClassWithMetaMatcher : public MatchFinder::MatchCallback {
@@ -117,10 +168,13 @@ public :
         const RecordDecl *parent = Result.Nodes.getNodeAs<clang::RecordDecl>("parent");
         const Decl *return_type = Result.Nodes.getNodeAs<clang::Decl>("return_type");
         assert(parent && return_type);
-        fprintf(stderr, "%s\n", parent->getName().str().c_str());
-        MetaMemberMatcher memberMatcher;
+        JsonStruct json_struct;
+        json_struct.type = parent->getName().str();
+        MetaMemberMatcher memberMatcher(json_struct);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(MetaMemberMatcher::metaMatcher(), &memberMatcher);
         finder.match(*return_type, return_type->getASTContext());
+
+        fprintf(stderr, "found \n%s\n", JT::serializeStruct(json_struct).c_str());
     }
 };

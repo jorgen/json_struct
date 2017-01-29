@@ -96,7 +96,14 @@ struct JsonData1
     std::string StringNode;
     double NumberNode;
     bool BooleanTrue;
-    ///very special comment for BooleanFalse
+    /*!
+     *very special comment for BooleanFalse
+     *
+     *\json
+     *{
+     *   json
+     *}
+    **/
     bool BooleanFalse;
     JT::Optional<int> OptionalInt;
     /// Test structur comment
