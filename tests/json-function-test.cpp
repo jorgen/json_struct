@@ -119,14 +119,24 @@ struct CallFunctionSuper : public CallFunctionSuperSuper
                                      JT_FUNCTION(execute_two));
 };
 
+struct ExecuteThreeReturn
+{
+    bool valid = true;
+    int error_code = 0;
+    std::string data = "hello world";
+    JT_STRUCT(JT_MEMBER(valid),
+              JT_MEMBER(error_code),
+              JT_MEMBER(data));
+};
 struct CallFunctionSub : public CallFunctionSuper
 {
-    void execute_three(const std::vector<double> &data)
+    ExecuteThreeReturn execute_three(const std::vector<double> &data)
     {
         fprintf(stderr, "execute three\n");
         for (auto x : data)
             fprintf(stderr, "\t%f\n", x);
         called_three = true;
+        return ExecuteThreeReturn();
     }
 
     bool called_three = false;

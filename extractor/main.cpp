@@ -24,5 +24,10 @@ int main(int argc, const char **argv)
     clang::ast_matchers::MatchFinder finder;
     finder.addMatcher(ClassWithMetaMatcher::metaMatcher(), &matchCallback);
     int tool_run =  tool.run(newFrontendActionFactory(&finder).get());
+
+    ClassWithFunctionMetaMatcher functionCallback;
+    class::ast_matchers::MatchFinder functionFinder;
+    functionFinder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionCallback);
+    tool_run = tool.run(newFrontendActionFactory(&functionFinder).get());
     return 0;
 }

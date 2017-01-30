@@ -174,7 +174,74 @@ public :
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(MetaMemberMatcher::metaMatcher(), &memberMatcher);
         finder.match(*return_type, return_type->getASTContext());
-
         fprintf(stderr, "found \n%s\n", JT::serializeStruct(json_struct).c_str());
+    }
+};
+
+class MetaFunctionMatcher : public MatchFinder::MatchCallback
+{
+public:
+  
+    static DeclarationMatcher metaMatcher()
+    {
+        return varDecl(has(exprWithCleanups(
+            has(cxxConstructExpr(
+                has(materializeTemporaryExpr(
+                    has(callExpr(
+                        forEachDescendant(materializeTemporaryExpr(
+                            has(callExpr(
+                                has(stringLiteral(anything()).bind("string_name")),
+                                has(unaryOperator(has(declRefExpr(hasDeclaration(decl(anything()).bind("function_ref"))))))
+                            ))
+                        ))
+                    ))
+                ))
+            ))
+        ))).bind("root");
+    }
+    void run(const MatchFinder::MatchResult &Result) override {
+        const CXXMethodDecl *function = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("function_ref");
+        const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
+        assert(function && nameLiteral);
+        fprintf(stderr, "Function meta match %s\n", nameLiteral->getString().str().c_str());
+        fprintf(stderr, "Function emta name %s\n", function->getDeclName().getAsString().c_str());
+        assert(function->param_size == 1);
+        //const LValueReferenceType *param = clang::dyn_cast<const LValueReferenceType>(function->parameters().front()->getType());
+        clang::QualType nonConst = function->parameters().front()->getType()->getPointeeType();
+        nonConst.removeLocalConst();
+        fprintf(stderr, "Name of argument %s\n", nonConst.getAsString().c_str());
+
+        clang::QualType nonConstReturn = function->getReturnType();
+        nonConstReturn.removeLocalConst();
+        fprintf(stderr, "Name of return %s\n", nonConstReturn.getAsString().c_str());
+    }
+};
+
+class ClassWithFunctionMetaMatcher : public MatchFinder::MatchCallback {
+public:
+    static DeclarationMatcher metaMatcher()
+    {
+        return cxxRecordDecl(hasName("JsonToolsFunctionContainer"),
+            has(cxxMethodDecl(hasName("jt_static_meta_functions_info"),
+                has(stmt(
+                    has(declStmt(has(varDecl(anything()).bind("return_type"))))
+                ))
+            ).bind("func")),
+            hasAncestor(recordDecl().bind("parent")),
+            unless(hasAncestor(recordDecl(hasName("JsonToolsFunctionContainer")))),
+            isTemplateInstantiation()).bind("meta");
+    }
+
+    void run(const MatchFinder::MatchResult &Result) override
+    {
+        const RecordDecl *parent = Result.Nodes.getNodeAs<clang::RecordDecl>("parent");
+        const Decl *return_type = Result.Nodes.getNodeAs<clang::Decl>("return_type");
+        assert(parent && return_type);
+        fprintf(stderr, "found \n%s\n", parent->getName().str().c_str());
+        //return_type->dump();
+        MetaFunctionMatcher metaFunctionMatcher;
+        clang::ast_matchers::MatchFinder finder;
+        finder.addMatcher(MetaFunctionMatcher::metaMatcher(), &metaFunctionMatcher);
+        finder.match(*return_type, return_type->getASTContext());
     }
 };
