@@ -1493,7 +1493,7 @@ struct Optional
     T data;
     T &operator()() { return data; }
     const T &operator()() const { return data; }
-    typedef bool HasJTOptionalValue;
+    typedef bool IsOptionalType;
 };
 
 template<typename T>
@@ -1518,7 +1518,7 @@ struct OptionalChecked
     const T &operator()() const { return data; }
     T data;
     bool assigned;
-    typedef bool HasJTOptionalValue;
+    typedef bool IsOptionalType;
 };
 
 struct JsonObjectRef : public DataRef
@@ -1538,12 +1538,12 @@ struct JsonArray : public std::string
 };
 
 template <typename T>
-struct HasJTOptionalValue{
+struct IsOptionalType {
     typedef char yes[1];
     typedef char no[2];
 
     template <typename C>
-    static JT_CONSTEXPR yes& test_in_optional(typename C::HasJTOptionalValue*);
+    static JT_CONSTEXPR yes& test_in_optional(typename C::IsOptionalType*);
 
     template <typename>
     static JT_CONSTEXPR no& test_in_optional(...);
@@ -1552,7 +1552,7 @@ struct HasJTOptionalValue{
 };
 
 template <typename T>
-struct HasJTOptionalValue<std::unique_ptr<T>>
+struct IsOptionalType<std::unique_ptr<T>>
 {
     static JT_CONSTEXPR const bool value = true;
 };
@@ -1682,7 +1682,7 @@ namespace Internal {
 #if JT_HAVE_CONSTEXPR
         if (assigned_members[index])
             return Error::NoError;
-        if (HasJTOptionalValue<MI_T>::value)
+        if (IsOptionalType<MI_T>::value)
             return Error::NoError;
 
         std::string to_push = strlen(super_name) ? std::string(super_name) + "::" : std::string();
