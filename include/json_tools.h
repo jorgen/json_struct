@@ -1521,7 +1521,19 @@ struct OptionalChecked
     typedef bool IsOptionalType;
 };
 
-struct JsonObjectRef : public DataRef
+template<typename T, typename A = std::allocator<T>>
+class SilentVector : public std::vector<T, A>
+{
+    using std::vector<T, A>::vector;
+};
+
+template<typename T, typename Deleter = std::default_delete<T>>
+class SilentUniquePtr : public std::unique_ptr<T, Deleter>
+{
+    using std::unique_ptr<T, Deleter>::unique_ptr;
+};
+
+class JsonObjectRef : public DataRef
 {
 };
 
@@ -2254,7 +2266,7 @@ public:
 
         token.name = DataRef::asDataRef("");
 
-        for (auto index : vec)
+        for (auto &index : vec)
         {
             TokenParser<T,T>::serializeToken(index, token, serializer);
         }
@@ -2264,6 +2276,40 @@ public:
         token.value_type = Type::ArrayEnd;
         token.value = DataRef::asDataRef(arrayEnd);
         serializer.write(token);
+    }
+};
+
+template<typename T>
+class TokenParser<SilentVector<T>, SilentVector<T>>
+{
+public:
+    static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
+    {
+        return TokenParser<std::vector<T>, std::vector<T>>::unpackToken(to_type, context);
+    }
+
+    static void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
+    {
+        if (vec.size()) {
+            TokenParser<std::vector<T>, std::vector<T>>::serializeToken(vec, token, serializer);
+        }
+    }
+};
+
+template<typename T>
+class TokenParser<SilentUniquePtr<T>, SilentUniquePtr<T>>
+{
+public:
+    static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
+    {
+        return TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::unpackToken(to_type, context);
+    }
+
+    static void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
+    {
+        if (ptr) {
+            TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
+        }
     }
 };
 
