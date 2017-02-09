@@ -11,27 +11,28 @@
 using namespace clang::tooling;
 using namespace llvm;
 
-static llvm::cl::OptionCategory MyToolCategory("extractor options");
+static llvm::cl::OptionCategory ExtractorExtraOptions("extractor options");
 
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 static cl::extrahelp MoreHelp("\nMore help text...\n");
 
+static Extractor global_extractor;
+
 class RootASTConsumer : public ASTConsumer {
 public:
     RootASTConsumer()
-        : functionCallback(extractor)
+        : findFunction(global_extractor)
     {
-        Matcher.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionCallback);
+        Matcher.addMatcher(FindFunctionCall::metaMatcher(), &findFunction);
     }
 
     void HandleTranslationUnit(ASTContext &Context) override {
         Matcher.matchAST(Context);
     }
 
-    Extractor extractor;
 private:
-    ClassWithFunctionMetaMatcher functionCallback;
+    FindFunctionCall findFunction;
     MatchFinder Matcher;
 }; 
 
@@ -43,7 +44,7 @@ public:
 
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef file) override {
-      astConsumer.extractor.current_instance = &CI;
+      global_extractor.current_instance = &CI;
     return llvm::make_unique<RootASTConsumer>(astConsumer);
   }
 
@@ -53,9 +54,10 @@ private:
 
 int main(int argc, const char **argv)
 {
-    CommonOptionsParser OptionsParser(argc, argv, MyToolCategory);
+    CommonOptionsParser OptionsParser(argc, argv, ExtractorExtraOptions);
     ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
     int tool_run = tool.run(newFrontendActionFactory<RootFrontendAction>().get());
+    fprintf(stderr, "Found functions\n%s\n", JT::serializeStruct(global_extractor.function_objects).c_str());
     return 0;
 }

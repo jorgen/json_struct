@@ -121,22 +121,15 @@ public:
         : extractor(extractor)
         , type_def(type_def)
     {}
-    static DeclarationMatcher metaMatcher()
+    static StatementMatcher metaMatcher()
     {
-        return varDecl(has(exprWithCleanups(
-                   has(cxxConstructExpr(
-                       has(materializeTemporaryExpr(
-                           has(callExpr(
-                               forEachDescendant(materializeTemporaryExpr(
-                                                 has(callExpr(
-                                                     has(stringLiteral(anything()).bind("string_name")),
-                                                     has(unaryOperator(has(declRefExpr(hasDeclaration(fieldDecl(anything()).bind("member_ref"))))))
-                                                     ))
-                                             ))
-                               ))
-                           ))
-                       ))
-                   ))).bind("root");
+        return callExpr(forEachDescendant(
+            materializeTemporaryExpr(has(
+                cxxBindTemporaryExpr(has(
+                    callExpr(
+                        has(stringLiteral(anything()).bind("string_name")),
+                        has(unaryOperator(has(declRefExpr(hasDeclaration(fieldDecl(anything()).bind("member_ref"))))))
+                    )))))));
     }
     void run(const MatchFinder::MatchResult &Result) override {
         const FieldDecl *field = Result.Nodes.getNodeAs<clang::FieldDecl>("member_ref");
@@ -161,43 +154,13 @@ public:
     TypeDef &type_def;
 };
 
-class TemplateSpecialisationMatcher : public MatchFinder::MatchCallback
-{
-public:
-    TemplateSpecialisationMatcher(Extractor &extractor)
-        : extractor(extractor)
-        , return_type(nullptr)
-    {}
-    static DeclarationMatcher metaMatcher()
-    {
-        return classTemplateSpecializationDecl(
-            has(cxxRecordDecl(hasName("JsonToolsBase"))),
-            has(cxxMethodDecl(hasName("jt_static_meta_data_info"),
-                has(stmt(
-                    has(declStmt(has(varDecl(anything()).bind("return_type"))))
-                ))
-            ).bind("func")));
-    }
-    
-    void run(const MatchFinder::MatchResult &Result) override
-    {
-        return_type = Result.Nodes.getNodeAs<const clang::VarDecl>("return_type");
-    }
-
-    Extractor &extractor;
-    const VarDecl *return_type;
-};
-
 static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extractor, CXXRecordDecl *parentClass, ClassTemplateDecl *metaTemplate)
 {
     TemplateArgument t_args(QualType(parentClass->getTypeForDecl(), 0));
     auto template_arg = llvm::makeArrayRef(t_args);
     void *insertion_point;
-    auto retval = metaTemplate->findSpecialization(template_arg, insertion_point);
-    if (!retval) {
-        retval = ClassTemplateSpecializationDecl::Create(parentClass->getASTContext(), TTK_Class, parentClass->getDeclContext(), {}, {}, metaTemplate, template_arg, nullptr);
-        metaTemplate->AddSpecialization(retval, insertion_point);
-    }
+    ClassTemplateSpecializationDecl *retval = ClassTemplateSpecializationDecl::Create(parentClass->getASTContext(), TTK_Class, parentClass->getDeclContext(), {}, {}, metaTemplate, template_arg, nullptr);
+    metaTemplate->AddSpecialization(retval, insertion_point);
     bool is_incomplete = extractor.current_instance->getSema().RequireCompleteType({}, parentClass->getASTContext().getTypeDeclType(retval), 0);
     return is_incomplete ? nullptr : retval;
 }
@@ -229,15 +192,19 @@ public :
         assert(!json_typedef.assigned);
         ClassTemplateDecl *classTemplate = const_cast<ClassTemplateDecl *>(Result.Nodes.getNodeAs<clang::ClassTemplateDecl>("class_template"));
         ClassTemplateSpecializationDecl *meta_specialization = getJTMetaSpecialisation(extractor, parent, classTemplate);
-        ast_matchers::MatchFinder returnFinder;
-        TemplateSpecialisationMatcher returnMatcher(extractor);
-        returnFinder.addMatcher(TemplateSpecialisationMatcher::metaMatcher(), &returnMatcher);
-        returnFinder.match(*meta_specialization, classTemplate->getASTContext());
-
+        
+        const DecltypeType *return_type = nullptr;
+        for (auto *method : meta_specialization->methods()) {
+            if (method->getName().str() == "jt_static_meta_data_info") {
+                const LValueReferenceType *ref = method->getReturnType()->getAs<LValueReferenceType>();
+                return_type = ref->getPointeeType()->getAs<DecltypeType>();
+                break;
+            }
+        }
         MetaMemberMatcher memberMatcher(extractor, json_typedef);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(MetaMemberMatcher::metaMatcher(), &memberMatcher);
-        finder.match(*returnMatcher.return_type, classTemplate->getASTContext());
+        finder.match(*return_type->getUnderlyingExpr(), classTemplate->getASTContext());
     }
 
     Extractor &extractor;
@@ -293,22 +260,15 @@ public:
         : extractor(extractor)
         , function_object(object)
     {}
-    static DeclarationMatcher metaMatcher()
+    static StatementMatcher metaMatcher()
     {
-        return varDecl(has(exprWithCleanups(
-            has(cxxConstructExpr(
-                has(materializeTemporaryExpr(
-                    has(callExpr(
-                        forEachDescendant(materializeTemporaryExpr(
-                            has(callExpr(
-                                has(stringLiteral(anything()).bind("string_name")),
-                                has(unaryOperator(has(declRefExpr(hasDeclaration(decl(anything()).bind("function_ref"))))))
-                            ))
-                        ))
-                    ))
-                ))
-            ))
-        ))).bind("root");
+        return callExpr(forEachDescendant(
+            materializeTemporaryExpr(has(
+                cxxBindTemporaryExpr(has(
+                    callExpr(
+                        has(stringLiteral(anything()).bind("string_name")),
+                        has(unaryOperator(has(declRefExpr(hasDeclaration(decl(anything()).bind("function_ref"))))))
+                    )))))));
     }
     void run(const MatchFinder::MatchResult &Result) override {
         const CXXMethodDecl *function = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("function_ref");
@@ -335,28 +295,68 @@ public:
     {}
     static DeclarationMatcher metaMatcher()
     {
-        return cxxRecordDecl(hasName("JsonToolsFunctionContainer"),
-            has(cxxMethodDecl(hasName("jt_static_meta_functions_info"),
-                has(stmt(
-                    has(declStmt(has(varDecl(anything()).bind("return_type"))))
-                ))
-            ).bind("func")),
-            hasAncestor(recordDecl().bind("parent")),
-            unless(hasAncestor(recordDecl(hasName("JsonToolsFunctionContainer")))),
-            isTemplateInstantiation()).bind("meta");
+        return cxxRecordDecl(isSameOrDerivedFrom(cxxRecordDecl(has(classTemplateDecl(
+            hasName("JsonToolsFunctionContainer"),
+            has(cxxRecordDecl(
+                hasName("JsonToolsFunctionContainer"),
+                has(cxxMethodDecl(
+                    hasName("jt_static_meta_functions_info"),
+                    has(stmt(
+                        has(declStmt(has(varDecl(anything()).bind("return_type"))))
+                    ))).bind("func"))))
+            ).bind("class_template"))))).bind("parent");
     }
 
     void run(const MatchFinder::MatchResult &Result) override
     {
-        const RecordDecl *parent = Result.Nodes.getNodeAs<clang::RecordDecl>("parent");
-        const Decl *return_type = Result.Nodes.getNodeAs<clang::Decl>("return_type");
-        assert(parent && return_type);
-        FunctionObject functionObject;
+        CXXRecordDecl *parent = const_cast<CXXRecordDecl *>(Result.Nodes.getNodeAs<clang::CXXRecordDecl>("parent"));
+        assert(parent && return_type && super_func);
+        ClassTemplateDecl *classTemplate = const_cast<ClassTemplateDecl *>(Result.Nodes.getNodeAs<clang::ClassTemplateDecl>("class_template"));
+        ClassTemplateSpecializationDecl *meta_specialization = getJTMetaSpecialisation(extractor, parent, classTemplate);
+        const DecltypeType *return_type = nullptr;
+        for (auto *method : meta_specialization->methods()) {
+            if (method->getName().str() == "jt_static_meta_functions_info") {
+                const LValueReferenceType *ref = method->getReturnType()->getAs<LValueReferenceType>();
+                return_type = ref->getPointeeType()->getAs<DecltypeType>();
+            }
+        }
+        assert(return_type);
+        assert(returnMatcher.return_type);
+        extractor.function_objects.push_back(FunctionObject());
+        FunctionObject &functionObject = extractor.function_objects.back();
+        functionObject.type = parent->getNameAsString();
         MetaFunctionMatcher metaFunctionMatcher(extractor, functionObject);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(MetaFunctionMatcher::metaMatcher(), &metaFunctionMatcher);
-        finder.match(*return_type, return_type->getASTContext());
-        fprintf(stderr, "Found\n%s\n", JT::serializeStruct(functionObject).c_str());
+        finder.match(*return_type->getUnderlyingExpr(), parent->getASTContext());
+    }
+
+    Extractor &extractor;
+};
+
+class FindFunctionCall : public MatchFinder::MatchCallback {
+public:
+    FindFunctionCall(Extractor &extractor)
+        : extractor(extractor)
+    {}
+    static StatementMatcher metaMatcher()
+    {
+        return callExpr(callee(functionDecl(hasName("callFunction"),
+                                            parameterCountIs(5),
+                                            isTemplateInstantiation(),
+                                            hasDeclContext(namedDecl(hasName("JT"))),
+                                            hasParameter(0, hasType(referenceType(pointee(hasDeclaration(cxxRecordDecl().bind("callObject"))))))
+                ))).bind("func");
+    }
+
+    void run(const MatchFinder::MatchResult &Result) override
+    {
+        const CallExpr *func = Result.Nodes.getNodeAs<CallExpr>("func");
+        const CXXRecordDecl *callObject = Result.Nodes.getNodeAs<CXXRecordDecl>("callObject");
+        ClassWithFunctionMetaMatcher functionObjectMatcher(extractor);
+        clang::ast_matchers::MatchFinder finder;
+        finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
+        finder.match(*callObject, callObject->getASTContext());
     }
 
     Extractor &extractor;

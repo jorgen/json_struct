@@ -2505,7 +2505,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const cha
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        static const decltype(std::make_tuple(__VA_ARGS__)) jt_static_meta_functions_info() \
+        static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
         { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
        static const decltype(std::make_tuple()) &jt_static_meta_super_info() \
        { static auto ret = std::make_tuple(); return ret; } \
