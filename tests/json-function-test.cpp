@@ -106,7 +106,7 @@ struct CallFunctionSuperSuper
     JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one))
 };
 
-struct CallFunctionSuper : public CallFunctionSuperSuper
+struct CallFunctionSuper
 {
     void execute_two(const double &data)
     {
@@ -115,8 +115,7 @@ struct CallFunctionSuper : public CallFunctionSuperSuper
     }
 
     bool called_two = false;
-    JT_FUNCTION_CONTAINER_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuperSuper)),
-                                     JT_FUNCTION(execute_two));
+    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_two));
 };
 
 struct ExecuteThreeReturn
@@ -128,7 +127,7 @@ struct ExecuteThreeReturn
               JT_MEMBER(error_code),
               JT_MEMBER(data));
 };
-struct CallFunctionSub : public CallFunctionSuper
+struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 {
     ExecuteThreeReturn execute_three(const std::vector<double> &data)
     {
@@ -140,7 +139,8 @@ struct CallFunctionSub : public CallFunctionSuper
     }
 
     bool called_three = false;
-    JT_FUNCTION_CONTAINER_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuper)),
+    JT_FUNCTION_CONTAINER_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuperSuper),
+                                                      JT_SUPER_CLASS(CallFunctionSuper)),
                                      JT_FUNCTION(execute_three));
 };
 
@@ -185,10 +185,69 @@ void virtualFunctionTest()
     JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
 
+const char json_two[] = R"json(
+{
+    "execute_one" : {
+        "number" : 45,
+        "valid" : false,
+        "more_data" : "string data",
+        "super_data" : "hello"
+    }
+}
+)json";
+
+struct SuperParamOne
+{
+    int number;
+    JT_STRUCT(JT_MEMBER(number));
+};
+
+struct SuperParamTwo
+{
+    bool valid;
+    JT_STRUCT(JT_MEMBER(valid));
+};
+
+struct SuperParamTwoOne : public SuperParamTwo
+{
+    std::string more_data;
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SuperParamTwo)), JT_MEMBER(more_data));
+};
+struct Param : public SuperParamOne, public SuperParamTwoOne
+{
+    std::string super_data;
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SuperParamOne),
+                                          JT_SUPER_CLASS(SuperParamTwoOne)),
+                         JT_MEMBER(super_data));
+};
+
+struct SuperParamCallable
+{
+    void execute_one(const Param &param)
+    {
+        execute_one_executed = true;
+    }
+    bool execute_one_executed = false;
+
+    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one));
+};
+
+void super_class_param_test()
+{
+    SuperParamCallable cont;
+    JT::CallFunctionContext<512> context(json_two);
+    JT::callFunction(cont, context);
+
+    JT_ASSERT(cont.execute_one_executed);
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+}
 int main()
 {
     simpleTest();
     inheritanceTest();
     virtualFunctionTest();
+    super_class_param_test();
 }
 

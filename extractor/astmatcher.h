@@ -24,6 +24,8 @@ std::string normalizeTypeName(const std::string &type)
     std::string return_type = type;
     if (return_type == "_Bool")
         return_type = "bool";
+    else if (return_type == "basic_string")
+        return_type = "string";
     return return_type;
 }
 
@@ -75,6 +77,35 @@ static void commentForDecl(const Decl *decl, JT::OptionalChecked<Comment> &comme
                 ++child;
             }
         }
+    }
+}
+
+static void get_super_classes(const CXXMethodDecl *super_func, std::vector<const CXXRecordDecl *> &return_vector)
+{
+    if (!super_func)
+        return;
+    const LValueReferenceType *return_ref = clang::dyn_cast<LValueReferenceType>(super_func->getReturnType().getTypePtr());
+    if (!return_ref)
+        return;
+    const DecltypeType *super_func_return_decltype = return_ref->getPointeeType()->getAs<DecltypeType>();
+    if (!super_func_return_decltype)
+        return;
+    super_func_return_decltype->dump();
+    const TemplateSpecializationType *super_tuple = clang::dyn_cast<TemplateSpecializationType>(super_func_return_decltype->getUnderlyingType());
+    if (!super_tuple)
+        return;
+    return_vector.reserve(super_tuple->template_arguments().size());
+    super_tuple->dump();
+    
+    for (const TemplateArgument &arg : super_tuple->template_arguments()) {
+        arg.dump();
+        const RecordType *record = clang::dyn_cast<RecordType>(arg.getAsType()->getUnqualifiedDesugaredType());
+        record->dump();
+        const ClassTemplateSpecializationDecl *superInfoTemplate = clang::dyn_cast<ClassTemplateSpecializationDecl>(record->getDecl());
+        const TemplateArgument &super_class_t_arg = superInfoTemplate->getTemplateArgs().get(0);
+        const RecordType *super_record = clang::dyn_cast<RecordType>(super_class_t_arg.getAsType());
+        const CXXRecordDecl *super_decl = clang::dyn_cast<CXXRecordDecl>(super_record->getDecl());
+        return_vector.push_back(super_decl);
     }
 }
 
@@ -154,13 +185,11 @@ public:
     TypeDef &type_def;
 };
 
-static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extractor, CXXRecordDecl *parentClass, ClassTemplateDecl *metaTemplate)
+static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extractor, const CXXRecordDecl *parentClass, ClassTemplateDecl *metaTemplate)
 {
     TemplateArgument t_args(QualType(parentClass->getTypeForDecl(), 0));
     auto template_arg = llvm::makeArrayRef(t_args);
-    void *insertion_point;
-    ClassTemplateSpecializationDecl *retval = ClassTemplateSpecializationDecl::Create(parentClass->getASTContext(), TTK_Class, parentClass->getDeclContext(), {}, {}, metaTemplate, template_arg, nullptr);
-    metaTemplate->AddSpecialization(retval, insertion_point);
+    ClassTemplateSpecializationDecl *retval = ClassTemplateSpecializationDecl::Create(parentClass->getASTContext(), TTK_Class, const_cast<CXXRecordDecl *>(parentClass)->getDeclContext(), {}, {}, metaTemplate, template_arg, nullptr);
     bool is_incomplete = extractor.current_instance->getSema().RequireCompleteType({}, parentClass->getASTContext().getTypeDeclType(retval), 0);
     return is_incomplete ? nullptr : retval;
 }
@@ -180,16 +209,33 @@ public :
                     has(stmt(
                         has(declStmt(has(varDecl(anything()).bind("return_type"))))
                     ))
-                ).bind("func"))
+                ).bind("func")),
+                has(cxxMethodDecl(hasName("jt_static_meta_super_info")).bind("super_func"))
             ))
         ).bind("class_template"))).bind("parent");
     }
 
     void run(const MatchFinder::MatchResult &Result) override
     {
-        CXXRecordDecl *parent = const_cast<CXXRecordDecl *>(Result.Nodes.getNodeAs<clang::CXXRecordDecl>("parent"));
+        const CXXRecordDecl *parent = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("parent");
+        const CXXMethodDecl *super_func = Result.Nodes.getNodeAs<CXXMethodDecl>("super_func");
         assert(parent && return_type);
         assert(!json_typedef.assigned);
+
+        std::vector<const CXXRecordDecl *> super_classes;
+        get_super_classes(super_func, super_classes);
+        if (super_classes.size()) {
+            if (!json_typedef.record_type)
+                json_typedef.record_type.reset(new Record());
+            json_typedef.record_type->super_classes.reserve(super_classes.size());
+        }
+        for (const CXXRecordDecl *super : super_classes)
+        {
+            json_typedef.record_type->super_classes.push_back(TypeDef());
+            TypeDef &super_typedef = json_typedef.record_type->super_classes.back();
+            typeDefForQual(extractor, QualType(super->getTypeForDecl(), 0), super_typedef);
+        }
+
         ClassTemplateDecl *classTemplate = const_cast<ClassTemplateDecl *>(Result.Nodes.getNodeAs<clang::ClassTemplateDecl>("class_template"));
         ClassTemplateSpecializationDecl *meta_specialization = getJTMetaSpecialisation(extractor, parent, classTemplate);
         
@@ -244,7 +290,6 @@ static void typeDefForQual(Extractor &extractor, clang::QualType type, TypeDef &
     if (record)
         record_decl = clang::dyn_cast<CXXRecordDecl>(record->getDecl());
     if (record_decl) {
-        bool isRef = record_decl->isReferenced();
         ClassWithMetaMatcher matcher(extractor, json_type);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(ClassWithMetaMatcher::metaMatcher(), &matcher);
@@ -290,8 +335,9 @@ public:
 
 class ClassWithFunctionMetaMatcher : public MatchFinder::MatchCallback {
 public:
-    ClassWithFunctionMetaMatcher(Extractor &extractor)
-        : extractor(extractor)
+    ClassWithFunctionMetaMatcher(FunctionObject &functionObject, Extractor &extractor)
+        : functionObject(functionObject)
+        , extractor(extractor)
     {}
     static DeclarationMatcher metaMatcher()
     {
@@ -303,15 +349,30 @@ public:
                     hasName("jt_static_meta_functions_info"),
                     has(stmt(
                         has(declStmt(has(varDecl(anything()).bind("return_type"))))
-                    ))).bind("func"))))
-            ).bind("class_template"))))).bind("parent");
+                    ))).bind("func")),
+                has(cxxMethodDecl(
+                    hasName("jt_static_meta_super_info")).bind("super_func"))
+            ))).bind("class_template"))))).bind("parent");
     }
 
     void run(const MatchFinder::MatchResult &Result) override
     {
         CXXRecordDecl *parent = const_cast<CXXRecordDecl *>(Result.Nodes.getNodeAs<clang::CXXRecordDecl>("parent"));
-        assert(parent && return_type && super_func);
         ClassTemplateDecl *classTemplate = const_cast<ClassTemplateDecl *>(Result.Nodes.getNodeAs<clang::ClassTemplateDecl>("class_template"));
+        const CXXMethodDecl *super_func = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("super_func");
+        std::vector<const CXXRecordDecl *> super_classes;
+        get_super_classes(super_func, super_classes);
+        functionObject.super_classes.reserve(super_classes.size());
+        for (const CXXRecordDecl *super_class : super_classes)
+        {
+            functionObject.super_classes.push_back(FunctionObject());
+            FunctionObject &super_class_object = functionObject.super_classes.back();
+            ClassWithFunctionMetaMatcher functionObjectMatcher(super_class_object, extractor);
+            clang::ast_matchers::MatchFinder finder;
+            finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
+            finder.match(*super_class, super_class->getASTContext());
+        }
+
         ClassTemplateSpecializationDecl *meta_specialization = getJTMetaSpecialisation(extractor, parent, classTemplate);
         const DecltypeType *return_type = nullptr;
         for (auto *method : meta_specialization->methods()) {
@@ -322,15 +383,14 @@ public:
         }
         assert(return_type);
         assert(returnMatcher.return_type);
-        extractor.function_objects.push_back(FunctionObject());
-        FunctionObject &functionObject = extractor.function_objects.back();
         functionObject.type = parent->getNameAsString();
         MetaFunctionMatcher metaFunctionMatcher(extractor, functionObject);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(MetaFunctionMatcher::metaMatcher(), &metaFunctionMatcher);
-        finder.match(*return_type->getUnderlyingExpr(), parent->getASTContext());
+        finder.match(*return_type->getUnderlyingExpr(), classTemplate->getASTContext());
     }
 
+    FunctionObject &functionObject;
     Extractor &extractor;
 };
 
@@ -353,7 +413,9 @@ public:
     {
         const CallExpr *func = Result.Nodes.getNodeAs<CallExpr>("func");
         const CXXRecordDecl *callObject = Result.Nodes.getNodeAs<CXXRecordDecl>("callObject");
-        ClassWithFunctionMetaMatcher functionObjectMatcher(extractor);
+        extractor.function_objects.push_back(FunctionObject());
+        FunctionObject &functionObject = extractor.function_objects.back();
+        ClassWithFunctionMetaMatcher functionObjectMatcher(functionObject, extractor);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
         finder.match(*callObject, callObject->getASTContext());

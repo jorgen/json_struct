@@ -2689,8 +2689,9 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
         auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-        if (FunctionHandler<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions, return_json))
-            return true;
+        Error error = FunctionHandler<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions, return_json);
+        if (error != Error::MissingPropertyMember)
+            return error;
 
         return FunctionalSuperRecursion<T, INDEX - 1>::callFunction(container, context, return_json);
     }

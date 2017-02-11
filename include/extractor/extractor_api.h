@@ -53,7 +53,7 @@ struct Member
 struct Record
 {
     std::vector<Member> members;
-    JT::SilentVector<Record> super_classes;
+    JT::SilentVector<TypeDef> super_classes;
     JT::OptionalChecked<Comment> comment;
 
     JT_STRUCT(JT_MEMBER(members),
