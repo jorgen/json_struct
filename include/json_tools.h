@@ -2485,7 +2485,7 @@ std::string serializeStruct(const T &from_type)
     return serializeContext.returnString();
 }
 
-template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_SERIALIZER>
 struct FunctionInfo
 {
     typedef Ret(T::*Function)(const Arg &);
@@ -2495,7 +2495,23 @@ struct FunctionInfo
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
+struct FunctionInfo<T, Ret, Arg, NAME_SIZE, true>
+{
+    typedef Ret(T::*Function)(const Arg &, Serializer &serializer);
+    typedef Ret returnType;
+    const char *name;
+    Function function;
+};
+
+
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, false> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
+{
+    return{ name, function };
+}
+
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, true> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, Serializer &))
 {
     return{ name, function };
 }
@@ -2548,27 +2564,46 @@ struct CallFunctionContext
 };
 
 namespace Internal {
-    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
+    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_SERIALIZER>
     struct ReturnSerializer
     {
-        static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE> &functionInfo, Arg &arg, Serializer &return_json)
+        static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_SERIALIZER> &functionInfo, Arg &arg, Serializer &return_json)
         {
             Token token;
             TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg), token, return_json);
         }
     };
 
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE>
+    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, true>
     {
-        static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE> &functionInfo, Arg &arg, Serializer &return_json)
+        static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, true> &functionInfo, Arg &arg, Serializer &return_json)
+        {
+            Token token;
+            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg, return_json), token, return_json);
+        }
+    };
+
+    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, true>
+    {
+        static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, true> &functionInfo, Arg &arg, Serializer &return_json)
+        {
+            (container.*functionInfo.function)(arg, return_json);
+        }
+    };
+
+    template<typename T, typename U, typename Arg, size_t NAME_SIZE, bool TAKES_SERIALIZER>
+    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, TAKES_SERIALIZER>
+    {
+        static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_SERIALIZER> &functionInfo, Arg &arg, Serializer &return_json)
         {
             (container.*functionInfo.function)(arg);
         }
     };
 }
-template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-Error callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE> &functionInfo, Serializer &return_json)
+template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_SERIALIZER>
+Error callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE, TAKES_SERIALIZER> &functionInfo, Serializer &return_json)
 {
     if (context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.token.name.data, NAME_SIZE) == 0)
     {
@@ -2577,7 +2612,7 @@ Error callFunctionHandler(T &container, ParseContext &context, FunctionInfo<U,Re
         if (context.error != Error::NoError)
             return context.error;
 
-       Internal::ReturnSerializer<T, U, Ret, Arg, NAME_SIZE>::serialize(container, functionInfo, arg, return_json);
+       Internal::ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, TAKES_SERIALIZER>::serialize(container, functionInfo, arg, return_json);
        return Error::NoError;
     }
     return Error::MissingPropertyMember;

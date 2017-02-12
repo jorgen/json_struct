@@ -54,20 +54,19 @@ struct CallFunction
         called_one = true;
     }
 
-    int execute_two(const double &data)
+    int execute_two(const double &data, JT::Serializer &serializer)
     {
         fprintf(stderr, "execute two executed %f\n", data);
         called_two = true;
         return 2;
     }
 
-    int execute_three(const std::vector<double> &data)
+    void execute_three(const std::vector<double> &data, JT::Serializer &serializer)
     {
         fprintf(stderr, "execute three\n");
         for (auto x : data)
             fprintf(stderr, "\t%f\n", x);
         called_three = true;
-        return 3;
     }
     JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
                           JT_FUNCTION(execute_two),
