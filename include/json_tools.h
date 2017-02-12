@@ -1592,7 +1592,8 @@ struct ParseContext
     bool allow_unnasigned_required__members = true;
 };
 
-#define JT_MEMBER(name) JT::makeMemberInfo(#name, &JT_STRUCT_T::name)
+#define JT_MEMBER(member) JT::makeMemberInfo(#member, &JT_STRUCT_T::member)
+#define JT_MEMBER_WITH_NAME(name, member) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
 
 #define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(std::string(#super))
 
