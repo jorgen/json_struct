@@ -54,14 +54,14 @@ struct CallFunction
         called_one = true;
     }
 
-    int execute_two(const double &data, JT::Serializer &serializer)
+    int execute_two(const double &data, JT::CallFunctionContext &context)
     {
         fprintf(stderr, "execute two executed %f\n", data);
         called_two = true;
         return 2;
     }
 
-    void execute_three(const std::vector<double> &data, JT::Serializer &serializer)
+    void execute_three(const std::vector<double> &data, JT::CallFunctionContext &context)
     {
         fprintf(stderr, "execute three\n");
         for (auto x : data)
@@ -80,7 +80,7 @@ struct CallFunction
 void simpleTest()
 {
     CallFunction cont;
-    JT::CallFunctionContext<512> context(json);
+    JT::DefaultCallFunctionContext<> context(json, sizeof(json));
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
@@ -146,7 +146,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 void inheritanceTest()
 {
     CallFunctionSub cont;
-    JT::CallFunctionContext<512> context(json);
+    JT::DefaultCallFunctionContext<> context(json);
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
@@ -170,7 +170,7 @@ struct CallFunctionVirtualOverload : public CallFunction
 void virtualFunctionTest()
 {
     CallFunctionVirtualOverload cont;
-    JT::CallFunctionContext<512> context(json);
+    JT::DefaultCallFunctionContext<> context(json);
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.override_called);
@@ -178,7 +178,7 @@ void virtualFunctionTest()
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
-    fprintf(stderr, "return string\n%s\n", context.return_serializer.returnString().c_str());
+    fprintf(stderr, "return string\n%s\n", context.s_context.returnString().c_str());
     if (context.parse_context.error != JT::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
     JT_ASSERT(context.parse_context.error == JT::Error::NoError);
@@ -234,7 +234,7 @@ struct SuperParamCallable
 void super_class_param_test()
 {
     SuperParamCallable cont;
-    JT::CallFunctionContext<512> context(json_two);
+    JT::DefaultCallFunctionContext<> context(json_two);
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.execute_one_executed);

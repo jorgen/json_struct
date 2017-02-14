@@ -62,7 +62,7 @@ struct Executor
 void test_simple()
 {
     Executor executor;
-    JT::CallFunctionContext<> context(json_data);
+    JT::DefaultCallFunctionContext<> context(json_data);
     JT::Error called = JT::callFunction(executor, context);
 
     JT_ASSERT(context.error_list.size() == 2);
