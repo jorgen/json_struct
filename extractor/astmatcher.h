@@ -219,8 +219,6 @@ public :
     {
         const CXXRecordDecl *parent = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("parent");
         const CXXMethodDecl *super_func = Result.Nodes.getNodeAs<CXXMethodDecl>("super_func");
-        assert(parent && return_type);
-        assert(!json_typedef.assigned);
 
         std::vector<const CXXRecordDecl *> super_classes;
         get_super_classes(super_func, super_classes);
@@ -319,7 +317,6 @@ public:
         const CXXMethodDecl *function = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("function_ref");
         const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
         assert(function && nameLiteral);
-        assert(function->param_size == 1);
         clang::QualType firstParameter = function->parameters().front()->getType();
         function_object.functions.push_back(Functio());
         Functio &func = function_object.functions.back();
@@ -382,7 +379,6 @@ public:
             }
         }
         assert(return_type);
-        assert(returnMatcher.return_type);
         functionObject.type = parent->getNameAsString();
         MetaFunctionMatcher metaFunctionMatcher(extractor, functionObject);
         clang::ast_matchers::MatchFinder finder;

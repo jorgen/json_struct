@@ -192,6 +192,58 @@ void jt_copy_parsed()
 	JT_ASSERT(parent.int_value == 65);
 }
 
+const char json_token_copy[] = R"json(
+{
+    "number" : 45,
+    "valid" : false,
+    "child" : {
+        "some_more": "world",
+        "another_int" : 495
+    },
+    "more_data" : "string data",
+    "super_data" : "hello"
+}
+)json";
+
+struct SecondChild
+{
+    std::string some_more;
+    int another_int;
+    JT_STRUCT(JT_MEMBER(some_more),
+        JT_MEMBER(another_int));
+};
+struct SecondParent
+{
+    int number;
+    bool valid;
+    JT::JsonTokens child;
+    std::string more_data;
+    std::string super_data;
+
+    JT_STRUCT(JT_MEMBER(number),
+        JT_MEMBER(valid),
+        JT_MEMBER(child),
+        JT_MEMBER(more_data),
+        JT_MEMBER(super_data));
+};
+
+void jt_copy_tokens()
+{
+    SecondParent parent;
+    JT::ParseContext parseContext(json_token_copy);
+    JT::parseData(parent, parseContext);
+
+    JT_ASSERT(parseContext.error == JT::Error::NoError);
+    JT_ASSERT(parent.child.size() == 4);
+
+    JT::ParseContext childContext;
+    childContext.tokenizer.addData(&parent.child);
+    SecondChild child;
+    JT::parseData(child, childContext);
+    JT_ASSERT(child.another_int == 495);
+    JT_ASSERT(child.some_more == "world");
+     
+}
 int main()
 {
     jt_copy_full();
@@ -200,6 +252,6 @@ int main()
     jt_partial_3();
 
 	jt_copy_parsed();
-    
+    jt_copy_tokens();
     return 0;
 }

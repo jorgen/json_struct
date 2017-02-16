@@ -1535,18 +1535,27 @@ class SilentUniquePtr : public std::unique_ptr<T, Deleter>
 
 class JsonObjectRef : public DataRef
 {
+    using DataRef::DataRef;
 };
 
 struct JsonObject : public std::string
 {
+    using std::string::string;
 };
 
 struct JsonArrayRef : public DataRef
 {
+    using DataRef::DataRef;
 };
 
 struct JsonArray : public std::string
 {
+    using std::string::string;
+};
+
+struct JsonTokens : public std::vector<JT::Token>
+{
+    using std::vector<JT::Token>::vector;
 };
 
 template <typename T>
@@ -2315,6 +2324,61 @@ public:
 };
 
 template<>
+class TokenParser<std::vector<Token>, std::vector<Token>>
+{
+public:
+    static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart &&
+            context.token.value_type != JT::Type::ObjectStart)
+            return Error::ExpectedObjectStart;
+        to_type.push_back(context.token);
+        bool buffer_change = false;
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        {
+            buffer_change = true;
+        });
+
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level && buffer_change == false) {
+            error = context.tokenizer.nextToken(context.token);
+            to_type.push_back(context.token);
+            if (context.token.value_type == Type::ArrayStart || context.token.value_type == Type::ObjectStart)
+                level++;
+            else if (context.token.value_type == Type::ArrayEnd || context.token.value_type == Type::ObjectEnd)
+                level--;
+        }
+        if (buffer_change)
+            return Error::NonContigiousMemory;
+
+        return error;
+    }
+
+    static void serializeToken(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
+    {
+        for (auto &t : from_type) {
+            token = t;
+            serializer.write(token);
+        }
+    }
+};
+
+template<>
+class TokenParser<JsonTokens, JsonTokens>
+{
+public:
+    static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
+    {
+        return TokenParser<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
+    }
+    static void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
+    {
+        return TokenParser<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
+    }
+};
+
+template<>
 inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &to_type, ParseContext &context)
 {
     if (context.token.value_type != JT::Type::ArrayStart)
@@ -2328,7 +2392,7 @@ inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &t
 
     size_t level = 1;
     Error error = Error::NoError;
-    while(error != JT::Error::NoError && level && buffer_change == false) {
+    while(error == JT::Error::NoError && level && buffer_change == false) {
         error = context.tokenizer.nextToken(context.token);
         if (context.token.value_type == Type::ArrayStart)
             level++;
@@ -2357,7 +2421,7 @@ inline Error TokenParser<JsonArray,JsonArray>::unpackToken(JsonArray &to_type, P
 
     size_t level = 1;
     Error error = Error::NoError;
-    while(error != JT::Error::NoError && level) {
+    while(error == JT::Error::NoError && level) {
         error = context.tokenizer.nextToken(context.token);
         if (context.token.value_type == Type::ArrayStart)
             level++;
@@ -2390,7 +2454,7 @@ inline Error TokenParser<JsonObjectRef,JsonObjectRef>::unpackToken(JsonObjectRef
 
     size_t level = 1;
     Error error = Error::NoError;
-    while(error != JT::Error::NoError && level && buffer_change == false) {
+    while(error == JT::Error::NoError && level && buffer_change == false) {
         error = context.tokenizer.nextToken(context.token);
         if (context.token.value_type == Type::ObjectStart)
             level++;
@@ -2419,7 +2483,7 @@ inline Error TokenParser<JsonObject,JsonObject>::unpackToken(JsonObject &to_type
 
     size_t level = 1;
     Error error = Error::NoError;
-    while(error != JT::Error::NoError && level) {
+    while(error == JT::Error::NoError && level) {
         error = context.tokenizer.nextToken(context.token);
         if (context.token.value_type == Type::ObjectStart)
             level++;
