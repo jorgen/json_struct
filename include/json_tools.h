@@ -1521,6 +1521,10 @@ struct OptionalChecked
     typedef bool IsOptionalType;
 };
 
+class SilentString : public std::string
+{
+    using std::string::string;
+};
 template<typename T, typename A = std::allocator<T>>
 class SilentVector : public std::vector<T, A>
 {
@@ -2286,6 +2290,21 @@ public:
         token.value_type = Type::ArrayEnd;
         token.value = DataRef::asDataRef(arrayEnd);
         serializer.write(token);
+    }
+};
+
+template<>
+class TokenParser<SilentString, SilentString>
+{
+    static inline Error unpackToken(SilentString &to_type, ParseContext &context)
+    {
+        return TokenParser<std::string, std::string>::unpackToken(to_type, context);
+    }
+    static void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
+    {
+        if (str.size()) {
+            TokenParser<std::string, std::string>::serializeToken(str, token, serializer);
+        }
     }
 };
 
