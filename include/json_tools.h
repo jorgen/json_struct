@@ -165,6 +165,7 @@ public:
     size_t line = 0;
     size_t character = 0;
     Error error = Error::NoError;
+    std::string custom_message;
     std::vector<std::string> lines;
 
     void clear()
@@ -341,6 +342,8 @@ public:
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
+    void updateErrorContext(Error error, const std::string &custom_message = std::string());
+    const ErrorContext &errorContext() const { return error_context; }
 private:
     enum class InTokenState : unsigned char
     {
@@ -372,7 +375,6 @@ private:
     Error populateFromDataRef(DataRef &data, Type &type, const DataRef &json_data);
     static void populate_annonymous_token(const DataRef &data, Type type, Token &token);
     Error populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data);
-    void updateErrorContext(Error error);
 
     InTokenState token_state = InTokenState::FindingName;
     InPropertyState property_state = InPropertyState::NoStartFound;
@@ -678,8 +680,12 @@ inline std::string Tokenizer::makeErrorString() const
     };
     static_assert(sizeof(error_strings) / sizeof*error_strings == size_t(Error::UserDefinedErrors) , "Please add missing error message");
 
-    std::string retString("Error ");
-    retString += error_strings[int(error_context.error)] + std::string(":\n");
+    std::string retString("Error");
+    if (error_context.error < Error::UserDefinedErrors)
+        retString += std::string(" ") + error_strings[int(error_context.error)];
+    if (error_context.custom_message.size())
+        retString += " " + error_context.custom_message;
+    retString += std::string(":\n");
     for (size_t i = 0; i < error_context.lines.size(); i++)
     {
         retString += error_context.lines[i] + "\n";
@@ -1181,7 +1187,7 @@ namespace Internal {
     };
 }
 
-inline void Tokenizer::updateErrorContext(Error error)
+inline void Tokenizer::updateErrorContext(Error error, const std::string &custom_message)
 {
     error_context.error = error;
     std::vector<Internal::Lines> lines;
@@ -1239,6 +1245,7 @@ inline void Tokenizer::updateErrorContext(Error error)
         error_context.character = cursor_index - left;
         error_context.lines.push_back(std::string(json_data.data + left, right - left));
     }
+    error_context.custom_message = custom_message;
 }
 
 inline SerializerOptions::SerializerOptions(Style style)
