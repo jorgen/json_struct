@@ -80,7 +80,7 @@ struct CallFunction
 void simpleTest()
 {
     CallFunction cont;
-    JT::DefaultCallFunctionContext<> context(json, sizeof(json));
+    JT::DefaultCallFunctionContext<> context(json, sizeof(json), std::string());
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
@@ -146,7 +146,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 void inheritanceTest()
 {
     CallFunctionSub cont;
-    JT::DefaultCallFunctionContext<> context(json);
+    JT::DefaultCallFunctionContext<> context(json, std::string());
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.called_one);
@@ -169,16 +169,20 @@ struct CallFunctionVirtualOverload : public CallFunction
 
 void virtualFunctionTest()
 {
+    std::string json_out;
+    json_out.reserve(512);
     CallFunctionVirtualOverload cont;
-    JT::DefaultCallFunctionContext<> context(json);
+    JT::DefaultCallFunctionContext<> context(json,json_out);
     JT::callFunction(cont, context);
+    context.s_context.flush();
+
 
     JT_ASSERT(cont.override_called);
     JT_ASSERT(!cont.called_one);
     JT_ASSERT(cont.called_two);
     JT_ASSERT(cont.called_three);
 
-    fprintf(stderr, "return string\n%s\n", context.s_context.returnString().c_str());
+    fprintf(stderr, "return string\n%s\n", json_out.c_str());
     if (context.parse_context.error != JT::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
     JT_ASSERT(context.parse_context.error == JT::Error::NoError);
@@ -234,7 +238,7 @@ struct SuperParamCallable
 void super_class_param_test()
 {
     SuperParamCallable cont;
-    JT::DefaultCallFunctionContext<> context(json_two);
+    JT::DefaultCallFunctionContext<> context(json_two, std::string());
     JT::callFunction(cont, context);
 
     JT_ASSERT(cont.execute_one_executed);

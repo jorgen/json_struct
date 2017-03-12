@@ -2671,39 +2671,45 @@ inline void ParseContext::parseTo(T &to_type)
 template<size_t SIZE>
 struct SerializerContext
 {
-    char outBuffer[SIZE];
-    Serializer serializer;
-    BufferRequestCBRef cbRef;
-    SerializerContext()
-        : serializer(outBuffer, SIZE)
-        , cbRef(serializer.addRequestBufferCallback([this](Serializer &serializer)
+    SerializerContext(std::string &json_out)
+        : serializer()
+        , cb_ref(serializer.addRequestBufferCallback([this](Serializer &serializer)
                                                     {
-                                                        return_string += std::string(outBuffer, sizeof(outBuffer));
-                                                        serializer.appendBuffer(outBuffer, sizeof(outBuffer));
+                                                        this->json_out += std::string(buffer, sizeof(buffer));
+                                                        serializer.appendBuffer(buffer, sizeof(buffer));
                                                     }))
+        , json_out(json_out)
     {
+        serializer.appendBuffer(buffer, sizeof(buffer));
     }
+
+    ~SerializerContext()
+    {
+        flush();
+    }
+
     void flush()
     {
-        return_string += std::string(outBuffer, serializer.buffers().back().used);
+        if (serializer.buffers().empty() || !serializer.buffers().back().used)
+            return;
+        json_out += std::string(buffer, serializer.buffers().back().used);
         serializer.clearBuffers();
     }
 
-    const std::string &returnString()
-    {
-        flush();
-        return return_string;
-    }
-private:
-    std::string return_string;;
+    char buffer[SIZE];
+    Serializer serializer;
+    BufferRequestCBRef cb_ref;
+    std::string &json_out;
 };
 template<typename T>
 std::string serializeStruct(const T &from_type)
 {
-    SerializerContext<512> serializeContext;
+    std::string ret_string;
+    SerializerContext<512> serializeContext(ret_string);
     Token token;
     TokenParser<T,T>::serializeToken(from_type, token, serializeContext.serializer);
-    return serializeContext.returnString();
+    serializeContext.flush();
+    return ret_string;
 }
 
 struct CallFunctionError
@@ -3049,15 +3055,22 @@ Error callFunction(T &container, CallFunctionContext &callContext)
 template<size_t size = 512>
 struct DefaultCallFunctionContext : public CallFunctionContext
 {
-    DefaultCallFunctionContext(const char *data, size_t size)
+    DefaultCallFunctionContext(std::string &json_out)
+        : CallFunctionContext(p_context, s_context.serializer)
+        , s_context(json_out)
+    {}
+
+    DefaultCallFunctionContext(const char *data, size_t size, std::string &json_out)
         :  CallFunctionContext(p_context, s_context.serializer)
         , p_context(data, size)
+        , s_context(json_out)
     {}
 
     template<size_t SIZE>
-    DefaultCallFunctionContext(const char(&data)[SIZE])
+    DefaultCallFunctionContext(const char(&data)[SIZE], std::string &json_out)
         : CallFunctionContext(p_context, s_context.serializer)
         , p_context(data)
+        , s_context(json_out)
     {}
 
     ParseContext p_context;
