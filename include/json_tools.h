@@ -345,7 +345,7 @@ public:
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
-    void updateErrorContext(Error error, const std::string &custom_message = std::string());
+    Error updateErrorContext(Error error, const std::string &custom_message = std::string());
     const ErrorContext &errorContext() const { return error_context; }
 private:
     enum class InTokenState : unsigned char
@@ -1190,7 +1190,7 @@ namespace Internal {
     };
 }
 
-inline void Tokenizer::updateErrorContext(Error error, const std::string &custom_message)
+inline Error Tokenizer::updateErrorContext(Error error, const std::string &custom_message)
 {
     error_context.error = error;
     std::vector<Internal::Lines> lines;
@@ -1254,6 +1254,7 @@ inline void Tokenizer::updateErrorContext(Error error, const std::string &custom
         error_context.lines.push_back(std::string(json_data.data + left, right - left));
     }
     error_context.custom_message = custom_message;
+    return error;
 }
 
 inline SerializerOptions::SerializerOptions(Style style)
@@ -2106,7 +2107,7 @@ inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseCont
     char *pointer;
     to_type = strtod(context.token.value.data, &pointer);
     if (context.token.value.data == pointer)
-        return Error::FailedToParseFloat;
+        return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
     return Error::NoError;
 }
 
