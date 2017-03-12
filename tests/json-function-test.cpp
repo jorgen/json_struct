@@ -242,11 +242,81 @@ void super_class_param_test()
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
     JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
+
+const char call_void_json[] = R"json(
+{
+    "call_void" : [],
+    "call_void_context" : null,
+    "call_int_void" : {},
+    "call_int_void_context" : {},
+    "call_void_with_value" : 4
+}
+)json";
+
+struct CallVoidStruct
+{
+    void call_void()
+    {
+        executed_1 = true;
+    }
+
+    void call_void_context(JT::CallFunctionContext &context)
+    {
+        executed_2 = true;
+    }
+
+    int call_int_void() {
+        executed_3 = true;
+        return 3;
+    }
+
+    int call_int_void_context(JT::CallFunctionContext &context)
+    {
+        executed_4 = true;
+        return 7;
+    }
+
+    void call_void_with_value()
+    {
+        executed_5 = true;
+    }
+
+    bool executed_1 = false;
+    bool executed_2 = false;
+    bool executed_3 = false;
+    bool executed_4 = false;
+    bool executed_5 = false;
+    JT_FUNCTION_CONTAINER(
+        JT_FUNCTION(call_void),
+        JT_FUNCTION(call_void_context),
+        JT_FUNCTION(call_int_void),
+        JT_FUNCTION(call_int_void_context),
+        JT_FUNCTION(call_void_with_value));
+};
+
+void call_void_test()
+{
+    CallVoidStruct voidStruct;
+    JT::DefaultCallFunctionContext<> context(call_void_json, std::string());
+    JT::callFunction(voidStruct, context);
+
+    if (context.parse_error() != JT::Error::NoError)
+        fprintf(stderr, "error %s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_error() == JT::Error::NoError);
+    JT_ASSERT(voidStruct.executed_1);
+    JT_ASSERT(voidStruct.executed_2);
+    JT_ASSERT(voidStruct.executed_3);
+    JT_ASSERT(voidStruct.executed_4);
+    JT_ASSERT(!voidStruct.executed_5);
+    JT_ASSERT(context.error_list.size() == 5);
+    JT_ASSERT(context.error_list[4].error == JT::Error::IlligalVoidFunctionArgument);
+}
 int main()
 {
     simpleTest();
     inheritanceTest();
     virtualFunctionTest();
     super_class_param_test();
+    call_void_test();
 }
 

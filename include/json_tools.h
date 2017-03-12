@@ -2745,6 +2745,23 @@ struct FunctionInfo<T, Ret, Arg, NAME_SIZE, true>
     Function function;
 };
 
+template<typename T, typename Ret, size_t NAME_SIZE, bool TAKES_CONTEXT>
+struct FunctionInfo<T, Ret, void, NAME_SIZE, TAKES_CONTEXT>
+{
+    typedef Ret(T::*Function)(void);
+    typedef Ret returnType;
+    const char *name;
+    Function function;
+};
+
+template<typename T, typename Ret, size_t NAME_SIZE>
+struct FunctionInfo<T, Ret, void, NAME_SIZE, true>
+{
+    typedef Ret(T::*Function)(CallFunctionContext &context);
+    typedef Ret returnType;
+    const char *name;
+    Function function;
+};
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, false> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
@@ -2754,6 +2771,18 @@ JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, false> makeFunctionInfo(co
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, true> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionContext &))
+{
+    return{ name, function };
+}
+
+template<typename T, typename Ret, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, false> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void))
+{
+    return{ name, function };
+}
+
+template<typename T, typename Ret, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, true> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &))
 {
     return{ name, function };
 }
@@ -2783,38 +2812,131 @@ namespace Internal {
     template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
     struct ReturnSerializer
     {
-        static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, Arg &arg, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
             Token token;
             TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg), token, context.return_serializer);
+            return Error::NoError;
         }
     };
 
     template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
     struct ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, true>
     {
-        static void serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, true> &functionInfo, Arg &arg, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
         {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
             Token token;
             TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg, context), token, context.return_serializer);
-        }
-    };
-
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, true>
-    {
-        static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, true> &functionInfo, Arg &arg, CallFunctionContext &context)
-        {
-            (container.*functionInfo.function)(arg, context);
+            return Error::NoError;
         }
     };
 
     template<typename T, typename U, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
     struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, TAKES_CONTEXT>
     {
-        static void serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, Arg &arg, CallFunctionContext &return_json)
+        static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
             (container.*functionInfo.function)(arg);
+            return Error::NoError;
+        }
+    };
+
+    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, true>
+    {
+        static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            (container.*functionInfo.function)(arg, context);
+            return Error::NoError;
+        }
+    };
+
+    static void checkValidVoidParameter(CallFunctionContext &context)
+    {
+        if (context.parse_context.token.value_type != Type::Null
+            && context.parse_context.token.value_type != Type::ArrayStart
+            && context.parse_context.token.value_type != Type::ObjectStart)
+        {
+            context.parse_context.error = Error::IlligalVoidFunctionArgument;
+            return;
+        }
+        skipArrayOrObject(context.parse_context);
+    }
+
+    template<typename T, typename U, typename Ret, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, TAKES_CONTEXT>
+    {
+        static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+        {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+            Token token;
+            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(), token, context.return_serializer);
+            return Error::NoError;
+        }
+    };
+
+    template<typename T, typename U, typename Ret, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, true>
+    {
+        static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            Token token;
+            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(context), token, context.return_serializer);
+            return Error::NoError;
+        }
+    };
+
+    template<typename T, typename U, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    struct ReturnSerializer<T, U, void, void, NAME_SIZE, TAKES_CONTEXT>
+    {
+        static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+       {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            (container.*functionInfo.function)();
+            return Error::NoError;
+        }
+    };
+
+    template<typename T, typename U, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, void, void, NAME_SIZE, true>
+    {
+        static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            (container.*functionInfo.function)(context);
+            return Error::NoError;
         }
     };
 }
@@ -2823,13 +2945,7 @@ Error callFunctionHandler(T &container, CallFunctionContext &context, FunctionIn
 {
     if (context.parse_context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.parse_context.token.name.data, NAME_SIZE) == 0)
     {
-        Arg arg;
-        context.parse_context.error = TokenParser<Arg,Arg>::unpackToken(arg, context.parse_context);
-        if (context.parse_context.error != Error::NoError)
-            return context.parse_context.error;
-
-       Internal::ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT>::serialize(container, functionInfo, arg, context);
-       return Error::NoError;
+        return Internal::ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT>::serialize(container, functionInfo, context);
     }
     return Error::MissingPropertyMember;
 }
