@@ -1995,28 +1995,29 @@ namespace Internal {
         }
     };
 
-    static void skipToNext(Error &error, Token &token, Tokenizer &tokenizer)
+    static void skipArrayOrObject(ParseContext &context)
     {
-        assert(error == Error::NoError);
+        assert(context.error == Error::NoError);
         Type end_type;
-        if (token.value_type == Type::ObjectStart) {
+        if (context.token.value_type == Type::ObjectStart) {
             end_type = Type::ObjectEnd;
         }
-        else if (token.value_type == Type::ArrayStart) {
+        else if (context.token.value_type == Type::ArrayStart) {
             end_type = Type::ArrayEnd;
         }
         else {
-            error = tokenizer.nextToken(token);
             return;
         }
-        while (error == Error::NoError && token.value_type != end_type) {
-            error = tokenizer.nextToken(token);
-            if (token.value_type == Type::ObjectStart
-                || token.value_type == Type::ArrayStart) {
-                skipToNext(error, token, tokenizer);
-                if (error != Error::NoError)
+
+        while (context.error == Error::NoError && context.token.value_type != end_type) {
+            context.nextToken();
+            if (context.error != Error::NoError)
+                return;
+            if (context.token.value_type == Type::ObjectStart
+                || context.token.value_type == Type::ArrayStart) {
+                skipArrayOrObject(context);
+                if (context.error != Error::NoError)
                     return;
-                error = tokenizer.nextToken(token);
             }
         }
     }
@@ -2045,18 +2046,22 @@ public:
             error = Internal::MemberChecker<T, decltype(members), 0 ,std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members, "");
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
-                if (!context.allow_missing_members)
+                if (context.allow_missing_members) {
+                    Internal::skipArrayOrObject(context);
+                    if (context.error != Error::NoError)
+                        return context.error;
+                }
+                else {
                     return error;
+                }
             } else if (error != Error::NoError) {
                 return error;
             }
-            error = Error::NoError;
-            Internal::skipToNext(error, context.token, context.tokenizer);
+            context.nextToken();
+            if (context.error != Error::NoError)
+                return context.error;
 
-            if (error != Error::NoError)
-                return error;
         }
-        assert(error == Error::NoError);
         std::vector<std::string> unassigned_required_members;
         error = Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
         if (error == Error::UnassignedRequiredMember) {
