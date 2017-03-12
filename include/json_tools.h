@@ -1627,6 +1627,11 @@ struct ParseContext
         tokenizer.addData(data);
     }
 
+    Error nextToken()
+    {
+        error = tokenizer.nextToken(token);
+        return error;
+    }
     Tokenizer tokenizer;
     Token token;
     Error error = Error::NoError;
@@ -2284,7 +2289,7 @@ public:
     {
         if (context.token.value_type != JT::Type::ArrayStart)
             return Error::ExpectedArrayStart;
-        Error error = context.tokenizer.nextToken(context.token);
+        Error error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
         while(context.token.value_type != JT::Type::ArrayEnd)
@@ -2293,7 +2298,7 @@ public:
             error = TokenParser<T,T>::unpackToken(to_type.back(), context);
             if (error != JT::Error::NoError)
                 break;
-            error = context.tokenizer.nextToken(context.token);
+            error = context.nextToken();
             if (error != JT::Error::NoError)
                 break;
         }
@@ -2392,7 +2397,7 @@ public:
         size_t level = 1;
         Error error = Error::NoError;
         while (error == JT::Error::NoError && level && buffer_change == false) {
-            error = context.tokenizer.nextToken(context.token);
+            error = context.nextToken();
             to_type.push_back(context.token);
             if (context.token.value_type == Type::ArrayStart || context.token.value_type == Type::ObjectStart)
                 level++;
@@ -2443,7 +2448,7 @@ inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &t
     size_t level = 1;
     Error error = Error::NoError;
     while(error == JT::Error::NoError && level && buffer_change == false) {
-        error = context.tokenizer.nextToken(context.token);
+        error = context.nextToken();
         if (context.token.value_type == Type::ArrayStart)
             level++;
         else if (context.token.value_type == Type::ArrayEnd)
@@ -2472,7 +2477,7 @@ inline Error TokenParser<JsonArray,JsonArray>::unpackToken(JsonArray &to_type, P
     size_t level = 1;
     Error error = Error::NoError;
     while(error == JT::Error::NoError && level) {
-        error = context.tokenizer.nextToken(context.token);
+        error = context.nextToken();
         if (context.token.value_type == Type::ArrayStart)
             level++;
         else if (context.token.value_type == Type::ArrayStart)
@@ -2505,7 +2510,7 @@ inline Error TokenParser<JsonObjectRef,JsonObjectRef>::unpackToken(JsonObjectRef
     size_t level = 1;
     Error error = Error::NoError;
     while(error == JT::Error::NoError && level && buffer_change == false) {
-        error = context.tokenizer.nextToken(context.token);
+        error = context.nextToken();
         if (context.token.value_type == Type::ObjectStart)
             level++;
         else if (context.token.value_type == Type::ObjectEnd)
@@ -2534,7 +2539,7 @@ inline Error TokenParser<JsonObject,JsonObject>::unpackToken(JsonObject &to_type
     size_t level = 1;
     Error error = Error::NoError;
     while(error == JT::Error::NoError && level) {
-        error = context.tokenizer.nextToken(context.token);
+        error = context.nextToken();
         if (context.token.value_type == Type::ObjectStart)
             level++;
         else if (context.token.value_type == Type::ObjectEnd)
