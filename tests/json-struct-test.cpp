@@ -239,11 +239,83 @@ void check_json_tree_deep_tree()
     JT_ASSERT(regular.Regular == 42);
 }
 
+const char missing_object_def[] = R"json(
+{
+    "first" : true,
+    "second" : "hello world",
+    "third" : {},
+    "fourth" : 33
+}
+)json";
+
+struct MissingObjectDef
+{
+    bool first;
+    std::string second;
+    int fourth;
+
+    JT_STRUCT(JT_MEMBER(first),
+        JT_MEMBER(second),
+        JT_MEMBER(fourth));
+};
+
+void check_json_missing_object()
+{
+    JT::ParseContext context(missing_object_def);
+    MissingObjectDef missing;
+    context.parseTo(missing);
+
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(missing.fourth == 33);
+}
+
+const char error_in_sub[] = R"json(
+{
+    "first" : {
+        "ffirst" : 4,
+        "fsecond" : {},
+        "not_assigned" : 555
+    },
+    "second" : "hello world",
+    "third" : 33
+}
+)json";
+
+struct ErrorInSubChild
+{
+    int ffirst;
+    JT_STRUCT(JT_MEMBER(ffirst));
+};
+
+struct ErrorInSub
+{
+    ErrorInSubChild first;
+    std::string second;
+    int third;
+    JT::Optional<int> not_assigned = 999;
+    JT_STRUCT(JT_MEMBER(first),
+        JT_MEMBER(second),
+        JT_MEMBER(third));
+};
+
+void check_json_error_in_sub()
+{
+    JT::ParseContext context(error_in_sub);
+    ErrorInSub sub;
+    context.parseTo(sub);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(sub.second == "hello world");
+    JT_ASSERT(sub.third == 33);
+    JT_ASSERT(sub.not_assigned.data == 999);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
     check_json_tree_template();
     check_json_tree_subclass();
     check_json_tree_deep_tree();
+    check_json_missing_object();
+    check_json_error_in_sub();
     return 0;
 }

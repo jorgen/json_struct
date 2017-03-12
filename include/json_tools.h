@@ -2713,10 +2713,10 @@ std::string serializeStruct(const T &from_type)
 }
 
 struct CallFunctionError
-
 {
     std::string name;
     Error error;
+    std::string error_string;
     std::vector<std::string> missing_members;
     std::vector<std::string> unassigned_required_members;
 };
@@ -2728,10 +2728,12 @@ struct CallFunctionContext
         , return_serializer(return_serializer)
     {}
 
+    JT::Error parse_error() { return parse_context.error; }
     ParseContext &parse_context;
     Serializer &return_serializer;
     std::vector<CallFunctionError> error_list;
     bool allow_missing = false;
+    bool stop_execute_on_fail = false;
     void *user_handle = nullptr;
 };
 
@@ -2990,7 +2992,7 @@ namespace Internal {
             Error error = callFunctionHandler(container, context, function);
             if (error == Error::NoError)
                 return Error::NoError;
-            if (context.parse_context.error != Error::NoError)
+            if (error != Error::MissingPropertyMember)
                 return context.parse_context.error;
             return FunctionHandler<T, Functions, INDEX - 1>::call(container, context, functions);
         }
@@ -3005,32 +3007,42 @@ namespace Internal {
             Error error = callFunctionHandler(container, context, function);
             if (error == Error::NoError)
                 return Error::NoError;
+            if (error != Error::MissingPropertyMember)
+                return error;
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
             return StartFunctionalSuperRecursion<T, std::tuple_size<SuperMeta>::value>::callFunction(container, context);
         }
     };
 
-    static void add_error(ParseContext &context, std::vector<CallFunctionError> &error_list)
+    static void add_error(const std::string &function_name, ParseContext &context, std::vector<CallFunctionError> &error_list)
     {
-        if (!context.missing_members.size() && !context.unassigned_required_members.size())
-            return;
         error_list.push_back(CallFunctionError());
-        error_list.back().name = std::string(context.token.name.data, context.token.name.size);
-        std::swap(error_list.back().missing_members, context.missing_members);
-        std::swap(error_list.back().unassigned_required_members, context.unassigned_required_members);
+        error_list.back().name = function_name;
+        error_list.back().error = context.error;
+        if (context.missing_members.size())
+            std::swap(error_list.back().missing_members, context.missing_members);
+        if (context.unassigned_required_members.size())
+            std::swap(error_list.back().unassigned_required_members, context.unassigned_required_members);
+
+        if (context.error != Error::NoError) {
+            context.tokenizer.updateErrorContext(context.error);
+            error_list.back().error_string = context.tokenizer.makeErrorString();
+        }
     }
 }
 template<typename T>
 Error callFunction(T &container, CallFunctionContext &callContext)
 {
-    callContext.parse_context.error = callContext.parse_context.tokenizer.nextToken(callContext.parse_context.token);
-    if (callContext.parse_context.error != JT::Error::NoError)
-        return callContext.parse_context.error;
-    if (callContext.parse_context.token.value_type != JT::Type::ObjectStart)
+    JT::Error error = callContext.parse_context.nextToken();
+    if (error != JT::Error::NoError)
+        return error;
+    if (callContext.parse_context.token.value_type != JT::Type::ObjectStart) {
+        callContext.parse_context.error = Error::ExpectedObjectStart;
         return Error::ExpectedObjectStart;
-    callContext.parse_context.error = callContext.parse_context.tokenizer.nextToken(callContext.parse_context.token);
-    if (callContext.parse_context.error != JT::Error::NoError)
-        return callContext.parse_context.error;
+    }
+    error = callContext.parse_context.nextToken();
+    if (error != JT::Error::NoError)
+        return error;
     Token token;
     token.value_type = Type::ArrayStart;
     token.value = DataRef::asDataRef("[");
@@ -3038,13 +3050,21 @@ Error callFunction(T &container, CallFunctionContext &callContext)
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (callContext.parse_context.token.value_type != JT::Type::ObjectEnd)
     {
+        std::string function_name(callContext.parse_context.token.name.data, callContext.parse_context.token.name.size);
         Error error = Internal::FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, callContext, functions);
-        Internal::add_error(callContext.parse_context, callContext.error_list);
-        if (error != JT::Error::NoError && (callContext.allow_missing && callContext.parse_context.error == Error::NoError &&  error == Error::MissingPropertyMember))
+        if (error != Error::NoError) {
+            assert(error == callContext.parse_context.error || callContext.parse_context.error == Error::NoError);
+            callContext.parse_context.error = error;
+        }
+        Internal::add_error(function_name, callContext.parse_context, callContext.error_list);
+        if (error == Error::MissingPropertyMember && !callContext.allow_missing)
             return error;
-        callContext.parse_context.error = callContext.parse_context.tokenizer.nextToken(callContext.parse_context.token);
-        if (callContext.parse_context.error != JT::Error::NoError)
-            return callContext.parse_context.error;
+        if (callContext.stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)
+            return error;
+
+        error = callContext.parse_context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
     }
     token.value_type = Type::ArrayEnd;
     token.value = DataRef::asDataRef("]");
