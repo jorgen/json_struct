@@ -38,13 +38,16 @@
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
+#define JT_HAS_USING_CONSTRUCTOR 1
 #else
 #define JT_CONSTEXPR
 #define JT_HAVE_CONSTEXPR 0
+#define JT_HAS_USING_CONSTRUCTOR 0
 #endif
 #else
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
+#define JT_HAS_USING_CONSTRUCTOR 1
 #endif
 
 namespace JT {
@@ -1535,43 +1538,59 @@ struct OptionalChecked
 
 class SilentString : public std::string
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::string::string;
+#endif
 };
 template<typename T, typename A = std::allocator<T>>
 class SilentVector : public std::vector<T, A>
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::vector<T, A>::vector;
+#endif
 };
 
 template<typename T, typename Deleter = std::default_delete<T>>
 class SilentUniquePtr : public std::unique_ptr<T, Deleter>
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::unique_ptr<T, Deleter>::unique_ptr;
+#endif
 };
 
 class JsonObjectRef : public DataRef
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using DataRef::DataRef;
+#endif
 };
 
 struct JsonObject : public std::string
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::string::string;
+#endif
 };
 
 struct JsonArrayRef : public DataRef
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using DataRef::DataRef;
+#endif
 };
 
 struct JsonArray : public std::string
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::string::string;
+#endif
 };
 
 struct JsonTokens : public std::vector<JT::Token>
 {
+#if JT_HAS_USING_CONSTRUCTOR
     using std::vector<JT::Token>::vector;
+#endif
 };
 
 template <typename T>
