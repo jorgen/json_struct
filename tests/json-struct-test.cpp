@@ -133,7 +133,7 @@ static int check_json_tree_nodes()
 {
     JT::ParseContext context(json_data1);
     JsonData1 data;
-    JT::parseData(data, context);
+    context.parseTo(data);
 
     for (double x : data.TestStruct.Array)
         fprintf(stderr, "x is %f\n", x);
@@ -186,7 +186,7 @@ static int check_json_tree_template()
 {
     JT::ParseContext context(json_data2);
     OuterStruct<SubObject> data;
-    JT::parseData(data, context);
+    context.parseTo(data);
     JT_ASSERT(data.sub_object.more_data == "some text");
     std::string json = JT::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
@@ -197,7 +197,7 @@ static int check_json_tree_subclass()
 {
     JT::ParseContext context(sub_struct3_data);
     SubStruct3 substruct3;
-    JT::parseData(substruct3, context);
+    context.parseTo(substruct3);
     JT_ASSERT(substruct3.Field3 == std::string("432"));
     return 0;
 }

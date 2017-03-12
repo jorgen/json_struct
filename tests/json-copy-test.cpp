@@ -80,7 +80,7 @@ void jt_validate_json(JT::Tokenizer &tokenizer)
     JT::ParseContext context(buffer.c_str(), buffer.size());
     fprintf(stderr, "buffer %s\n", buffer.c_str());
     SubObject subObj;
-    JT::parseData(subObj, context);
+    context.parseTo(subObj);
     
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(subObj.number == 45);
@@ -183,7 +183,7 @@ void jt_copy_parsed()
 	JT::ParseContext context;
 	context.tokenizer.addData(&tokens);
 	Parent parent;
-	JT::parseData(parent, context);
+	context.parseTo(parent);
 
 	JT_ASSERT(context.error == JT::Error::NoError);
 	JT_ASSERT(parent.test == true);
@@ -231,7 +231,7 @@ void jt_copy_tokens()
 {
     SecondParent parent;
     JT::ParseContext parseContext(json_token_copy);
-    JT::parseData(parent, parseContext);
+    parseContext.parseTo(parent);
 
     JT_ASSERT(parseContext.error == JT::Error::NoError);
     JT_ASSERT(parent.child.size() == 4);
@@ -239,7 +239,7 @@ void jt_copy_tokens()
     JT::ParseContext childContext;
     childContext.tokenizer.addData(&parent.child);
     SecondChild child;
-    JT::parseData(child, childContext);
+    childContext.parseTo(child);
     JT_ASSERT(child.another_int == 495);
     JT_ASSERT(child.some_more == "world");
      

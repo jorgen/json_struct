@@ -1628,6 +1628,9 @@ struct ParseContext
         tokenizer.addData(data);
     }
 
+    template<typename T>
+    void parseTo(T &to_type);
+
     Error nextToken()
     {
         error = tokenizer.nextToken(token);
@@ -2657,13 +2660,12 @@ inline void TokenParser<JsonObject, JsonObject>::serializeToken(const JsonObject
 }
 
 template<typename T>
-void parseData(T &to_type, ParseContext &context)
+inline void ParseContext::parseTo(T &to_type)
 {
-    context.error = context.tokenizer.nextToken(context.token);
-    if (context.error != JT::Error::NoError)
+    error = tokenizer.nextToken(token);
+    if (error != JT::Error::NoError)
         return;
-    context.error = TokenParser<T,T>::unpackToken(to_type, context);
-    return;
+    error = TokenParser<T,T>::unpackToken(to_type, *this);
 }
 
 template<size_t SIZE>

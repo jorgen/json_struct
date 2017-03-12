@@ -49,7 +49,7 @@ void testSimpleOneMember()
 {
     JT::ParseContext context(json_data1);
     SubStruct substruct;
-    JT::parseData(substruct, context);
+    context.parseTo(substruct);
 
     JT_ASSERT(substruct.StringNode == "Some test data");
     JT_ASSERT(substruct.NumberNode == 4676);
@@ -64,7 +64,7 @@ void testSimpleVerifyMissingMemberInStruct()
 {
     JT::ParseContext context(json_data2);
     ContainsStringNode containsString;
-    JT::parseData(containsString, context);
+    context.parseTo(containsString);
 
     JT_ASSERT(containsString.StringNode == "Some test data");
     JT_ASSERT(context.missing_members.size() == 1);
@@ -91,7 +91,7 @@ void testSimpleVerifyMissingRequiredMemberInStruct()
 {
     JT::ParseContext context(json_data3);
     RequiredMemberStruct requiredMemberStruct;
-    JT::parseData(requiredMemberStruct, context);
+    context.parseTo(requiredMemberStruct);
 
     JT_ASSERT(requiredMemberStruct.Field3 == 3);
     JT_ASSERT(context.unassigned_required_members.size() == 1);
@@ -126,7 +126,7 @@ void testClassHirarchyVerifyMissingMemberInStruct()
 {
     JT::ParseContext context(json_data4);
     SubClass subClass;
-    JT::parseData(subClass, context);
+    context.parseTo(subClass);
 
     JT_ASSERT(subClass.NumberNode == 342);
     JT_ASSERT(subClass.SubNode == "This should be in subclass");
@@ -164,7 +164,7 @@ void testClassHIrarchyVerifyMissingDataForStruct()
 {
     JT::ParseContext context(json_data5);
     RegularClass regular;
-    JT::parseData(regular, context);
+    context.parseTo(regular);
 
     JT_ASSERT(context.unassigned_required_members.size() == 1);
     JT_ASSERT(context.unassigned_required_members.front() == "SuperClass2::Super");
@@ -181,7 +181,7 @@ void testClassHirarchyVerifyMissingMemberInStruct2()
 {
     JT::ParseContext context(json_data6);
     RegularClass regular;
-    JT::parseData(regular, context);
+    context.parseTo(regular);
 
     JT_ASSERT(context.missing_members.size() == 1);
     JT_ASSERT(context.missing_members.front() == "SuperSuperSuper");
@@ -251,7 +251,7 @@ void testClassHirarchyVerifyMissingDataForStructDeep()
 {
     JT::ParseContext context(json_data7);
     Subclass subclass;
-    JT::parseData(subclass, context);
+    context.parseTo(subclass);
 
     JT_ASSERT(context.unassigned_required_members.size() == 1);
     JT_ASSERT(context.unassigned_required_members.front() == "E::e");
