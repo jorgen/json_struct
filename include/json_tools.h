@@ -50,6 +50,9 @@
 #define JT_HAS_USING_CONSTRUCTOR 1
 #endif
 
+#ifdef min
+#undef min
+#endif
 namespace JT {
 struct DataRef
 {
