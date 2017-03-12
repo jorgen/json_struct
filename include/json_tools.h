@@ -1217,14 +1217,19 @@ inline void Tokenizer::updateErrorContext(Error error, const std::string &custom
     }
     if (lines.front().start == 0)
         lines.front().start = cursor_back;
+    bool add_new_line = false;
     for (cursor_forward = cursor_index; cursor_forward < stop_forward; cursor_forward++)
     {
+        if (add_new_line) {
+            lines.push_back({cursor_forward, 0});
+            add_new_line = false;
+        }
         if (*(json_data.data + cursor_forward) == '\n') {
             lines.back().end = cursor_forward;
             lines_forward++;
             if (lines_forward == line_context)
                 break;
-            lines.push_back({cursor_forward, 0});
+            add_new_line = true;
         }
     }
     if (lines.back().end == 0)
