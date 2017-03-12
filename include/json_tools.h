@@ -2150,6 +2150,7 @@ inline void TokenParser<double, double>::serializeToken(const double &d, Token &
     serializer.write(token);
 }
 
+
 template<>
 inline Error TokenParser<float, float>::unpackToken(float &to_type, ParseContext &context)
 {
@@ -2701,6 +2702,7 @@ struct SerializerContext
     BufferRequestCBRef cb_ref;
     std::string &json_out;
 };
+
 template<typename T>
 std::string serializeStruct(const T &from_type)
 {
