@@ -63,7 +63,7 @@ void test_simple()
 {
     Executor executor;
     JT::DefaultCallFunctionContext<> context(json_data, std::string());
-    JT::Error called = JT::callFunction(executor, context);
+    JT::Error called = context.callFunctions(executor);
 
     JT_ASSERT(context.error_list.size() == 2);
     JT_ASSERT(context.error_list[0].unassigned_required_members.size() == 1);

@@ -2733,7 +2733,11 @@ struct CallFunctionContext
         , return_serializer(return_serializer)
     {}
 
+    template<typename T>
+    Error callFunctions(T &container);
+
     JT::Error parse_error() { return parse_context.error; }
+
     ParseContext &parse_context;
     Serializer &return_serializer;
     std::vector<CallFunctionError> error_list;
@@ -3036,44 +3040,44 @@ namespace Internal {
     }
 }
 template<typename T>
-Error callFunction(T &container, CallFunctionContext &callContext)
+inline Error CallFunctionContext::callFunctions(T &container)
 {
-    JT::Error error = callContext.parse_context.nextToken();
+    JT::Error error = parse_context.nextToken();
     if (error != JT::Error::NoError)
         return error;
-    if (callContext.parse_context.token.value_type != JT::Type::ObjectStart) {
-        callContext.parse_context.error = Error::ExpectedObjectStart;
+    if (parse_context.token.value_type != JT::Type::ObjectStart) {
+        parse_context.error = Error::ExpectedObjectStart;
         return Error::ExpectedObjectStart;
     }
-    error = callContext.parse_context.nextToken();
+    error = parse_context.nextToken();
     if (error != JT::Error::NoError)
         return error;
     Token token;
     token.value_type = Type::ArrayStart;
     token.value = DataRef::asDataRef("[");
-    callContext.return_serializer.write(token);
+    return_serializer.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
-    while (callContext.parse_context.token.value_type != JT::Type::ObjectEnd)
+    while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
-        std::string function_name(callContext.parse_context.token.name.data, callContext.parse_context.token.name.size);
-        Error error = Internal::FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, callContext, functions);
+        std::string function_name(parse_context.token.name.data, parse_context.token.name.size);
+        Error error = Internal::FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, *this,  functions);
         if (error != Error::NoError) {
-            assert(error == callContext.parse_context.error || callContext.parse_context.error == Error::NoError);
-            callContext.parse_context.error = error;
+            assert(error == parse_context.error || parse_context.error == Error::NoError);
+            parse_context.error = error;
         }
-        Internal::add_error(function_name, callContext.parse_context, callContext.error_list);
-        if (error == Error::MissingPropertyMember && !callContext.allow_missing)
+        Internal::add_error(function_name, parse_context, error_list);
+        if (error == Error::MissingPropertyMember && !allow_missing)
             return error;
-        if (callContext.stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)
+        if (stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)
             return error;
 
-        error = callContext.parse_context.nextToken();
+        error = parse_context.nextToken();
         if (error != JT::Error::NoError)
             return error;
     }
     token.value_type = Type::ArrayEnd;
     token.value = DataRef::asDataRef("]");
-    callContext.return_serializer.write(token);
+    return_serializer.write(token);
     return Error::NoError;
 }
 

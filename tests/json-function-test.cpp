@@ -81,7 +81,7 @@ void simpleTest()
 {
     CallFunction cont;
     JT::DefaultCallFunctionContext<> context(json, sizeof(json), std::string());
-    JT::callFunction(cont, context);
+    context.callFunctions(cont);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);
@@ -147,7 +147,7 @@ void inheritanceTest()
 {
     CallFunctionSub cont;
     JT::DefaultCallFunctionContext<> context(json, std::string());
-    JT::callFunction(cont, context);
+    context.callFunctions(cont);
 
     JT_ASSERT(cont.called_one);
     JT_ASSERT(cont.called_two);
@@ -173,7 +173,7 @@ void virtualFunctionTest()
     json_out.reserve(512);
     CallFunctionVirtualOverload cont;
     JT::DefaultCallFunctionContext<> context(json,json_out);
-    JT::callFunction(cont, context);
+    context.callFunctions(cont);
     context.s_context.flush();
 
 
@@ -239,7 +239,7 @@ void super_class_param_test()
 {
     SuperParamCallable cont;
     JT::DefaultCallFunctionContext<> context(json_two, std::string());
-    JT::callFunction(cont, context);
+    context.callFunctions(cont);
 
     JT_ASSERT(cont.execute_one_executed);
     if (context.parse_context.error != JT::Error::NoError)
@@ -302,7 +302,7 @@ void call_void_test()
 {
     CallVoidStruct voidStruct;
     JT::DefaultCallFunctionContext<> context(call_void_json, std::string());
-    JT::callFunction(voidStruct, context);
+    context.callFunctions(voidStruct);
 
     if (context.parse_error() != JT::Error::NoError)
         fprintf(stderr, "error %s\n", context.parse_context.tokenizer.makeErrorString().c_str());
