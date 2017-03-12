@@ -174,8 +174,6 @@ void virtualFunctionTest()
     CallFunctionVirtualOverload cont;
     JT::DefaultCallFunctionContext<> context(json,json_out);
     context.callFunctions(cont);
-    context.s_context.flush();
-
 
     JT_ASSERT(cont.override_called);
     JT_ASSERT(!cont.called_one);

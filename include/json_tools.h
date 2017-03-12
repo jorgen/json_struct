@@ -2744,6 +2744,10 @@ struct CallFunctionContext
     bool allow_missing = false;
     bool stop_execute_on_fail = false;
     void *user_handle = nullptr;
+
+protected:
+    virtual void beforeCallFunctions() {};
+    virtual void afterCallFunctions() {}
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
@@ -3039,9 +3043,28 @@ namespace Internal {
         }
     }
 }
+
+typedef void (CallFunctionContext::*AfterCallFunction)();
+
+struct CallFunction
+{
+    CallFunction(CallFunctionContext &context, AfterCallFunction after)
+        : context(context)
+        , after(after)
+    {}
+    ~CallFunction()
+    {
+        (context.*after)();
+    }
+    CallFunctionContext &context;
+    AfterCallFunction after;
+};
+
 template<typename T>
 inline Error CallFunctionContext::callFunctions(T &container)
 {
+    beforeCallFunctions();
+    CallFunction callOnExit(*this, &CallFunctionContext::afterCallFunctions);
     JT::Error error = parse_context.nextToken();
     if (error != JT::Error::NoError)
         return error;
@@ -3102,8 +3125,11 @@ struct DefaultCallFunctionContext : public CallFunctionContext
         , s_context(json_out)
     {}
 
+
     ParseContext p_context;
     SerializerContext<size> s_context;
+protected:
+    void afterCallFunctions() { s_context.flush(); }
 };
 namespace Internal {
     template<typename T, size_t INDEX>
