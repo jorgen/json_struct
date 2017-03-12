@@ -2200,6 +2200,99 @@ inline void TokenParser<int, int>::serializeToken(const int&d, Token &token, Ser
     serializer.write(token);
 }
 
+template<>
+class TokenParser<unsigned int, unsigned int>
+{
+public:
+    static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
+    {
+        char *pointer;
+        to_type = strtoul(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const unsigned int &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[12];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+class TokenParser<int64_t, int64_t>
+{
+public:
+    static inline Error unpackToken(int64_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
+        char *pointer;
+        to_type = strtoll(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const int64_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%lld", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+class TokenParser<uint64_t, uint64_t>
+{
+public:
+    static inline Error unpackToken(uint64_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long unsinged int");
+        char *pointer;
+        to_type = strtoll(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const uint64_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%llu", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
 template<typename T>
 class TokenParser<Optional<T>, Optional<T>>
 {
