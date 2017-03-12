@@ -233,7 +233,7 @@ void check_json_tree_deep_tree()
 {
     JT::ParseContext context(json_data3);
     RegularClass regular;
-    JT::parseData(regular, context);
+    context.parseTo(regular);
     JT_ASSERT(regular.SuperSuper == 5);
     JT_ASSERT(regular.Super == "This is in the Superclass");
     JT_ASSERT(regular.Regular == 42);
