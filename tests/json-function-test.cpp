@@ -250,7 +250,7 @@ const char call_void_json[] = R"json(
     "call_void" : [],
     "call_void_context" : null,
     "call_int_void" : {},
-    "call_int_void_context" : {},
+    "call_int_void_context" : {}
     "call_void_with_value" : 4
 }
 )json";
@@ -310,8 +310,8 @@ void call_void_test()
     JT_ASSERT(voidStruct.executed_3);
     JT_ASSERT(voidStruct.executed_4);
     JT_ASSERT(!voidStruct.executed_5);
-    JT_ASSERT(context.error_list.size() == 5);
-    JT_ASSERT(context.error_list[4].error == JT::Error::IlligalVoidFunctionArgument);
+    JT_ASSERT(context.execution_list.size() == 5);
+    JT_ASSERT(context.execution_list[4].error == JT::Error::IlligalVoidFunctionArgument);
 }
 int main()
 {

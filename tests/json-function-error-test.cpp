@@ -65,14 +65,14 @@ void test_simple()
     JT::DefaultCallFunctionContext<> context(json_data, std::string());
     JT::Error called = context.callFunctions(executor);
 
-    JT_ASSERT(context.error_list.size() == 2);
-    JT_ASSERT(context.error_list[0].unassigned_required_members.size() == 1);
-    JT_ASSERT(context.error_list[0].unassigned_required_members[0] == "prop3");
-    JT_ASSERT(context.error_list[0].missing_members.size() == 0);
+    JT_ASSERT(context.execution_list.size() == 2);
+    JT_ASSERT(context.execution_list[0].unassigned_required_members.size() == 1);
+    JT_ASSERT(context.execution_list[0].unassigned_required_members[0] == "prop3");
+    JT_ASSERT(context.execution_list[0].missing_members.size() == 0);
 
-    JT_ASSERT(context.error_list[1].missing_members.size() == 1);
-    JT_ASSERT(context.error_list[1].missing_members[0] == "second_prop");
-    JT_ASSERT(context.error_list[1].unassigned_required_members.size() == 0);
+    JT_ASSERT(context.execution_list[1].missing_members.size() == 1);
+    JT_ASSERT(context.execution_list[1].missing_members[0] == "second_prop");
+    JT_ASSERT(context.execution_list[1].unassigned_required_members.size() == 0);
 }
 
 int main()

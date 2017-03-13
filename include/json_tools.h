@@ -2717,13 +2717,17 @@ std::string serializeStruct(const T &from_type)
     return ret_string;
 }
 
-struct CallFunctionError
+struct CallFunctionExecutionState
 {
+    CallFunctionExecutionState(const std::string &name)
+        : name(name)
+    {}
     std::string name;
     Error error;
     std::string error_string;
     std::vector<std::string> missing_members;
     std::vector<std::string> unassigned_required_members;
+    std::vector<CallFunctionExecutionState> child_states;
 };
 
 struct CallFunctionContext
@@ -2740,7 +2744,7 @@ struct CallFunctionContext
 
     ParseContext &parse_context;
     Serializer &return_serializer;
-    std::vector<CallFunctionError> error_list;
+    std::vector<CallFunctionExecutionState> execution_list;
     bool allow_missing = false;
     bool stop_execute_on_fail = false;
     void *user_handle = nullptr;
@@ -3027,19 +3031,17 @@ namespace Internal {
         }
     };
 
-    static void add_error(const std::string &function_name, ParseContext &context, std::vector<CallFunctionError> &error_list)
+    static void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
     {
-        error_list.push_back(CallFunctionError());
-        error_list.back().name = function_name;
-        error_list.back().error = context.error;
+        executionState.error = context.error;
         if (context.missing_members.size())
-            std::swap(error_list.back().missing_members, context.missing_members);
+            std::swap(executionState.missing_members, context.missing_members);
         if (context.unassigned_required_members.size())
-            std::swap(error_list.back().unassigned_required_members, context.unassigned_required_members);
+            std::swap(executionState.unassigned_required_members, context.unassigned_required_members);
 
         if (context.error != Error::NoError) {
             context.tokenizer.updateErrorContext(context.error);
-            error_list.back().error_string = context.tokenizer.makeErrorString();
+            executionState.error_string = context.tokenizer.makeErrorString();
         }
     }
 }
@@ -3082,13 +3084,14 @@ inline Error CallFunctionContext::callFunctions(T &container)
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
-        std::string function_name(parse_context.token.name.data, parse_context.token.name.size);
+        execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
+        auto execution_state_it = --execution_list.end();
         Error error = Internal::FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, *this,  functions);
         if (error != Error::NoError) {
             assert(error == parse_context.error || parse_context.error == Error::NoError);
             parse_context.error = error;
         }
-        Internal::add_error(function_name, parse_context, error_list);
+        Internal::add_error(*execution_state_it, parse_context);
         if (error == Error::MissingPropertyMember && !allow_missing)
             return error;
         if (stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)
