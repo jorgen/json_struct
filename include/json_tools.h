@@ -1597,6 +1597,51 @@ struct JsonTokens : public std::vector<JT::Token>
 #endif
 };
 
+struct JsonMeta
+{
+    unsigned int position;
+    unsigned int size;
+    unsigned int skip;
+    unsigned int children;
+    bool is_array : 1;
+};
+
+static std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
+{
+    std::vector<JsonMeta> meta;
+    std::vector<int> parent;
+    for (unsigned int i = 0; i < tokens.size(); i++)
+    {
+        for (int parent_index : parent) {
+            meta[parent_index].size++;
+        }
+        const JT::Token &token = tokens.at(i);
+        if (token.value_type == Type::ArrayEnd
+            || token.value_type == Type::ObjectEnd)
+        {
+            assert(parent.size());
+            assert(meta[parent.back()].is_array == (token.value_type == Type::ArrayEnd));
+            parent.pop_back();
+        }
+        else {
+            if (parent.size())
+                meta[parent.back()].children++;
+        }
+
+        if (token.value_type == Type::ArrayStart
+            || token.value_type == Type::ObjectStart)
+        {
+            for (int parent_index: parent) {
+                meta[parent_index].skip++;
+            }
+            meta.push_back({ i, 1, 1, 0, token.value_type == Type::ArrayStart });
+            parent.push_back(meta.size()-1);
+        }
+    }
+    assert(!parent.size());
+    return meta;
+}
+
 template <typename T>
 struct IsOptionalType {
     typedef char yes[1];
