@@ -2239,7 +2239,7 @@ inline Error TokenParser<int, int>::unpackToken(int &to_type, ParseContext &cont
 template<>
 inline void TokenParser<int, int>::serializeToken(const int&d, Token &token, Serializer &serializer)
 {
-    char buf[10];
+    char buf[11];
     int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
     if (size < 0) {
         fprintf(stderr, "error serializing int token\n");
