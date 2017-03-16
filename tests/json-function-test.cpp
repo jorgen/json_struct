@@ -80,7 +80,8 @@ struct CallFunction
 void simpleTest()
 {
     CallFunction cont;
-    JT::DefaultCallFunctionContext<> context(json, sizeof(json), std::string());
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(json, sizeof(json), json_out);
     context.callFunctions(cont);
 
     JT_ASSERT(cont.called_one);
@@ -146,7 +147,8 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 void inheritanceTest()
 {
     CallFunctionSub cont;
-    JT::DefaultCallFunctionContext<> context(json, std::string());
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(json, json_out);
     context.callFunctions(cont);
 
     JT_ASSERT(cont.called_one);
@@ -172,7 +174,7 @@ void virtualFunctionTest()
     std::string json_out;
     json_out.reserve(512);
     CallFunctionVirtualOverload cont;
-    JT::DefaultCallFunctionContext<> context(json,json_out);
+    JT::DefaultCallFunctionContext context(json,json_out);
     context.callFunctions(cont);
 
     JT_ASSERT(cont.override_called);
@@ -236,7 +238,8 @@ struct SuperParamCallable
 void super_class_param_test()
 {
     SuperParamCallable cont;
-    JT::DefaultCallFunctionContext<> context(json_two, std::string());
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(json_two, json_out);
     context.callFunctions(cont);
 
     JT_ASSERT(cont.execute_one_executed);
@@ -250,7 +253,7 @@ const char call_void_json[] = R"json(
     "call_void" : [],
     "call_void_context" : null,
     "call_int_void" : {},
-    "call_int_void_context" : {}
+    "call_int_void_context" : {},
     "call_void_with_value" : 4
 }
 )json";
@@ -299,7 +302,8 @@ struct CallVoidStruct
 void call_void_test()
 {
     CallVoidStruct voidStruct;
-    JT::DefaultCallFunctionContext<> context(call_void_json, std::string());
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(call_void_json, json_out);
     context.callFunctions(voidStruct);
 
     if (context.parse_error() != JT::Error::NoError)

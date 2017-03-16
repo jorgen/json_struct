@@ -2717,19 +2717,23 @@ inline void ParseContext::parseTo(T &to_type)
     error = TokenParser<T,T>::unpackToken(to_type, *this);
 }
 
-template<size_t SIZE>
 struct SerializerContext
 {
     SerializerContext(std::string &json_out)
         : serializer()
         , cb_ref(serializer.addRequestBufferCallback([this](Serializer &serializer)
                                                     {
-                                                        this->json_out += std::string(buffer, sizeof(buffer));
-                                                        serializer.appendBuffer(buffer, sizeof(buffer));
+                size_t end = this->json_out.size();
+                this->json_out.resize(end * 2);
+                serializer.appendBuffer(&(this->json_out[0]) + end, end);
+                this->last_pos = end;
                                                     }))
         , json_out(json_out)
+        , last_pos(0)
     {
-        serializer.appendBuffer(buffer, sizeof(buffer));
+        if (json_out.empty())
+            json_out.resize(512);
+        serializer.appendBuffer(&json_out[0], json_out.size());
     }
 
     ~SerializerContext()
@@ -2741,21 +2745,21 @@ struct SerializerContext
     {
         if (serializer.buffers().empty() || !serializer.buffers().back().used)
             return;
-        json_out += std::string(buffer, serializer.buffers().back().used);
+        json_out.resize(last_pos + serializer.buffers().back().used);
         serializer.clearBuffers();
     }
 
-    char buffer[SIZE];
     Serializer serializer;
     BufferRequestCBRef cb_ref;
     std::string &json_out;
+    size_t last_pos;
 };
 
 template<typename T>
 std::string serializeStruct(const T &from_type)
 {
     std::string ret_string;
-    SerializerContext<512> serializeContext(ret_string);
+    SerializerContext serializeContext(ret_string);
     Token token;
     TokenParser<T,T>::serializeToken(from_type, token, serializeContext.serializer);
     serializeContext.flush();
@@ -3152,7 +3156,6 @@ inline Error CallFunctionContext::callFunctions(T &container)
     return Error::NoError;
 }
 
-template<size_t size = 512>
 struct DefaultCallFunctionContext : public CallFunctionContext
 {
     DefaultCallFunctionContext(std::string &json_out)
@@ -3161,7 +3164,7 @@ struct DefaultCallFunctionContext : public CallFunctionContext
     {}
 
     DefaultCallFunctionContext(const char *data, size_t size, std::string &json_out)
-        :  CallFunctionContext(p_context, s_context.serializer)
+        : CallFunctionContext(p_context, s_context.serializer)
         , p_context(data, size)
         , s_context(json_out)
     {}
@@ -3175,7 +3178,7 @@ struct DefaultCallFunctionContext : public CallFunctionContext
 
 
     ParseContext p_context;
-    SerializerContext<size> s_context;
+    SerializerContext s_context;
 protected:
     void afterCallFunctions() { s_context.flush(); }
 };
