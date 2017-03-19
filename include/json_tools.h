@@ -2327,7 +2327,7 @@ public:
     {
         static_assert(sizeof(to_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long unsinged int");
         char *pointer;
-        to_type = strtoll(context.token.value.data, &pointer, 10);
+        to_type = strtoull(context.token.value.data, &pointer, 10);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
         return Error::NoError;
