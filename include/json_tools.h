@@ -2350,6 +2350,71 @@ public:
     }
 
 };
+
+template<>
+class TokenParser<int16_t, int16_t>
+{
+public:
+    static inline Error unpackToken(int16_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
+        char *pointer;
+        to_type = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const int16_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+class TokenParser<uint16_t, uint16_t>
+{
+public:
+    static inline Error unpackToken(uint16_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long unsinged int");
+        char *pointer;
+        to_type = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const uint16_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
 template<typename T>
 class TokenParser<Optional<T>, Optional<T>>
 {
