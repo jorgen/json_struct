@@ -1613,6 +1613,7 @@ struct JsonMeta
 static std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 {
     std::vector<JsonMeta> meta;
+    meta.reserve(tokens.size() / 4);
     std::vector<int> parent;
     for (unsigned int i = 0; i < tokens.size(); i++)
     {
