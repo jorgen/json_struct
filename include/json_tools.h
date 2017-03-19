@@ -2529,10 +2529,8 @@ public:
 
     static void serializeToken(const std::vector<T> &vec, Token &token, Serializer &serializer)
     {
-        static const char arrayStart[] = "[";
-        static const char arrayEnd[] = "]";
         token.value_type = Type::ArrayStart;
-        token.value = DataRef::asDataRef(arrayStart);
+        token.value = DataRef::asDataRef("[");
         serializer.write(token);
 
         token.name = DataRef::asDataRef("");
@@ -2545,7 +2543,7 @@ public:
         token.name = DataRef::asDataRef("");
 
         token.value_type = Type::ArrayEnd;
-        token.value = DataRef::asDataRef(arrayEnd);
+        token.value = DataRef::asDataRef("]");
         serializer.write(token);
     }
 };
