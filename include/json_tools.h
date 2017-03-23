@@ -165,6 +165,7 @@ enum class Error : unsigned char
     UserDefinedErrors
 };
 
+namespace Internal {
 class ErrorContext
 {
 public:
@@ -183,7 +184,6 @@ public:
     }
 };
 
-namespace Internal {
     template<typename T>
     struct CallbackContainer;
 }
@@ -349,7 +349,7 @@ public:
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
     Error updateErrorContext(Error error, const std::string &custom_message = std::string());
-    const ErrorContext &errorContext() const { return error_context; }
+    const Internal::ErrorContext &errorContext() const { return error_context; }
 private:
     enum class InTokenState : unsigned char
     {
@@ -404,7 +404,7 @@ private:
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
     const std::vector<Token> *parsed_data_vector;
     std::function<void(Token &next_token)> token_transformer;
-    ErrorContext error_context;
+    Internal::ErrorContext error_context;
 };
 
 class SerializerOptions
