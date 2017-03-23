@@ -322,11 +322,76 @@ void call_void_test()
     JT_ASSERT(voidStruct.executed_3);
     JT_ASSERT(voidStruct.executed_4);
     JT_ASSERT(!voidStruct.executed_5);
+    JT_ASSERT(voidStruct.executed_6);
     JT_ASSERT(context.execution_list.size() == 6);
     JT_ASSERT(context.execution_list[4].error == JT::Error::IlligalVoidFunctionArgument);
-    JT_ASSERT(voidStruct.executed_6);
 }
 
+const char call_error_check_json[] = R"json(
+{
+    "call_void" : [],
+    "call_with_int" : 5,
+    "call_another_void" : {},
+    "call_with_object" : { "x" : 9 }
+}
+)json";
+
+struct CallErrorCheckArg
+{
+	int x;
+	JT_STRUCT(JT_MEMBER(x));
+};
+struct CallErrorCheck
+{
+	void call_void()
+	{
+		executed1 = true;
+	}
+
+	void call_with_int(int x, JT::CallFunctionErrorContext &context)
+	{
+		executed2 = true;
+		context.setError(JT::Error::UserDefinedErrors, "CallWithIntCustomError problem with number");
+	}
+
+	void call_another_void()
+	{
+		executed3 = true;
+	}
+
+	std::string call_with_object(const CallErrorCheckArg &arg, JT::CallFunctionErrorContext &context)
+	{
+		executed4 = true;
+		context.setError(JT::Error::UserDefinedErrors, "This functions should not serialize the string");
+		return std::string("THIS SHOULD NOT BE SERIALIZED");
+	}
+
+	JT_FUNCTION_CONTAINER(
+		JT_FUNCTION(call_void),
+		JT_FUNCTION(call_with_int),
+		JT_FUNCTION(call_another_void),
+		JT_FUNCTION(call_with_object));
+
+	bool executed1 = false;
+	bool executed2 = false;
+	bool executed3 = false;
+	bool executed4 = false;
+};
+
+void call_error_check()
+{
+	CallErrorCheck errorCheck;
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(call_error_check_json, json_out);
+    context.callFunctions(errorCheck);
+
+	fprintf(stderr, "json out %s\n", json_out.c_str());
+	JT_ASSERT(errorCheck.executed1);
+	JT_ASSERT(errorCheck.executed2);
+	JT_ASSERT(errorCheck.executed3);
+	JT_ASSERT(errorCheck.executed4);
+	JT_ASSERT(json_out.size() == 3);
+}
 int main()
 {
     simpleTest();
@@ -334,5 +399,6 @@ int main()
     virtualFunctionTest();
     super_class_param_test();
     call_void_test();
+	call_error_check();
 }
 
