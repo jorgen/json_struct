@@ -2838,6 +2838,7 @@ struct CallFunctionExecutionState
 {
     CallFunctionExecutionState(const std::string &name)
         : name(name)
+        , error(Error::NoError)
     {}
     std::string name;
     Error error;
@@ -2859,7 +2860,7 @@ struct CallFunctionErrorContext
     Error getLatestError() const;
 
 private:
-	CallFunctionContext &context;
+    CallFunctionContext &context;
 };
 
 struct CallFunctionContext
@@ -2867,7 +2868,7 @@ struct CallFunctionContext
     CallFunctionContext(ParseContext &parser_context, Serializer &return_serializer)
         : parse_context(parser_context)
         , return_serializer(return_serializer)
-		, error_context(*this)
+        , error_context(*this)
     {}
 
     template<typename T>
