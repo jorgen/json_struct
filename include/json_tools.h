@@ -3048,7 +3048,9 @@ namespace Internal {
                 return context.parse_context.error;
 
             Token token;
-            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg, context.error_context), token, context.return_serializer);
+            Ret ret = (container.*functionInfo.function)(arg, context.error_context);
+            if (context.execution_list.back().error == Error::NoError)
+                TokenParser<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
