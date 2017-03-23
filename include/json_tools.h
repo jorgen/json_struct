@@ -1196,6 +1196,9 @@ namespace Internal {
 inline Error Tokenizer::updateErrorContext(Error error, const std::string &custom_message)
 {
     error_context.error = error;
+    error_context.custom_message = custom_message;
+    if ((!parsed_data_vector || parsed_data_vector->empty()) && data_list.empty())
+        return error;
     std::vector<Internal::Lines> lines;
     lines.push_back({0, cursor_index});
 
@@ -1260,7 +1263,6 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
         error_context.character = real_cursor_index - left;
         error_context.lines.push_back(std::string(json_data.data + left, right - left));
     }
-    error_context.custom_message = custom_message;
     return error;
 }
 
