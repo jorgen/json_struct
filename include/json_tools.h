@@ -2904,7 +2904,7 @@ inline Error CallFunctionErrorContext::getLatestError() const
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
 struct FunctionInfo
 {
-    typedef Ret(T::*Function)(const Arg &);
+    typedef Ret(T::*Function)(Arg);
     typedef Ret returnType;
     const char *name;
     Function function;
@@ -2913,7 +2913,7 @@ struct FunctionInfo
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 1>
 {
-    typedef Ret(T::*Function)(const Arg &, CallFunctionErrorContext &);
+    typedef Ret(T::*Function)(Arg, CallFunctionErrorContext &);
     typedef Ret returnType;
     const char *name;
     Function function;
@@ -2923,7 +2923,7 @@ struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 1>
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
 struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 2>
 {
-    typedef Ret(T::*Function)(const Arg &, CallFunctionContext &);
+    typedef Ret(T::*Function)(Arg, CallFunctionContext &);
     typedef Ret returnType;
     const char *name;
     Function function;
@@ -2957,19 +2957,19 @@ struct FunctionInfo<T, Ret, void, NAME_SIZE, 2>
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg))
 {
     return{ name, function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionErrorContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &))
 {
     return{ name, function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &))
 {
     return{ name, function };
 }
@@ -3019,8 +3019,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3035,8 +3037,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3051,8 +3055,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3069,8 +3075,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3084,8 +3092,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3099,8 +3109,10 @@ namespace Internal {
     {
         static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
-            Arg arg;
-            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            typedef std::remove_reference<Arg>::type NonRefArg;
+            typedef std::remove_cv<NonRefArg>::type PureArg;
+            PureArg arg;
+            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
