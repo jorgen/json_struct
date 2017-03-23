@@ -2847,20 +2847,35 @@ struct CallFunctionExecutionState
     std::vector<CallFunctionExecutionState> child_states;
 };
 
+struct CallFunctionContext;
+
+struct CallFunctionErrorContext
+{
+    CallFunctionErrorContext(CallFunctionContext &context)
+        : context(context)
+    {}
+
+    Error setError(Error error, const std::string &error_string);
+    Error getLatestError() const;
+
+private:
+	CallFunctionContext &context;
+};
+
 struct CallFunctionContext
 {
     CallFunctionContext(ParseContext &parser_context, Serializer &return_serializer)
         : parse_context(parser_context)
         , return_serializer(return_serializer)
+		, error_context(*this)
     {}
 
     template<typename T>
     Error callFunctions(T &container);
 
-    JT::Error parse_error() { return parse_context.error; }
-
     ParseContext &parse_context;
     Serializer &return_serializer;
+    CallFunctionErrorContext error_context;
     std::vector<CallFunctionExecutionState> execution_list;
     bool allow_missing = false;
     bool stop_execute_on_fail = false;
@@ -2871,7 +2886,22 @@ protected:
     virtual void afterCallFunctions() {}
 };
 
-template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
+inline Error CallFunctionErrorContext::setError(Error error, const std::string &errorString)
+{
+    assert(context.execution_list.size());
+    context.parse_context.error = error;
+    context.execution_list.back().error = error;
+    context.parse_context.tokenizer.updateErrorContext(error, errorString);
+    context.execution_list.back().error_string = context.parse_context.tokenizer.makeErrorString();
+    return error;
+}
+
+inline Error CallFunctionErrorContext::getLatestError() const
+{
+    return context.parse_context.error;
+}
+
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
 struct FunctionInfo
 {
     typedef Ret(T::*Function)(const Arg &);
@@ -2881,15 +2911,25 @@ struct FunctionInfo
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, Arg, NAME_SIZE, true>
+struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 1>
 {
-    typedef Ret(T::*Function)(const Arg &, CallFunctionContext &context);
+    typedef Ret(T::*Function)(const Arg &, CallFunctionErrorContext &);
     typedef Ret returnType;
     const char *name;
     Function function;
 };
 
-template<typename T, typename Ret, size_t NAME_SIZE, bool TAKES_CONTEXT>
+
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 2>
+{
+    typedef Ret(T::*Function)(const Arg &, CallFunctionContext &);
+    typedef Ret returnType;
+    const char *name;
+    Function function;
+};
+
+template<typename T, typename Ret, size_t NAME_SIZE, size_t TAKES_CONTEXT>
 struct FunctionInfo<T, Ret, void, NAME_SIZE, TAKES_CONTEXT>
 {
     typedef Ret(T::*Function)(void);
@@ -2899,34 +2939,55 @@ struct FunctionInfo<T, Ret, void, NAME_SIZE, TAKES_CONTEXT>
 };
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, void, NAME_SIZE, true>
+struct FunctionInfo<T, Ret, void, NAME_SIZE, 1>
 {
-    typedef Ret(T::*Function)(CallFunctionContext &context);
+    typedef Ret(T::*Function)(CallFunctionErrorContext &);
+    typedef Ret returnType;
+    const char *name;
+    Function function;
+};
+
+template<typename T, typename Ret, size_t NAME_SIZE>
+struct FunctionInfo<T, Ret, void, NAME_SIZE, 2>
+{
+    typedef Ret(T::*Function)(CallFunctionContext &);
     typedef Ret returnType;
     const char *name;
     Function function;
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, false> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &))
 {
     return{ name, function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, true> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionErrorContext &))
+{
+    return{ name, function };
+}
+
+template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(const Arg &, CallFunctionContext &))
 {
     return{ name, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, false> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void))
+JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void))
 {
     return{ name, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, true> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &))
+{
+    return{ name, function };
+}
+
+template<typename T, typename Ret, size_t NAME_SIZE>
+JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &))
 {
     return{ name, function };
 }
@@ -2953,7 +3014,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, true> makeFunctionInfo(co
     };
 
 namespace Internal {
-    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
     struct ReturnSerializer
     {
         static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
@@ -2970,9 +3031,25 @@ namespace Internal {
     };
 
     template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, true>
+    struct ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, 1>
     {
-        static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            Token token;
+            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg, context.error_context), token, context.return_serializer);
+            return context.execution_list.back().error;
+        }
+    };
+
+    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, Ret, Arg, NAME_SIZE, 2>
+    {
+        static Error serialize(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
             Arg arg;
             context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
@@ -2981,11 +3058,11 @@ namespace Internal {
 
             Token token;
             TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg, context), token, context.return_serializer);
-            return Error::NoError;
+            return context.execution_list.back().error;
         }
     };
 
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    template<typename T, typename U, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
     struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, TAKES_CONTEXT>
     {
         static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
@@ -3001,9 +3078,24 @@ namespace Internal {
     };
 
     template<typename T, typename U, typename Arg, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, true>
+    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, 1>
     {
-        static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        {
+            Arg arg;
+            context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            (container.*functionInfo.function)(arg, context.error_context);
+            return context.execution_list.back().error;
+        }
+    };
+
+    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, void, Arg, NAME_SIZE, 2>
+    {
+        static Error serialize(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
             Arg arg;
             context.parse_context.error = TokenParser<Arg, Arg>::unpackToken(arg, context.parse_context);
@@ -3011,7 +3103,7 @@ namespace Internal {
                 return context.parse_context.error;
 
             (container.*functionInfo.function)(arg, context);
-            return Error::NoError;
+            return context.execution_list.back().error;
         }
     };
 
@@ -3027,7 +3119,7 @@ namespace Internal {
         skipArrayOrObject(context.parse_context);
     }
 
-    template<typename T, typename U, typename Ret, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    template<typename T, typename U, typename Ret, size_t NAME_SIZE, size_t TAKES_CONTEXT>
     struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, TAKES_CONTEXT>
     {
         static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
@@ -3042,9 +3134,24 @@ namespace Internal {
     };
 
     template<typename T, typename U, typename Ret, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, true>
+    struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, 1>
     {
-        static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            Token token;
+            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(context.error_context), token, context.return_serializer);
+            return context.execution_list.back().error;
+        }
+    };
+
+    template<typename T, typename U, typename Ret, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, Ret, void, NAME_SIZE, 2>
+    {
+        static Error serialize(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -3052,11 +3159,11 @@ namespace Internal {
 
             Token token;
             TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(context), token, context.return_serializer);
-            return Error::NoError;
+            return context.execution_list.back().error;
         }
     };
 
-    template<typename T, typename U, size_t NAME_SIZE, bool TAKES_CONTEXT>
+    template<typename T, typename U, size_t NAME_SIZE, size_t TAKES_CONTEXT>
     struct ReturnSerializer<T, U, void, void, NAME_SIZE, TAKES_CONTEXT>
     {
         static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
@@ -3071,20 +3178,34 @@ namespace Internal {
     };
 
     template<typename T, typename U, size_t NAME_SIZE>
-    struct ReturnSerializer<T, U, void, void, NAME_SIZE, true>
+    struct ReturnSerializer<T, U, void, void, NAME_SIZE, 1>
     {
-        static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, true> &functionInfo, CallFunctionContext &context)
+        static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        {
+            checkValidVoidParameter(context);
+            if (context.parse_context.error != Error::NoError)
+                return context.parse_context.error;
+
+            (container.*functionInfo.function)(context.error_context);
+            return context.execution_list.back().error;
+        }
+    };
+
+    template<typename T, typename U, size_t NAME_SIZE>
+    struct ReturnSerializer<T, U, void, void, NAME_SIZE, 2>
+    {
+        static Error serialize(T &container, FunctionInfo<U, void, void, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             (container.*functionInfo.function)(context);
-            return Error::NoError;
+            return context.execution_list.back().error;
         }
     };
 }
-template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, bool TAKES_CONTEXT>
+template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
 Error callFunctionHandler(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE, TAKES_CONTEXT> &functionInfo)
 {
     if (context.parse_context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.parse_context.token.name.data, NAME_SIZE) == 0)
@@ -3150,46 +3271,49 @@ namespace Internal {
 
     static void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
     {
-        executionState.error = context.error;
+        if (executionState.error == Error::NoError) {
+            executionState.error = context.error;
+            if (context.error != Error::NoError) {
+                context.tokenizer.updateErrorContext(context.error);
+                executionState.error_string = context.tokenizer.makeErrorString();
+            }
+        }
         if (context.missing_members.size())
             std::swap(executionState.missing_members, context.missing_members);
         if (context.unassigned_required_members.size())
             std::swap(executionState.unassigned_required_members, context.unassigned_required_members);
 
-        if (context.error != Error::NoError) {
-            context.tokenizer.updateErrorContext(context.error);
-            executionState.error_string = context.tokenizer.makeErrorString();
-        }
     }
 }
 
-typedef void (CallFunctionContext::*AfterCallFunction)();
+namespace Internal {
+    typedef void (CallFunctionContext::*AfterCallFunction)();
 
-struct CallFunction
-{
-    CallFunction(CallFunctionContext &context, AfterCallFunction after)
-        : context(context)
-        , after(after)
-    {}
-    ~CallFunction()
+    struct CallFunction
     {
-        (context.*after)();
-    }
-    CallFunctionContext &context;
-    AfterCallFunction after;
-};
+        CallFunction(CallFunctionContext &context, AfterCallFunction after)
+            : context(context)
+              , after(after)
+        {}
+        ~CallFunction()
+        {
+            (context.*after)();
+        }
+        CallFunctionContext &context;
+        AfterCallFunction after;
+    };
+}
 
 template<typename T>
 inline Error CallFunctionContext::callFunctions(T &container)
 {
     beforeCallFunctions();
-    CallFunction callOnExit(*this, &CallFunctionContext::afterCallFunctions);
+    Internal::CallFunction callOnExit(*this, &CallFunctionContext::afterCallFunctions);
     JT::Error error = parse_context.nextToken();
     if (error != JT::Error::NoError)
         return error;
     if (parse_context.token.value_type != JT::Type::ObjectStart) {
-        parse_context.error = Error::ExpectedObjectStart;
-        return Error::ExpectedObjectStart;
+        return error_context.setError(Error::ExpectedObjectStart, "Can only call functions on objects with members");
     }
     error = parse_context.nextToken();
     if (error != JT::Error::NoError)
@@ -3202,13 +3326,12 @@ inline Error CallFunctionContext::callFunctions(T &container)
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
-        auto execution_state_it = --execution_list.end();
         Error error = Internal::FunctionHandler<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, *this,  functions);
         if (error != Error::NoError) {
             assert(error == parse_context.error || parse_context.error == Error::NoError);
             parse_context.error = error;
         }
-        Internal::add_error(*execution_state_it, parse_context);
+        Internal::add_error(execution_list.back(), parse_context);
         if (error == Error::MissingPropertyMember && !allow_missing)
             return error;
         if (stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)

@@ -254,7 +254,8 @@ const char call_void_json[] = R"json(
     "call_void_context" : null,
     "call_int_void" : {},
     "call_int_void_context" : {},
-    "call_void_with_value" : 4
+    "call_void_with_value" : 4,
+	"call_void_error" : {}
 }
 )json";
 
@@ -281,6 +282,11 @@ struct CallVoidStruct
         return 7;
     }
 
+    void call_void_error(JT::CallFunctionErrorContext &error)
+    {
+        executed_6 = true;
+    }
+
     void call_void_with_value()
     {
         executed_5 = true;
@@ -291,12 +297,14 @@ struct CallVoidStruct
     bool executed_3 = false;
     bool executed_4 = false;
     bool executed_5 = false;
+    bool executed_6 = false;
     JT_FUNCTION_CONTAINER(
         JT_FUNCTION(call_void),
         JT_FUNCTION(call_void_context),
         JT_FUNCTION(call_int_void),
         JT_FUNCTION(call_int_void_context),
-        JT_FUNCTION(call_void_with_value));
+        JT_FUNCTION(call_void_with_value),
+        JT_FUNCTION(call_void_error));
 };
 
 void call_void_test()
@@ -306,17 +314,19 @@ void call_void_test()
     JT::DefaultCallFunctionContext context(call_void_json, json_out);
     context.callFunctions(voidStruct);
 
-    if (context.parse_error() != JT::Error::NoError)
+    if (context.error_context.getLatestError() != JT::Error::NoError)
         fprintf(stderr, "error %s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_error() == JT::Error::NoError);
+    JT_ASSERT(context.error_context.getLatestError() == JT::Error::NoError);
     JT_ASSERT(voidStruct.executed_1);
     JT_ASSERT(voidStruct.executed_2);
     JT_ASSERT(voidStruct.executed_3);
     JT_ASSERT(voidStruct.executed_4);
     JT_ASSERT(!voidStruct.executed_5);
-    JT_ASSERT(context.execution_list.size() == 5);
+    JT_ASSERT(context.execution_list.size() == 6);
     JT_ASSERT(context.execution_list[4].error == JT::Error::IlligalVoidFunctionArgument);
+    JT_ASSERT(voidStruct.executed_6);
 }
+
 int main()
 {
     simpleTest();
