@@ -2996,6 +2996,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
 }
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
+#define JT_FUNCTION_WITH_NAME(name, member) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
 #define JT_FUNCTION_CONTAINER(...) \
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
