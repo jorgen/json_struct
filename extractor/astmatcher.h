@@ -13,11 +13,11 @@ using namespace clang::ast_matchers;
 
 struct Extractor
 {
-    std::vector<FunctionObject> function_objects;
+    std::vector<JT::FunctionObject> function_objects;
     CompilerInstance *current_instance;
 };
 
-static void typeDefForQual(Extractor &extractor, clang::QualType type, TypeDef &json_type);
+static void typeDefForQual(Extractor &extractor, clang::QualType type, JT::TypeDef &json_type);
 
 std::string normalizeTypeName(const std::string &type)
 {
@@ -37,7 +37,7 @@ static std::string getLiteralText(const SourceManager &sm, const LangOptions &la
     return std::string(sm.getCharacterData(b), sm.getCharacterData(e) - sm.getCharacterData(b));
 }
 
-static void commentForDecl(const Decl *decl, JT::OptionalChecked<Comment> &comment)
+static void commentForDecl(const Decl *decl, JT::OptionalChecked<JT::Comment> &comment)
 {
     ASTContext& ctx = decl->getASTContext();
     ctx.getLangOpts();
@@ -50,8 +50,8 @@ static void commentForDecl(const Decl *decl, JT::OptionalChecked<Comment> &comme
 
     for (auto &block : fc->getBlocks()) {
         if (clang::comments::ParagraphComment *paragraph = clang::dyn_cast<clang::comments::ParagraphComment>(block)) {
-            comment.data.paragraphs.push_back(Paragraph());
-            Paragraph &para = comment.data.paragraphs.back();
+            comment.data.paragraphs.push_back(JT::Paragraph());
+            JT::Paragraph &para = comment.data.paragraphs.back();
             comment.assigned = true;
             auto child = paragraph->child_begin();
             bool first = true;
@@ -90,17 +90,13 @@ static void get_super_classes(const CXXMethodDecl *super_func, std::vector<const
     const DecltypeType *super_func_return_decltype = return_ref->getPointeeType()->getAs<DecltypeType>();
     if (!super_func_return_decltype)
         return;
-    super_func_return_decltype->dump();
     const TemplateSpecializationType *super_tuple = clang::dyn_cast<TemplateSpecializationType>(super_func_return_decltype->getUnderlyingType());
     if (!super_tuple)
         return;
     return_vector.reserve(super_tuple->template_arguments().size());
-    super_tuple->dump();
     
     for (const TemplateArgument &arg : super_tuple->template_arguments()) {
-        arg.dump();
         const RecordType *record = clang::dyn_cast<RecordType>(arg.getAsType()->getUnqualifiedDesugaredType());
-        record->dump();
         const ClassTemplateSpecializationDecl *superInfoTemplate = clang::dyn_cast<ClassTemplateSpecializationDecl>(record->getDecl());
         const TemplateArgument &super_class_t_arg = superInfoTemplate->getTemplateArgs().get(0);
         const RecordType *super_record = clang::dyn_cast<RecordType>(super_class_t_arg.getAsType());
@@ -112,7 +108,7 @@ static void get_super_classes(const CXXMethodDecl *super_func, std::vector<const
 class DefaultValueMatcher : public MatchFinder::MatchCallback
 {
 public:
-    DefaultValueMatcher(Member &member)
+    DefaultValueMatcher(JT::Member &member)
         : member(member)
     {}
     static DeclarationMatcher metaMatcher()
@@ -142,13 +138,13 @@ public:
             }
         }
     }
-    Member &member;
+    JT::Member &member;
 };
 
 class MetaMemberMatcher : public MatchFinder::MatchCallback
 {
 public:
-    MetaMemberMatcher(Extractor &extractor, TypeDef &type_def)
+    MetaMemberMatcher(Extractor &extractor, JT::TypeDef &type_def)
         : extractor(extractor)
         , type_def(type_def)
     {}
@@ -167,9 +163,9 @@ public:
         const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
         assert(field && nameLiteral);
         if (!type_def.record_type)
-            type_def.record_type.reset(new Record());
-        type_def.record_type->members.push_back(Member());
-        Member &member = type_def.record_type->members.back();
+            type_def.record_type.reset(new JT::Record());
+        type_def.record_type->members.push_back(JT::Member());
+        JT::Member &member = type_def.record_type->members.back();
         member.name = nameLiteral->getString().str();
         commentForDecl(field, member.comment);
 
@@ -182,7 +178,7 @@ public:
 
     }
     Extractor &extractor;
-    TypeDef &type_def;
+    JT::TypeDef &type_def;
 };
 
 static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extractor, const CXXRecordDecl *parentClass, ClassTemplateDecl *metaTemplate)
@@ -197,7 +193,7 @@ static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extra
 class ClassWithMetaMatcher : public MatchFinder::MatchCallback
 {
 public :
-    ClassWithMetaMatcher(Extractor &extractor, TypeDef &json_typedef)
+    ClassWithMetaMatcher(Extractor &extractor, JT::TypeDef &json_typedef)
         : extractor(extractor)
         , json_typedef(json_typedef)
     {}
@@ -224,13 +220,13 @@ public :
         get_super_classes(super_func, super_classes);
         if (super_classes.size()) {
             if (!json_typedef.record_type)
-                json_typedef.record_type.reset(new Record());
+                json_typedef.record_type.reset(new JT::Record());
             json_typedef.record_type->super_classes.reserve(super_classes.size());
         }
         for (const CXXRecordDecl *super : super_classes)
         {
-            json_typedef.record_type->super_classes.push_back(TypeDef());
-            TypeDef &super_typedef = json_typedef.record_type->super_classes.back();
+            json_typedef.record_type->super_classes.push_back(JT::TypeDef());
+            JT::TypeDef &super_typedef = json_typedef.record_type->super_classes.back();
             typeDefForQual(extractor, QualType(super->getTypeForDecl(), 0), super_typedef);
         }
 
@@ -252,10 +248,10 @@ public :
     }
 
     Extractor &extractor;
-    TypeDef &json_typedef;
+    JT::TypeDef &json_typedef;
 };
 
-static void typeDefForQual(Extractor &extractor, clang::QualType type, TypeDef &json_type)
+static void typeDefForQual(Extractor &extractor, clang::QualType type, JT::TypeDef &json_type)
 {
     if (type->isReferenceType())
         type = type->getPointeeType(); 
@@ -273,8 +269,8 @@ static void typeDefForQual(Extractor &extractor, clang::QualType type, TypeDef &
                 const TemplateArgument &arg = t_decl->getTemplateArgs().get(n);
                 if (arg.getKind() != TemplateArgument::Type)
                     continue;
-                json_type.template_parameters.push_back(TypeDef());
-                TypeDef &template_arg_typedef = json_type.template_parameters.back();
+                json_type.template_parameters.push_back(JT::TypeDef());
+                JT::TypeDef &template_arg_typedef = json_type.template_parameters.back();
                 typeDefForQual(extractor, arg.getAsType(), template_arg_typedef);
             }
         }
@@ -299,7 +295,7 @@ static void typeDefForQual(Extractor &extractor, clang::QualType type, TypeDef &
 class MetaFunctionMatcher : public MatchFinder::MatchCallback
 {
 public:
-    MetaFunctionMatcher(Extractor &extractor, FunctionObject &object)
+    MetaFunctionMatcher(Extractor &extractor, JT::FunctionObject &object)
         : extractor(extractor)
         , function_object(object)
     {}
@@ -317,22 +313,25 @@ public:
         const CXXMethodDecl *function = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("function_ref");
         const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
         assert(function && nameLiteral);
-        clang::QualType firstParameter = function->parameters().front()->getType();
-        function_object.functions.push_back(Functio());
-        Functio &func = function_object.functions.back();
-        func.name = nameLiteral->getString().str();
-        commentForDecl(function, func.comment);
-        typeDefForQual(extractor, firstParameter, func.argument);
-        typeDefForQual(extractor, function->getReturnType(), func.return_type);
+		function_object.functions.push_back(JT::Function());
+		JT::Function &func = function_object.functions.back();
+		func.name = nameLiteral->getString().str();
+		commentForDecl(function, func.comment);
+		if (function->parameters().size()) {
+			clang::QualType firstParameter = function->parameters().front()->getType();
+			typeDefForQual(extractor, firstParameter, func.argument.data);
+			func.argument.assigned = true;
+		}
+		typeDefForQual(extractor, function->getReturnType(), func.return_type);
     }
 
     Extractor &extractor;
-    FunctionObject &function_object;
+    JT::FunctionObject &function_object;
 };
 
 class ClassWithFunctionMetaMatcher : public MatchFinder::MatchCallback {
 public:
-    ClassWithFunctionMetaMatcher(FunctionObject &functionObject, Extractor &extractor)
+    ClassWithFunctionMetaMatcher(JT::FunctionObject &functionObject, Extractor &extractor)
         : functionObject(functionObject)
         , extractor(extractor)
     {}
@@ -362,8 +361,8 @@ public:
         functionObject.super_classes.reserve(super_classes.size());
         for (const CXXRecordDecl *super_class : super_classes)
         {
-            functionObject.super_classes.push_back(FunctionObject());
-            FunctionObject &super_class_object = functionObject.super_classes.back();
+            functionObject.super_classes.push_back(JT::FunctionObject());
+            JT::FunctionObject &super_class_object = functionObject.super_classes.back();
             ClassWithFunctionMetaMatcher functionObjectMatcher(super_class_object, extractor);
             clang::ast_matchers::MatchFinder finder;
             finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
@@ -386,7 +385,7 @@ public:
         finder.match(*return_type->getUnderlyingExpr(), classTemplate->getASTContext());
     }
 
-    FunctionObject &functionObject;
+    JT::FunctionObject &functionObject;
     Extractor &extractor;
 };
 
@@ -397,10 +396,10 @@ public:
     {}
     static StatementMatcher metaMatcher()
     {
-        return callExpr(callee(functionDecl(hasName("callFunction"),
-                                            parameterCountIs(5),
+		return callExpr(callee(cxxMethodDecl(hasName("callFunctions"),
+											parameterCountIs(1),
                                             isTemplateInstantiation(),
-                                            hasDeclContext(namedDecl(hasName("JT"))),
+                                            hasDeclContext(namedDecl(hasName("CallFunctionContext"))),
                                             hasParameter(0, hasType(referenceType(pointee(hasDeclaration(cxxRecordDecl().bind("callObject"))))))
                 ))).bind("func");
     }
@@ -409,8 +408,8 @@ public:
     {
         const CallExpr *func = Result.Nodes.getNodeAs<CallExpr>("func");
         const CXXRecordDecl *callObject = Result.Nodes.getNodeAs<CXXRecordDecl>("callObject");
-        extractor.function_objects.push_back(FunctionObject());
-        FunctionObject &functionObject = extractor.function_objects.back();
+        extractor.function_objects.push_back(JT::FunctionObject());
+        JT::FunctionObject &functionObject = extractor.function_objects.back();
         ClassWithFunctionMetaMatcher functionObjectMatcher(functionObject, extractor);
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
