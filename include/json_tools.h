@@ -2337,8 +2337,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
@@ -2355,8 +2355,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
@@ -2375,8 +2375,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
@@ -2395,8 +2395,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
@@ -2412,8 +2412,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
@@ -2429,8 +2429,8 @@ namespace Internal {
     {
         static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
         {
-            typedef std::remove_reference<Arg>::type NonRefArg;
-            typedef std::remove_cv<NonRefArg>::type PureArg;
+            typedef typename std::remove_reference<Arg>::type NonRefArg;
+            typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
             context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
