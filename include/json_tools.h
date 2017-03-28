@@ -1768,9 +1768,8 @@ JT_CONSTEXPR Internal::MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char
 }
 
 template<typename T, typename specifier>
-class TokenParser
+struct TokenParser
 {
-public:
     static inline Error unpackToken(T &to_type, ParseContext &context)
     {
         static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
@@ -2080,99 +2079,6 @@ namespace Internal {
         }
     }
 }
-template<typename T>
-class TokenParser<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
-{
-public:
-    static inline Error unpackToken(T &to_type, ParseContext &context)
-    {
-        if (context.token.value_type != JT::Type::ObjectStart)
-            return Error::ExpectedObjectStart;
-        Error error = context.tokenizer.nextToken(context.token);
-        if (error != JT::Error::NoError)
-            return error;
-        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-#if JT_HAVE_CONSTEXPR
-        bool assigned_members[Internal::memberCount<T, 0>()];
-        memset(assigned_members, 0, sizeof(assigned_members));
-#else
-        bool *assigned_members = nullptr;
-#endif
-        while(context.token.value_type != JT::Type::ObjectEnd)
-        {
-            std::string token_name(context.token.name.data, context.token.name.size);
-            error = Internal::MemberChecker<T, decltype(members), 0 ,std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members, "");
-            if (error == Error::MissingPropertyMember) {
-                context.missing_members.push_back(token_name);
-                if (context.allow_missing_members) {
-                    Internal::skipArrayOrObject(context);
-                    if (context.error != Error::NoError)
-                        return context.error;
-                }
-                else {
-                    return error;
-                }
-            } else if (error != Error::NoError) {
-                return error;
-            }
-            context.nextToken();
-            if (context.error != Error::NoError)
-                return context.error;
-
-        }
-        std::vector<std::string> unassigned_required_members;
-        error = Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
-        if (error == Error::UnassignedRequiredMember) {
-            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
-            if (context.allow_unnasigned_required__members)
-                error = Error::NoError;
-        }
-        return error;
-    }
-
-    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
-    {
-        static const char objectStart[] = "{";
-        static const char objectEnd[] = "}";
-        token.value_type = Type::ObjectStart;
-        token.value = DataRef::asDataRef(objectStart);
-        serializer.write(token);
-        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-        Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
-        token.name.size = 0;
-        token.name.data = "";
-        token.name_type = Type::String;
-        token.value_type = Type::ObjectEnd;
-        token.value = DataRef::asDataRef(objectEnd);
-        serializer.write(token);
-    }
-};
-
-template<>
-inline Error TokenParser<std::string, std::string>::unpackToken(std::string &to_type, ParseContext &context)
-{
-    to_type = std::string(context.token.value.data, context.token.value.size);
-    return Error::NoError;
-}
-
-template<>
-inline void TokenParser<std::string, std::string>::serializeToken(const std::string &str, Token &token, Serializer &serializer)
-{
-    token.value_type = Type::Ascii;
-    token.value.data = &str[0];
-    token.value.size = str.size();
-    serializer.write(token);
-}
-
-template<>
-inline Error TokenParser<double, double>::unpackToken(double &to_type, ParseContext &context)
-{
-    char *pointer;
-    to_type = strtod(context.token.value.data, &pointer);
-    if (context.token.value.data == pointer)
-        return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
-    return Error::NoError;
-}
 
 namespace Internal {
     template<typename ...Ts>
@@ -2184,598 +2090,6 @@ namespace Internal {
         return snprintf(dst, max, format, args...);
 #endif
     }
-}
-
-template<>
-inline void TokenParser<double, double>::serializeToken(const double &d, Token &token, Serializer &serializer)
-{
-    //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    char buf[1 + (308+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-
-    int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
-
-    if (size < 0) {
-        fprintf(stderr, "error serializing float token\n");
-        return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size;
-    serializer.write(token);
-}
-
-
-template<>
-inline Error TokenParser<float, float>::unpackToken(float &to_type, ParseContext &context)
-{
-    char *pointer;
-    to_type = strtof(context.token.value.data, &pointer);
-    if (context.token.value.data == pointer)
-        return Error::FailedToParseFloat;
-    return Error::NoError;
-}
-
-template<>
-inline void TokenParser<float, float>::serializeToken(const float &f, Token &token, Serializer &serializer)
-{
-    //char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    char buf[1/*'-'*/ + (38+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    int size = Internal::jt_snprintf(buf, sizeof buf/sizeof *buf, "%f",f);
-    if (size < 0) {
-        fprintf(stderr, "error serializing float token\n");
-        return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size;
-    serializer.write(token);
-}
-
-template<>
-inline Error TokenParser<int, int>::unpackToken(int &to_type, ParseContext &context)
-{
-    char *pointer;
-    to_type = strtol(context.token.value.data, &pointer, 10);
-    if (context.token.value.data == pointer)
-        return Error::FailedToParseInt;
-    return Error::NoError;
-}
-
-template<>
-inline void TokenParser<int, int>::serializeToken(const int&d, Token &token, Serializer &serializer)
-{
-    char buf[11];
-    int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
-    if (size < 0) {
-        fprintf(stderr, "error serializing int token\n");
-        return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size;
-    serializer.write(token);
-}
-
-template<>
-class TokenParser<unsigned int, unsigned int>
-{
-public:
-    static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
-    {
-        char *pointer;
-        to_type = strtoul(context.token.value.data, &pointer, 10);
-        if (context.token.value.data == pointer)
-            return Error::FailedToParseInt;
-        return Error::NoError;
-    }
-
-    static void serializeToken(const unsigned int &from_type, Token &token, Serializer &serializer)
-    {
-        char buf[12];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
-        if (size < 0) {
-            fprintf(stderr, "error serializing int token\n");
-            return;
-        }
-
-        token.value_type = Type::Number;
-        token.value.data = buf;
-        token.value.size = size;
-        serializer.write(token);
-    }
-
-};
-
-template<>
-class TokenParser<int64_t, int64_t>
-{
-public:
-    static inline Error unpackToken(int64_t &to_type, ParseContext &context)
-    {
-        static_assert(sizeof(to_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
-        char *pointer;
-        to_type = strtoll(context.token.value.data, &pointer, 10);
-        if (context.token.value.data == pointer)
-            return Error::FailedToParseInt;
-        return Error::NoError;
-    }
-
-    static void serializeToken(const int64_t &from_type, Token &token, Serializer &serializer)
-    {
-        static_assert(sizeof(from_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
-        char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%lld", from_type);
-        if (size < 0) {
-            fprintf(stderr, "error serializing int token\n");
-            return;
-        }
-
-        token.value_type = Type::Number;
-        token.value.data = buf;
-        token.value.size = size;
-        serializer.write(token);
-    }
-
-};
-
-template<>
-class TokenParser<uint64_t, uint64_t>
-{
-public:
-    static inline Error unpackToken(uint64_t &to_type, ParseContext &context)
-    {
-        static_assert(sizeof(to_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long unsinged int");
-        char *pointer;
-        to_type = strtoull(context.token.value.data, &pointer, 10);
-        if (context.token.value.data == pointer)
-            return Error::FailedToParseInt;
-        return Error::NoError;
-    }
-
-    static void serializeToken(const uint64_t &from_type, Token &token, Serializer &serializer)
-    {
-        static_assert(sizeof(from_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long int");
-        char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%llu", from_type);
-        if (size < 0) {
-            fprintf(stderr, "error serializing int token\n");
-            return;
-        }
-
-        token.value_type = Type::Number;
-        token.value.data = buf;
-        token.value.size = size;
-        serializer.write(token);
-    }
-
-};
-
-template<>
-class TokenParser<int16_t, int16_t>
-{
-public:
-    static inline Error unpackToken(int16_t &to_type, ParseContext &context)
-    {
-        static_assert(sizeof(to_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
-        char *pointer;
-        to_type = strtol(context.token.value.data, &pointer, 10);
-        if (context.token.value.data == pointer)
-            return Error::FailedToParseInt;
-        return Error::NoError;
-    }
-
-    static void serializeToken(const int16_t &from_type, Token &token, Serializer &serializer)
-    {
-        static_assert(sizeof(from_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
-        char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hd", from_type);
-        if (size < 0) {
-            fprintf(stderr, "error serializing int token\n");
-            return;
-        }
-
-        token.value_type = Type::Number;
-        token.value.data = buf;
-        token.value.size = size;
-        serializer.write(token);
-    }
-
-};
-
-template<>
-class TokenParser<uint16_t, uint16_t>
-{
-public:
-    static inline Error unpackToken(uint16_t &to_type, ParseContext &context)
-    {
-        static_assert(sizeof(to_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long unsinged int");
-        char *pointer;
-        to_type = strtol(context.token.value.data, &pointer, 10);
-        if (context.token.value.data == pointer)
-            return Error::FailedToParseInt;
-        return Error::NoError;
-    }
-
-    static void serializeToken(const uint16_t &from_type, Token &token, Serializer &serializer)
-    {
-        static_assert(sizeof(from_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long int");
-        char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
-        if (size < 0) {
-            fprintf(stderr, "error serializing int token\n");
-            return;
-        }
-
-        token.value_type = Type::Number;
-        token.value.data = buf;
-        token.value.size = size;
-        serializer.write(token);
-    }
-
-};
-
-template<typename T>
-class TokenParser<Optional<T>, Optional<T>>
-{
-public:
-    static inline Error unpackToken(Optional<T> &to_type, ParseContext &context)
-    {
-        return TokenParser<T,T>::unpackToken(to_type.data, context);
-    }
-
-    static void serializeToken(const Optional<T> &opt, Token &token, Serializer &serializer)
-    {
-        TokenParser<T,T>::serializeToken(opt(), token, serializer);
-    }
-};
-
-template<typename T>
-class TokenParser<OptionalChecked<T>, OptionalChecked<T>>
-{
-public:
-    static inline Error unpackToken(OptionalChecked<T> &to_type, ParseContext &context)
-    {
-        to_type.assigned = true;
-        return TokenParser<T,T>::unpackToken(to_type.data, context);
-    }
-
-    static void serializeToken(const OptionalChecked<T> &opt, Token &token, Serializer &serializer)
-    {
-        if (opt.assigned)
-            TokenParser<T,T>::serializeToken(opt(), token, serializer);
-    }
-};
-
-template<typename T>
-class TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>
-{
-public:
-    static inline Error unpackToken(std::unique_ptr<T> &to_type, ParseContext &context)
-    {
-        if (context.token.value_type != Type::Null) {
-            to_type.reset(new T());
-            return TokenParser<T,T>::unpackToken(*to_type.get(), context);
-        }
-        to_type.reset(nullptr);
-        return Error::NoError;
-    }
-
-    static void serializeToken(const std::unique_ptr<T> &unique, Token &token, Serializer &serializer)
-    {
-        if (unique) {
-            TokenParser<T,T>::serializeToken(*unique.get(), token, serializer);
-        } else {
-            const char nullChar[] = "null";
-            token.value_type = Type::Null;
-            token.value = DataRef::asDataRef(nullChar);
-            serializer.write(token);
-        }
-    }
-
-};
-
-template<>
-inline Error TokenParser<bool, bool>::unpackToken(bool &to_type, ParseContext &context)
-{
-    if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
-        to_type = true;
-    else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
-        to_type = false;
-    else
-        return Error::FailedToParseBoolen;
-
-    return Error::NoError;
-}
-
-template<>
-inline void TokenParser<bool, bool>::serializeToken(const bool &b, Token &token, Serializer &serializer)
-{
-    const char trueChar[] = "true";
-    const char falseChar[] = "false";
-    token.value_type = Type::Bool;
-    if (b) {
-        token.value = DataRef::asDataRef(trueChar);
-    } else {
-        token.value =  DataRef::asDataRef(falseChar);
-    }
-    serializer.write(token);
-}
-
-template<typename T>
-class TokenParser<std::vector<T>, std::vector<T>>
-{
-public:
-    static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
-    {
-        if (context.token.value_type != JT::Type::ArrayStart)
-            return Error::ExpectedArrayStart;
-        Error error = context.nextToken();
-        if (error != JT::Error::NoError)
-            return error;
-        while(context.token.value_type != JT::Type::ArrayEnd)
-        {
-            to_type.push_back(T());
-            error = TokenParser<T,T>::unpackToken(to_type.back(), context);
-            if (error != JT::Error::NoError)
-                break;
-            error = context.nextToken();
-            if (error != JT::Error::NoError)
-                break;
-        }
-
-        return error;
-    }
-
-    static void serializeToken(const std::vector<T> &vec, Token &token, Serializer &serializer)
-    {
-        token.value_type = Type::ArrayStart;
-        token.value = DataRef::asDataRef("[");
-        serializer.write(token);
-
-        token.name = DataRef::asDataRef("");
-
-        for (auto &index : vec)
-        {
-            TokenParser<T,T>::serializeToken(index, token, serializer);
-        }
-
-        token.name = DataRef::asDataRef("");
-
-        token.value_type = Type::ArrayEnd;
-        token.value = DataRef::asDataRef("]");
-        serializer.write(token);
-    }
-};
-
-template<>
-class TokenParser<SilentString, SilentString>
-{
-    static inline Error unpackToken(SilentString &to_type, ParseContext &context)
-    {
-        return TokenParser<std::string, std::string>::unpackToken(to_type, context);
-    }
-    static void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
-    {
-        if (str.size()) {
-            TokenParser<std::string, std::string>::serializeToken(str, token, serializer);
-        }
-    }
-};
-
-template<typename T>
-class TokenParser<SilentVector<T>, SilentVector<T>>
-{
-public:
-    static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
-    {
-        return TokenParser<std::vector<T>, std::vector<T>>::unpackToken(to_type, context);
-    }
-
-    static void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
-    {
-        if (vec.size()) {
-            TokenParser<std::vector<T>, std::vector<T>>::serializeToken(vec, token, serializer);
-        }
-    }
-};
-
-template<typename T>
-class TokenParser<SilentUniquePtr<T>, SilentUniquePtr<T>>
-{
-public:
-    static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
-    {
-        return TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::unpackToken(to_type, context);
-    }
-
-    static void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
-    {
-        if (ptr) {
-            TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
-        }
-    }
-};
-
-template<>
-class TokenParser<std::vector<Token>, std::vector<Token>>
-{
-public:
-    static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
-    {
-        if (context.token.value_type != JT::Type::ArrayStart &&
-            context.token.value_type != JT::Type::ObjectStart)
-            return Error::ExpectedObjectStart;
-        to_type.push_back(context.token);
-        bool buffer_change = false;
-        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
-        {
-            buffer_change = true;
-        });
-
-        size_t level = 1;
-        Error error = Error::NoError;
-        while (error == JT::Error::NoError && level && buffer_change == false) {
-            error = context.nextToken();
-            to_type.push_back(context.token);
-            if (context.token.value_type == Type::ArrayStart || context.token.value_type == Type::ObjectStart)
-                level++;
-            else if (context.token.value_type == Type::ArrayEnd || context.token.value_type == Type::ObjectEnd)
-                level--;
-        }
-        if (buffer_change)
-            return Error::NonContigiousMemory;
-
-        return error;
-    }
-
-    static void serializeToken(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
-    {
-        for (auto &t : from_type) {
-            token = t;
-            serializer.write(token);
-        }
-    }
-};
-
-template<>
-class TokenParser<JsonTokens, JsonTokens>
-{
-public:
-    static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
-    {
-        return TokenParser<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
-    }
-    static void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
-    {
-        return TokenParser<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
-    }
-};
-
-template<>
-inline Error TokenParser<JsonArrayRef,JsonArrayRef>::unpackToken(JsonArrayRef &to_type, ParseContext &context)
-{
-    if (context.token.value_type != JT::Type::ArrayStart)
-        return Error::ExpectedArrayStart;
-
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
-                                                               {
-                                                                    buffer_change = true;
-                                                               });
-
-    size_t level = 1;
-    Error error = Error::NoError;
-    while(error == JT::Error::NoError && level && buffer_change == false) {
-        error = context.nextToken();
-        if (context.token.value_type == Type::ArrayStart)
-            level++;
-        else if (context.token.value_type == Type::ArrayEnd)
-            level--;
-    }
-    if (buffer_change)
-        return Error::NonContigiousMemory;
-
-    return error;
-}
-
-template<>
-inline void TokenParser<JsonArrayRef, JsonArrayRef>::serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
-{
-    serializer.write(from_type.data, from_type.size);
-}
-
-template<>
-inline Error TokenParser<JsonArray,JsonArray>::unpackToken(JsonArray &to_type, ParseContext &context)
-{
-    if (context.token.value_type != JT::Type::ArrayStart)
-        return Error::ExpectedArrayStart;
-
-    context.tokenizer.copyFromValue(context.token, to_type);
-
-    size_t level = 1;
-    Error error = Error::NoError;
-    while(error == JT::Error::NoError && level) {
-        error = context.nextToken();
-        if (context.token.value_type == Type::ArrayStart)
-            level++;
-        else if (context.token.value_type == Type::ArrayStart)
-            level--;
-    }
-
-    context.tokenizer.copyIncludingValue(context.token, to_type);
-
-    return error;
-}
-
-template<>
-inline void TokenParser<JsonArray, JsonArray>::serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
-{
-    serializer.write(from_type);
-}
-
-template<>
-inline Error TokenParser<JsonObjectRef,JsonObjectRef>::unpackToken(JsonObjectRef &to_type, ParseContext &context)
-{
-    if (context.token.value_type != JT::Type::ObjectStart)
-        return Error::ExpectedObjectStart;
-
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change] (JT::Tokenizer &tokenizer)
-                                                               {
-                                                                    buffer_change = true;
-                                                               });
-
-    size_t level = 1;
-    Error error = Error::NoError;
-    while(error == JT::Error::NoError && level && buffer_change == false) {
-        error = context.nextToken();
-        if (context.token.value_type == Type::ObjectStart)
-            level++;
-        else if (context.token.value_type == Type::ObjectEnd)
-            level--;
-    }
-    if (buffer_change)
-        return Error::NonContigiousMemory;
-
-    return error;
-}
-
-template<>
-inline void TokenParser<JsonObjectRef, JsonObjectRef>::serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
-{
-    serializer.write(from_type.data, from_type.size);
-}
-
-template<>
-inline Error TokenParser<JsonObject,JsonObject>::unpackToken(JsonObject &to_type, ParseContext &context)
-{
-    if (context.token.value_type != JT::Type::ObjectStart)
-        return Error::ExpectedObjectStart;
-
-    context.tokenizer.copyFromValue(context.token, to_type);
-
-    size_t level = 1;
-    Error error = Error::NoError;
-    while(error == JT::Error::NoError && level) {
-        error = context.nextToken();
-        if (context.token.value_type == Type::ObjectStart)
-            level++;
-        else if (context.token.value_type == Type::ObjectEnd)
-            level--;
-    }
-
-    context.tokenizer.copyIncludingValue(context.token, to_type);
-
-    return error;
-}
-
-template<>
-inline void TokenParser<JsonObject, JsonObject>::serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
-{
-    serializer.write(from_type);
 }
 
 template<typename T>
@@ -3423,5 +2737,709 @@ namespace Internal {
         }
     };
 }
+
+template<typename T>
+struct TokenParser<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
+{
+public:
+    static inline Error unpackToken(T &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ObjectStart)
+            return Error::ExpectedObjectStart;
+        Error error = context.tokenizer.nextToken(context.token);
+        if (error != JT::Error::NoError)
+            return error;
+        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
+#if JT_HAVE_CONSTEXPR
+        bool assigned_members[Internal::memberCount<T, 0>()];
+        memset(assigned_members, 0, sizeof(assigned_members));
+#else
+        bool *assigned_members = nullptr;
+#endif
+        while(context.token.value_type != JT::Type::ObjectEnd)
+        {
+            std::string token_name(context.token.name.data, context.token.name.size);
+            error = Internal::MemberChecker<T, decltype(members), 0 ,std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members, "");
+            if (error == Error::MissingPropertyMember) {
+                context.missing_members.push_back(token_name);
+                if (context.allow_missing_members) {
+                    Internal::skipArrayOrObject(context);
+                    if (context.error != Error::NoError)
+                        return context.error;
+                }
+                else {
+                    return error;
+                }
+            } else if (error != Error::NoError) {
+                return error;
+            }
+            context.nextToken();
+            if (context.error != Error::NoError)
+                return context.error;
+
+        }
+        std::vector<std::string> unassigned_required_members;
+        error = Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
+        if (error == Error::UnassignedRequiredMember) {
+            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
+            if (context.allow_unnasigned_required__members)
+                error = Error::NoError;
+        }
+        return error;
+    }
+
+    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
+    {
+        static const char objectStart[] = "{";
+        static const char objectEnd[] = "}";
+        token.value_type = Type::ObjectStart;
+        token.value = DataRef::asDataRef(objectStart);
+        serializer.write(token);
+        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
+        Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+        token.name.size = 0;
+        token.name.data = "";
+        token.name_type = Type::String;
+        token.value_type = Type::ObjectEnd;
+        token.value = DataRef::asDataRef(objectEnd);
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TokenParser<std::string, std::string>
+{
+	static inline Error unpackToken(std::string &to_type, ParseContext &context)
+	{
+		to_type = std::string(context.token.value.data, context.token.value.size);
+		return Error::NoError;
+	}
+
+	static inline void serializeToken(const std::string &str, Token &token, Serializer &serializer)
+	{
+		token.value_type = Type::Ascii;
+		token.value.data = &str[0];
+		token.value.size = str.size();
+		serializer.write(token);
+	}
+};
+
+template<>
+struct TokenParser<double, double>
+{
+	static inline Error unpackToken(double &to_type, ParseContext &context)
+	{
+		char *pointer;
+		to_type = strtod(context.token.value.data, &pointer);
+		if (context.token.value.data == pointer)
+			return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
+		return Error::NoError;
+	}
+
+	static inline void serializeToken(const double &d, Token &token, Serializer &serializer)
+	{
+		//char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+		char buf[1 + (308 + 1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+
+		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
+
+		if (size < 0) {
+			fprintf(stderr, "error serializing float token\n");
+			return;
+		}
+
+		token.value_type = Type::Number;
+		token.value.data = buf;
+		token.value.size = size;
+		serializer.write(token);
+	}
+};
+
+
+template<>
+struct TokenParser<float, float>
+{
+	static inline Error unpackToken(float &to_type, ParseContext &context)
+	{
+		char *pointer;
+		to_type = strtof(context.token.value.data, &pointer);
+		if (context.token.value.data == pointer)
+			return Error::FailedToParseFloat;
+		return Error::NoError;
+	}
+
+	static inline void serializeToken(const float &f, Token &token, Serializer &serializer)
+	{
+		//char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+		char buf[1/*'-'*/ + (38 + 1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", f);
+		if (size < 0) {
+			fprintf(stderr, "error serializing float token\n");
+			return;
+		}
+
+		token.value_type = Type::Number;
+		token.value.data = buf;
+		token.value.size = size;
+		serializer.write(token);
+	}
+};
+
+template<>
+struct TokenParser<int, int>
+{
+	static inline Error unpackToken(int &to_type, ParseContext &context)
+	{
+		char *pointer;
+		to_type = strtol(context.token.value.data, &pointer, 10);
+		if (context.token.value.data == pointer)
+			return Error::FailedToParseInt;
+		return Error::NoError;
+	}
+
+	static inline void serializeToken(const int&d, Token &token, Serializer &serializer)
+	{
+		char buf[11];
+		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
+		if (size < 0) {
+			fprintf(stderr, "error serializing int token\n");
+			return;
+		}
+
+		token.value_type = Type::Number;
+		token.value.data = buf;
+		token.value.size = size;
+		serializer.write(token);
+	}
+};
+
+template<>
+struct TokenParser<unsigned int, unsigned int>
+{
+public:
+    static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
+    {
+        char *pointer;
+        to_type = strtoul(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const unsigned int &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[12];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+struct TokenParser<int64_t, int64_t>
+{
+public:
+    static inline Error unpackToken(int64_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
+        char *pointer;
+        to_type = strtoll(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static void serializeToken(const int64_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%lld", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+struct TokenParser<uint64_t, uint64_t>
+{
+public:
+    static inline Error unpackToken(uint64_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long unsinged int");
+        char *pointer;
+        to_type = strtoull(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const uint64_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%llu", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+struct TokenParser<int16_t, int16_t>
+{
+public:
+    static inline Error unpackToken(int16_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
+        char *pointer;
+        to_type = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const int16_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<>
+struct TokenParser<uint16_t, uint16_t>
+{
+public:
+    static inline Error unpackToken(uint16_t &to_type, ParseContext &context)
+    {
+        static_assert(sizeof(to_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long unsinged int");
+        char *pointer;
+        to_type = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const uint16_t &from_type, Token &token, Serializer &serializer)
+    {
+        static_assert(sizeof(from_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long int");
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
+
+};
+
+template<typename T>
+struct TokenParser<Optional<T>, Optional<T>>
+{
+public:
+    static inline Error unpackToken(Optional<T> &to_type, ParseContext &context)
+    {
+        return TokenParser<T,T>::unpackToken(to_type.data, context);
+    }
+
+    static inline void serializeToken(const Optional<T> &opt, Token &token, Serializer &serializer)
+    {
+        TokenParser<T,T>::serializeToken(opt(), token, serializer);
+    }
+};
+
+template<typename T>
+struct TokenParser<OptionalChecked<T>, OptionalChecked<T>>
+{
+public:
+    static inline Error unpackToken(OptionalChecked<T> &to_type, ParseContext &context)
+    {
+        to_type.assigned = true;
+        return TokenParser<T,T>::unpackToken(to_type.data, context);
+    }
+
+    static inline void serializeToken(const OptionalChecked<T> &opt, Token &token, Serializer &serializer)
+    {
+        if (opt.assigned)
+            TokenParser<T,T>::serializeToken(opt(), token, serializer);
+    }
+};
+
+template<typename T>
+struct TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>
+{
+public:
+    static inline Error unpackToken(std::unique_ptr<T> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != Type::Null) {
+            to_type.reset(new T());
+            return TokenParser<T,T>::unpackToken(*to_type.get(), context);
+        }
+        to_type.reset(nullptr);
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const std::unique_ptr<T> &unique, Token &token, Serializer &serializer)
+    {
+        if (unique) {
+            TokenParser<T,T>::serializeToken(*unique.get(), token, serializer);
+        } else {
+            const char nullChar[] = "null";
+            token.value_type = Type::Null;
+            token.value = DataRef::asDataRef(nullChar);
+            serializer.write(token);
+        }
+    }
+
+};
+
+template<>
+struct TokenParser<bool, bool>
+{
+	static inline Error unpackToken(bool &to_type, ParseContext &context)
+	{
+		if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
+			to_type = true;
+		else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
+			to_type = false;
+		else
+			return Error::FailedToParseBoolen;
+
+		return Error::NoError;
+	}
+
+	static inline void serializeToken(const bool &b, Token &token, Serializer &serializer)
+	{
+		const char trueChar[] = "true";
+		const char falseChar[] = "false";
+		token.value_type = Type::Bool;
+		if (b) {
+			token.value = DataRef::asDataRef(trueChar);
+		}
+		else {
+			token.value = DataRef::asDataRef(falseChar);
+		}
+		serializer.write(token);
+	}
+};
+
+template<typename T>
+struct TokenParser<std::vector<T>, std::vector<T>>
+{
+public:
+    static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart)
+            return Error::ExpectedArrayStart;
+        Error error = context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
+        while(context.token.value_type != JT::Type::ArrayEnd)
+        {
+            to_type.push_back(T());
+            error = TokenParser<T,T>::unpackToken(to_type.back(), context);
+            if (error != JT::Error::NoError)
+                break;
+            error = context.nextToken();
+            if (error != JT::Error::NoError)
+                break;
+        }
+
+        return error;
+    }
+
+    static inline void serializeToken(const std::vector<T> &vec, Token &token, Serializer &serializer)
+    {
+        token.value_type = Type::ArrayStart;
+        token.value = DataRef::asDataRef("[");
+        serializer.write(token);
+
+        token.name = DataRef::asDataRef("");
+
+        for (auto &index : vec)
+        {
+            TokenParser<T,T>::serializeToken(index, token, serializer);
+        }
+
+        token.name = DataRef::asDataRef("");
+
+        token.value_type = Type::ArrayEnd;
+        token.value = DataRef::asDataRef("]");
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TokenParser<SilentString, SilentString>
+{
+    static inline Error unpackToken(SilentString &to_type, ParseContext &context)
+    {
+        return TokenParser<std::string, std::string>::unpackToken(to_type, context);
+    }
+    static inline void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
+    {
+        if (str.size()) {
+            TokenParser<std::string, std::string>::serializeToken(str, token, serializer);
+        }
+    }
+};
+
+template<typename T>
+struct TokenParser<SilentVector<T>, SilentVector<T>>
+{
+public:
+    static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
+    {
+        return TokenParser<std::vector<T>, std::vector<T>>::unpackToken(to_type, context);
+    }
+
+    static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
+    {
+        if (vec.size()) {
+            TokenParser<std::vector<T>, std::vector<T>>::serializeToken(vec, token, serializer);
+        }
+    }
+};
+
+template<typename T>
+struct TokenParser<SilentUniquePtr<T>, SilentUniquePtr<T>>
+{
+public:
+    static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
+    {
+        return TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::unpackToken(to_type, context);
+    }
+
+    static inline void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
+    {
+        if (ptr) {
+            TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
+        }
+    }
+};
+
+template<>
+struct TokenParser<std::vector<Token>, std::vector<Token>>
+{
+public:
+    static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart &&
+            context.token.value_type != JT::Type::ObjectStart)
+            return Error::ExpectedObjectStart;
+        to_type.push_back(context.token);
+        bool buffer_change = false;
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        {
+            buffer_change = true;
+        });
+
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level && buffer_change == false) {
+            error = context.nextToken();
+            to_type.push_back(context.token);
+            if (context.token.value_type == Type::ArrayStart || context.token.value_type == Type::ObjectStart)
+                level++;
+            else if (context.token.value_type == Type::ArrayEnd || context.token.value_type == Type::ObjectEnd)
+                level--;
+        }
+        if (buffer_change)
+            return Error::NonContigiousMemory;
+
+        return error;
+    }
+
+    static inline void serializeToken(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
+    {
+        for (auto &t : from_type) {
+            token = t;
+            serializer.write(token);
+        }
+    }
+};
+
+template<>
+struct TokenParser<JsonTokens, JsonTokens>
+{
+public:
+    static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
+    {
+        return TokenParser<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
+    }
+    static inline void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
+    {
+        return TokenParser<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
+    }
+};
+
+template<>
+struct TokenParser<JsonArrayRef,JsonArrayRef>
+{
+	static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
+	{
+		if (context.token.value_type != JT::Type::ArrayStart)
+			return Error::ExpectedArrayStart;
+
+		bool buffer_change = false;
+		auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+		{
+			buffer_change = true;
+		});
+
+		size_t level = 1;
+		Error error = Error::NoError;
+		while (error == JT::Error::NoError && level && buffer_change == false) {
+			error = context.nextToken();
+			if (context.token.value_type == Type::ArrayStart)
+				level++;
+			else if (context.token.value_type == Type::ArrayEnd)
+				level--;
+		}
+		if (buffer_change)
+			return Error::NonContigiousMemory;
+
+		return error;
+	}
+
+	static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
+	{
+		serializer.write(from_type.data, from_type.size);
+	}
+};
+
+template<>
+struct TokenParser<JsonArray,JsonArray>
+{
+	static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
+	{
+		if (context.token.value_type != JT::Type::ArrayStart)
+			return Error::ExpectedArrayStart;
+
+		context.tokenizer.copyFromValue(context.token, to_type);
+
+		size_t level = 1;
+		Error error = Error::NoError;
+		while (error == JT::Error::NoError && level) {
+			error = context.nextToken();
+			if (context.token.value_type == Type::ArrayStart)
+				level++;
+			else if (context.token.value_type == Type::ArrayStart)
+				level--;
+		}
+
+		context.tokenizer.copyIncludingValue(context.token, to_type);
+
+		return error;
+	}
+
+	static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
+	{
+		serializer.write(from_type);
+	}
+};
+
+template<>
+struct TokenParser<JsonObjectRef, JsonObjectRef> {
+	static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
+	{
+		if (context.token.value_type != JT::Type::ObjectStart)
+			return Error::ExpectedObjectStart;
+
+		bool buffer_change = false;
+		auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+		{
+			buffer_change = true;
+		});
+
+		size_t level = 1;
+		Error error = Error::NoError;
+		while (error == JT::Error::NoError && level && buffer_change == false) {
+			error = context.nextToken();
+			if (context.token.value_type == Type::ObjectStart)
+				level++;
+			else if (context.token.value_type == Type::ObjectEnd)
+				level--;
+		}
+		if (buffer_change)
+			return Error::NonContigiousMemory;
+
+		return error;
+	}
+
+	static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
+	{
+		serializer.write(from_type.data, from_type.size);
+	}
+};
+
+template<>
+struct TokenParser<JsonObject, JsonObject>
+{
+	static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
+	{
+		if (context.token.value_type != JT::Type::ObjectStart)
+			return Error::ExpectedObjectStart;
+
+		context.tokenizer.copyFromValue(context.token, to_type);
+
+		size_t level = 1;
+		Error error = Error::NoError;
+		while (error == JT::Error::NoError && level) {
+			error = context.nextToken();
+			if (context.token.value_type == Type::ObjectStart)
+				level++;
+			else if (context.token.value_type == Type::ObjectEnd)
+				level--;
+		}
+
+		context.tokenizer.copyIncludingValue(context.token, to_type);
+
+		return error;
+	}
+
+	static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
+	{
+		serializer.write(from_type);
+	}
+};
 } //Namespace
 #endif //JSON_TOOLS_H
