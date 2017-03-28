@@ -254,7 +254,10 @@ public :
 static void typeDefForQual(Extractor &extractor, clang::QualType type, JT::TypeDef &json_type)
 {
     if (type->isReferenceType())
-        type = type->getPointeeType(); 
+        type = type->getPointeeType();
+
+    if (const clang::ElaboratedType *elaborateType = clang::dyn_cast<const clang::ElaboratedType>(type.getTypePtr()))
+		type = elaborateType->getNamedType();
 
     type.removeLocalConst();
     if (TagDecl *tag_decl = type->getAsTagDecl()) {
