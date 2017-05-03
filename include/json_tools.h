@@ -30,11 +30,11 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <memory>
-#include <tuple>
 #include <assert.h>
 #include <atomic>
 
 #ifdef _MSC_VER
+#pragma warning(disable : 4503)
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
@@ -1497,6 +1497,128 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
+namespace Internal
+{
+	template<size_t...> struct Sequence { using type = Sequence; };
+
+	template<typename A, typename B> struct Merge;
+	template<size_t ... Is1, size_t ... Is2>
+	struct Merge<Sequence<Is1...>, Sequence<Is2...>>
+	{
+		using type = Sequence<Is1..., (sizeof...(Is1)+Is2)...>;
+	};
+
+	template<size_t size> struct GenSequence;
+	template<> struct GenSequence<0> { using type = Sequence<>; };
+	template<> struct GenSequence<1> { using type = Sequence<0>; };
+	template<size_t size>
+	struct GenSequence
+	{
+		using type = typename Merge<typename GenSequence<size / size_t(2)>::type, typename GenSequence<size - size / size_t(2)>::type>::type;
+	};
+
+	template<size_t index, typename T> struct Element
+	{
+		Element()
+			: data()
+		{
+
+		}
+
+		Element(const T &t)
+			: data(t)
+		{}
+		using type = T;
+		T data;
+	};
+
+	template<typename A, typename ...Bs> struct TupleImpl;
+
+	template<size_t ...indices, typename ...Ts>
+	struct TupleImpl<Sequence<indices...>, Ts...> : public Element<indices, Ts>...
+	{
+		TupleImpl()
+			: Element<indices, Ts>()...
+		{}
+
+		TupleImpl(Ts ...args)
+			: Element<indices, Ts>(args)...
+		{}
+	};
+
+	template<size_t I, typename ...Ts>
+	struct TypeAt
+	{
+		template<typename T>
+		static Element<I, T> deduce(Element<I, T>);
+
+		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
+		using element = decltype(deduce(tuple_impl()));
+		using type = typename element::type;
+	};
+
+	template<typename ...Ts>
+	struct Tuple
+	{
+		Tuple()
+			: impl()
+		{}
+
+		Tuple(Ts ...args)
+			: impl(args...)
+		{}
+
+		TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...> impl;
+		static JT_CONSTEXPR const size_t size = sizeof...(Ts);
+
+		template<size_t Index>
+		const typename TypeAt<Index, Ts...>::type &get() const
+		{
+			return static_cast<const typename TypeAt<Index, Ts...>::element&>(impl).data;
+		}
+
+		template<size_t Index>
+		typename TypeAt<Index, Ts...>::type &get()
+		{
+			return static_cast<typename TypeAt<Index, Ts...>::element&>(impl).data;
+		}
+	};
+
+	template<size_t I, typename ...Ts>
+	struct TypeAt<I, const Tuple<Ts...>>
+	{
+		template<typename T>
+		static Element<I, T> deduce(Element<I, T>);
+
+		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
+		using element = decltype(deduce(tuple_impl()));
+		using type = typename element::type;
+	};
+
+	template<size_t I, typename ...Ts>
+	struct TypeAt<I, Tuple<Ts...>>
+	{
+		template<typename T>
+		static Element<I, T> deduce(Element<I, T>);
+
+		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
+		using element = decltype(deduce(tuple_impl()));
+		using type = typename element::type;
+	};
+
+	template<>
+	struct Tuple<>
+	{
+		static JT_CONSTEXPR const size_t size = 0;
+	};
+
+	template<typename ...Ts>
+	Tuple<Ts...> makeTuple(Ts ...args)
+	{
+		return Tuple<Ts...>(args...);
+	}
+}
+
 template<typename T>
 struct Optional
 {
@@ -1705,24 +1827,24 @@ struct ParseContext
 
 #define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(std::string(#super))
 
-#define JT_SUPER_CLASSES(...) std::make_tuple(__VA_ARGS__)
+#define JT_SUPER_CLASSES(...) JT::Internal::makeTuple(__VA_ARGS__)
 
 #define JT_STRUCT(...) \
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_data_info() \
-       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
-       static const decltype(std::make_tuple()) &jt_static_meta_super_info() \
-       { static auto ret = std::make_tuple(); return ret; } \
+       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::Internal::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JT::Internal::makeTuple(); return ret; } \
     };
 
 #define JT_STRUCT_WITH_SUPER(super_list, ...) \
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_data_info() \
-       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     };
@@ -1862,7 +1984,7 @@ namespace Internal {
     {
         using Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        return std::tuple_size<Members>::value + StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<SuperMeta>::value>::membersInSuperClasses();
+        return Members::size + StartSuperRecursion<T, PAGE + Members::size, SuperMeta::size>::membersInSuperClasses();
     }
 
     template<typename T, size_t PAGE>
@@ -1893,7 +2015,7 @@ namespace Internal {
     {
         static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
         {
-            Error error = unpackMember(to_type, std::get<INDEX>(members), context, PAGE + INDEX, assigned_members, super_name);
+            Error error = unpackMember(to_type, members.get<INDEX>(), context, PAGE + INDEX, assigned_members, super_name);
             if (error != Error::MissingPropertyMember)
                 return error;
 
@@ -1902,7 +2024,7 @@ namespace Internal {
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
         {
-            Error memberError = verifyMember(std::get<INDEX>(members), PAGE + INDEX, assigned_members, missing_members, super_name);
+            Error memberError = verifyMember(members.get<INDEX>(), PAGE + INDEX, assigned_members, missing_members, super_name);
             Error error = MemberChecker<T, Members, PAGE, INDEX - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
             if (memberError != Error::NoError)
                 return memberError;
@@ -1910,7 +2032,7 @@ namespace Internal {
         }
         static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer, const char *super_name)
         {
-            serializeMember(from_type, std::get<std::tuple_size<Members>::value - INDEX - 1>(members), token, serializer, super_name);
+            serializeMember(from_type, members.get<Members::size - INDEX - 1>(), token, serializer, super_name);
             MemberChecker<T, Members, PAGE, INDEX - 1>::serializeMembers(from_type, members, token, serializer, super_name);
         }
     };
@@ -1920,19 +2042,19 @@ namespace Internal {
     {
         static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
         {
-            Error error = unpackMember(to_type, std::get<0>(members), context, PAGE, assigned_members, super_name);
+            Error error = unpackMember(to_type, members.get<0>(), context, PAGE, assigned_members, super_name);
             if (error != Error::MissingPropertyMember)
                 return error;
 
             using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            return StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::start(to_type, context, assigned_members);
+            return StartSuperRecursion<T, PAGE + Members::size, Super::size>::start(to_type, context, assigned_members);
         }
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
         {
-            Error memberError = verifyMember(std::get<0>(members), PAGE, assigned_members, missing_members, super_name);
+            Error memberError = verifyMember(members.get<0>(), PAGE, assigned_members, missing_members, super_name);
             using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            Error superError = StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::verifyMembers(assigned_members, missing_members);
+            Error superError = StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(assigned_members, missing_members);
             if (memberError != Error::NoError)
                 return memberError;
             return superError;
@@ -1940,9 +2062,9 @@ namespace Internal {
 
         static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer, const char *super_name)
         {
-            serializeMember(from_type, std::get<std::tuple_size<Members>::value - 1>(members), token, serializer, super_name);
+            serializeMember(from_type, members.get<Members::size - 1>(), token, serializer, super_name);
             using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            StartSuperRecursion<T, PAGE + std::tuple_size<Members>::value, std::tuple_size<Super>::value>::serializeMembers(from_type, token, serializer);
+            StartSuperRecursion<T, PAGE + Members::size, Super::size>::serializeMembers(from_type, token, serializer);
 
         }
     };
@@ -1951,12 +2073,12 @@ namespace Internal {
     Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        using Super = typename JT::Internal::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-        Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
+        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<INDEX>().name.c_str();
+        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
         if (error != Error::MissingPropertyMember)
             return error;
 #if JT_HAVE_CONSTEXPR
@@ -1970,12 +2092,12 @@ namespace Internal {
     Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-        Error error = MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
+        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<INDEX>().name.c_str();
+        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
 #if JT_HAVE_CONSTEXPR
         Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
 #else
@@ -1990,7 +2112,7 @@ namespace Internal {
     size_t JT_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
 #if JT_HAVE_CONSTEXPR
         return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
 #else
@@ -2002,11 +2124,11 @@ namespace Internal {
     void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Token &token, Serializer &serializer)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = std::get<INDEX>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-        MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<INDEX>().name.c_str();
+        MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
 #if JT_HAVE_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
 #else
@@ -2020,35 +2142,35 @@ namespace Internal {
         static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
         {
             using Meta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            using Super = typename std::tuple_element<0, Meta>::type::type;
+            using Super = typename TypeAt<0, Meta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-            return MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
+            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<0>().name.c_str();
+            return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+            using Super = typename TypeAt<0, SuperMeta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-            return MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
+            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<0>().name.c_str();
+            return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
         JT_CONSTEXPR static size_t membersInSuperClasses()
         {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+            using Super = typename TypeAt<0, SuperMeta>::type::type;
             return memberCount<Super, PAGE>();
         }
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
         {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+            using Super = typename TypeAt<0, SuperMeta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = std::get<0>(T::template JsonToolsBase<T>::jt_static_meta_super_info()).name.c_str();
-            MemberChecker<Super, Members, PAGE, std::tuple_size<Members>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().get<0>().name.c_str();
+            MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
         }
     };
 
@@ -2315,18 +2437,18 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
-        { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
-       static const decltype(std::make_tuple()) &jt_static_meta_super_info() \
-       { static auto ret = std::make_tuple(); return ret; } \
+        static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+        { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::Internal::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JT::Internal::makeTuple(); return ret; } \
     };
 
 #define JT_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-       static const decltype(std::make_tuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
-       { static auto ret = std::make_tuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     };
@@ -2581,7 +2703,7 @@ namespace Internal {
     {
         static Error call(T &container, CallFunctionContext &context, Functions &functions)
         {
-            auto function = std::get<INDEX>(functions);
+            auto function = functions.get<INDEX>();
             Error error = matchAndCallFunction(container, context, function);
             if (error == Error::NoError)
                 return Error::NoError;
@@ -2596,14 +2718,14 @@ namespace Internal {
     {
         static Error call(T &container, CallFunctionContext &context, Functions &functions)
         {
-            auto function = std::get<0>(functions);
+            auto function = functions.get<0>();
             Error error = matchAndCallFunction(container, context, function);
             if (error == Error::NoError)
                 return Error::NoError;
             if (error != Error::MissingPropertyMember)
                 return error;
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
-            return StartFunctionalSuperRecursion<T, std::tuple_size<SuperMeta>::value>::callFunction(container, context);
+            return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context);
         }
     };
 
@@ -2664,7 +2786,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
-        Error error = Internal::FunctionObjectTraverser<T, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, *this,  functions);
+        Error error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions);
         if (error != Error::NoError) {
             assert(error == parse_context.error || parse_context.error == Error::NoError);
             parse_context.error = error;
@@ -2716,9 +2838,9 @@ namespace Internal {
     Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
-        using Super = typename std::tuple_element<INDEX, SuperMeta>::type::type;
+        using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-        Error error = FunctionObjectTraverser<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
+        Error error = FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions);
         if (error != Error::MissingPropertyMember)
             return error;
 
@@ -2731,9 +2853,9 @@ namespace Internal {
         static Error callFunction(T &container, CallFunctionContext &context)
         {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
-            using Super = typename std::tuple_element<0, SuperMeta>::type::type;
+            using Super = typename TypeAt<0, SuperMeta>::type::type;
             auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-            return FunctionObjectTraverser<Super, decltype(functions), std::tuple_size<decltype(functions)>::value - 1>::call(container, context, functions);
+            return FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions);
         }
     };
 }
@@ -2759,7 +2881,7 @@ public:
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
-            error = Internal::MemberChecker<T, decltype(members), 0 ,std::tuple_size<decltype(members)>::value - 1>::unpackMembers(to_type, members, context, assigned_members, "");
+            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, assigned_members, "");
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
                 if (context.allow_missing_members) {
@@ -2779,7 +2901,7 @@ public:
 
         }
         std::vector<std::string> unassigned_required_members;
-        error = Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
+        error = Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
         if (error == Error::UnassignedRequiredMember) {
             context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
             if (context.allow_unnasigned_required__members)
@@ -2796,7 +2918,7 @@ public:
         token.value = DataRef::asDataRef(objectStart);
         serializer.write(token);
         auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-        Internal::MemberChecker<T, decltype(members), 0, std::tuple_size<decltype(members)>::value - 1>::serializeMembers(from_type, members, token, serializer, "");
+        Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::serializeMembers(from_type, members, token, serializer, "");
         token.name.size = 0;
         token.name.data = "";
         token.name_type = Type::String;
