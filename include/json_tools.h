@@ -1497,6 +1497,7 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
+//Tuple start
 namespace Internal
 {
 	template<size_t...> struct Sequence { using type = Sequence; };
@@ -1545,79 +1546,80 @@ namespace Internal
 			: Element<indices, Ts>(args)...
 		{}
 	};
-
-	template<size_t I, typename ...Ts>
-	struct TypeAt
-	{
-		template<typename T>
-		static Element<I, T> deduce(Element<I, T>);
-
-		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
-		using element = decltype(deduce(tuple_impl()));
-		using type = typename element::type;
-	};
-
-	template<typename ...Ts>
-	struct Tuple
-	{
-		Tuple()
-			: impl()
-		{}
-
-		Tuple(Ts ...args)
-			: impl(args...)
-		{}
-
-		TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...> impl;
-		static JT_CONSTEXPR const size_t size = sizeof...(Ts);
-
-		template<size_t Index>
-		const typename TypeAt<Index, Ts...>::type &get() const
-		{
-			return static_cast<const typename TypeAt<Index, Ts...>::element&>(impl).data;
-		}
-
-		template<size_t Index>
-		typename TypeAt<Index, Ts...>::type &get()
-		{
-			return static_cast<typename TypeAt<Index, Ts...>::element&>(impl).data;
-		}
-	};
-
-	template<size_t I, typename ...Ts>
-	struct TypeAt<I, const Tuple<Ts...>>
-	{
-		template<typename T>
-		static Element<I, T> deduce(Element<I, T>);
-
-		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
-		using element = decltype(deduce(tuple_impl()));
-		using type = typename element::type;
-	};
-
-	template<size_t I, typename ...Ts>
-	struct TypeAt<I, Tuple<Ts...>>
-	{
-		template<typename T>
-		static Element<I, T> deduce(Element<I, T>);
-
-		using tuple_impl = TupleImpl<typename GenSequence<sizeof...(Ts)>::type, Ts...>;
-		using element = decltype(deduce(tuple_impl()));
-		using type = typename element::type;
-	};
-
-	template<>
-	struct Tuple<>
-	{
-		static JT_CONSTEXPR const size_t size = 0;
-	};
-
-	template<typename ...Ts>
-	Tuple<Ts...> makeTuple(Ts ...args)
-	{
-		return Tuple<Ts...>(args...);
-	}
 }
+
+template<size_t I, typename ...Ts>
+struct TypeAt
+{
+        template<typename T>
+        static Internal::Element<I, T> deduce(Internal::Element<I, T>);
+
+        using tuple_impl = Internal::TupleImpl<typename Internal::GenSequence<sizeof...(Ts)>::type, Ts...>;
+        using element = decltype(deduce(tuple_impl()));
+        using type = typename element::type;
+};
+
+template<typename ...Ts>
+struct Tuple
+{
+        Tuple()
+                : impl()
+        {}
+
+        Tuple(Ts ...args)
+                : impl(args...)
+        {}
+
+        Internal::TupleImpl<typename Internal::GenSequence<sizeof...(Ts)>::type, Ts...> impl;
+        static JT_CONSTEXPR const size_t size = sizeof...(Ts);
+
+        template<size_t Index>
+        const typename TypeAt<Index, Ts...>::type &get() const
+        {
+                return static_cast<const typename TypeAt<Index, Ts...>::element&>(impl).data;
+        }
+
+        template<size_t Index>
+        typename TypeAt<Index, Ts...>::type &get()
+        {
+                return static_cast<typename TypeAt<Index, Ts...>::element&>(impl).data;
+        }
+};
+
+template<size_t I, typename ...Ts>
+struct TypeAt<I, const Tuple<Ts...>>
+{
+        template<typename T>
+        static Internal::Element<I, T> deduce(Internal::Element<I, T>);
+
+        using tuple_impl = Internal::TupleImpl<typename Internal::GenSequence<sizeof...(Ts)>::type, Ts...>;
+        using element = decltype(deduce(tuple_impl()));
+        using type = typename element::type;
+};
+
+template<size_t I, typename ...Ts>
+struct TypeAt<I, Tuple<Ts...>>
+{
+        template<typename T>
+        static Internal::Element<I, T> deduce(Internal::Element<I, T>);
+
+        using tuple_impl = Internal::TupleImpl<typename Internal::GenSequence<sizeof...(Ts)>::type, Ts...>;
+        using element = decltype(deduce(tuple_impl()));
+        using type = typename element::type;
+};
+
+template<>
+struct Tuple<>
+{
+        static JT_CONSTEXPR const size_t size = 0;
+};
+
+template<typename ...Ts>
+Tuple<Ts...> makeTuple(Ts ...args)
+{
+        return Tuple<Ts...>(args...);
+}
+//Tuple end
 
 template<typename T>
 struct Optional
@@ -1827,24 +1829,24 @@ struct ParseContext
 
 #define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(std::string(#super))
 
-#define JT_SUPER_CLASSES(...) JT::Internal::makeTuple(__VA_ARGS__)
+#define JT_SUPER_CLASSES(...) JT::makeTuple(__VA_ARGS__)
 
 #define JT_STRUCT(...) \
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
-       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::Internal::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::Internal::makeTuple(); return ret; } \
+       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JT::makeTuple(); return ret; } \
     };
 
 #define JT_STRUCT_WITH_SUPER(super_list, ...) \
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
-       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     };
@@ -2073,7 +2075,7 @@ namespace Internal {
     Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-        using Super = typename JT::Internal::TypeAt<INDEX, SuperMeta>::type::type;
+        using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
@@ -2437,18 +2439,18 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
-        { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::Internal::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::Internal::makeTuple(); return ret; } \
+        static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JT::makeTuple(); return ret; } \
     };
 
 #define JT_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-       static const decltype(JT::Internal::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
-       { static auto ret = JT::Internal::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     };
@@ -3569,9 +3571,9 @@ namespace Internal
 template<size_t INDEX, typename ...Ts>
 struct TupleTokenParser
 {
-    static inline Error unpackToken(JT::Internal::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
     {
-        using Type = typename JT::Internal::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
         Error error = TokenParser<Type, Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
         if (error != JT::Error::NoError)
             return error;
@@ -3581,9 +3583,9 @@ struct TupleTokenParser
         return TupleTokenParser<INDEX - 1, Ts...>::unpackToken(to_type, context);
     }
 
-    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
-        using Type = typename JT::Internal::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
         TokenParser<Type, Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
         TupleTokenParser<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
     }
@@ -3593,21 +3595,21 @@ struct TupleTokenParser
 template<typename ...Ts>
 struct TupleTokenParser<0, Ts...>
 {
-    static inline Error unpackToken(JT::Internal::Tuple<Ts...>, ParseContext &context)
+    static inline Error unpackToken(JT::Tuple<Ts...>, ParseContext &context)
     {
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
     }
 };
 }
 
 template<typename ...Ts>
-struct TokenParser<JT::Internal::Tuple<Ts...>, JT::Internal::Tuple<Ts...>>
+struct TokenParser<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
 {
-    static inline Error unpackToken(JT::Internal::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
     {
         if (context.token.value_type != JT::Type::ArrayStart)
             return Error::ExpectedArrayStart;
@@ -3622,7 +3624,7 @@ struct TokenParser<JT::Internal::Tuple<Ts...>, JT::Internal::Tuple<Ts...>>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef::asDataRef("[");

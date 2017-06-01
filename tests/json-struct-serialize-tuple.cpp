@@ -5,7 +5,7 @@
 
 struct Foo
 {
-    JT::Internal::Tuple<int, std::string, float> data;
+    JT::Tuple<int, std::string, float> data;
     JT_STRUCT(JT_MEMBER(data));
 };
 
