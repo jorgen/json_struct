@@ -3563,5 +3563,80 @@ struct TokenParser<JsonObject, JsonObject>
 		serializer.write(from_type);
 	}
 };
+
+namespace Internal
+{
+template<size_t INDEX, typename ...Ts>
+struct TupleTokenParser
+{
+    static inline Error unpackToken(JT::Internal::Tuple<Ts...> &to_type, ParseContext &context)
+    {
+        using Type = typename JT::Internal::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        Error error = TokenParser<Type, Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
+        if (error != JT::Error::NoError)
+            return error;
+        error = context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
+        return TupleTokenParser<INDEX - 1, Ts...>::unpackToken(to_type, context);
+    }
+
+    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    {
+        using Type = typename JT::Internal::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        TokenParser<Type, Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
+        TupleTokenParser<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
+    }
+
+};
+
+template<typename ...Ts>
+struct TupleTokenParser<0, Ts...>
+{
+    static inline Error unpackToken(JT::Internal::Tuple<Ts...>, ParseContext &context)
+    {
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    {
+    }
+};
+}
+
+template<typename ...Ts>
+struct TokenParser<JT::Internal::Tuple<Ts...>, JT::Internal::Tuple<Ts...>>
+{
+    static inline Error unpackToken(JT::Internal::Tuple<Ts...> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart)
+            return Error::ExpectedArrayStart;
+        Error error = context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
+        error = JT::Internal::TupleTokenParser<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
+        if (error != JT::Error::NoError)
+            return error;
+        if (context.token.value_type != JT::Type::ArrayEnd)
+            return Error::ExpectedArrayEnd;
+        return Error::NoError;
+    }
+
+    static inline void serializeToken(const JT::Internal::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    {
+        token.value_type = Type::ArrayStart;
+        token.value = DataRef::asDataRef("[");
+        serializer.write(token);
+
+        token.name = DataRef::asDataRef("");
+
+        JT::Internal::TupleTokenParser<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
+        token.name = DataRef::asDataRef("");
+
+        token.value_type = Type::ArrayEnd;
+        token.value = DataRef::asDataRef("]");
+        serializer.write(token);
+    }
+};
 } //Namespace
 #endif //JSON_TOOLS_H
