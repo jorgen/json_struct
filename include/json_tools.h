@@ -1784,7 +1784,7 @@ struct IsOptionalType {
     template <typename>
     static JT_CONSTEXPR no& test_in_optional(...);
 
-    static JT_CONSTEXPR const bool value = sizeof(test_in_optional<T>(nullptr)) == sizeof(yes);
+    static JT_CONSTEXPR const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
 };
 
 template <typename T>
@@ -1863,7 +1863,7 @@ namespace Internal {
         template <typename>
         static JT_CONSTEXPR no& test_in_base(...);
 
-        static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(nullptr)) == sizeof(yes);
+        static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(0)) == sizeof(yes);
     };
 
     template<typename T, typename U, size_t NAME_SIZE>
