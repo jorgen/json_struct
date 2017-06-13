@@ -4,13 +4,13 @@
 
 ClassVisitor::ClassVisitor(clang::ASTContext *context)
 	: clang::RecursiveASTVisitor<ClassVisitor>()
-	, _context(context)
+	//, _context(context)
 {
 }
 
 TemplateVisitor::TemplateVisitor(clang::ASTContext *context)
     : clang::RecursiveASTVisitor<TemplateVisitor>()
-    , _context(context)
+    //, _context(context)
 {
 }
 

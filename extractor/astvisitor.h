@@ -89,7 +89,7 @@ public:
         return true;
     }
 private:
-	clang::ASTContext *_context;
+	//clang::ASTContext *_context;
 };
 
 

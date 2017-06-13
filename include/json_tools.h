@@ -198,8 +198,8 @@ public:
     {}
 
     RefCounter(size_t index, Internal::CallbackContainer<T> *callbackContainer)
-        : index(index)
-        , callbackContainer(callbackContainer)
+        : callbackContainer(callbackContainer)
+        , index(index)
     {
         inc();
     }
@@ -396,7 +396,6 @@ private:
     size_t line_context;
     size_t line_range_context;
     size_t range_context;
-    size_t callback_id;
     Internal::IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
     Internal::CallbackContainer<void(const char *)> release_callbacks;
@@ -498,8 +497,8 @@ private:
 
 inline Token::Token()
     : name_type(Type::String)
-    , name()
     , value_type(Type::String)
+    , name()
     , value()
 {
 
@@ -517,7 +516,6 @@ inline Tokenizer::Tokenizer()
     , line_context(4)
     , line_range_context(256)
     , range_context(38)
-    , callback_id(0)
     , parsed_data_vector(nullptr)
 {}
 inline Tokenizer::~Tokenizer()
@@ -888,7 +886,6 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
-        const char *data_at = json_data.data + end;
         switch(*(json_data.data + end)) {
         case ',':
             expecting_prop_or_annonymous_data = true;
@@ -1736,7 +1733,7 @@ struct JsonMeta
     bool is_array : 1;
 };
 
-static std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
+static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 {
     std::vector<JsonMeta> meta;
     meta.reserve(tokens.size() / 4);
@@ -2077,7 +2074,6 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
         using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
-        using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
         const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
@@ -2096,7 +2092,6 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
-        using T_Members = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
         const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
@@ -2129,7 +2124,6 @@ namespace Internal {
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
         MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
 #if JT_HAVE_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
@@ -2171,7 +2165,6 @@ namespace Internal {
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.c_str();
             MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
         }
     };
@@ -2565,7 +2558,7 @@ namespace Internal {
         }
     };
 
-    static void checkValidVoidParameter(CallFunctionContext &context)
+    static inline void checkValidVoidParameter(CallFunctionContext &context)
     {
         if (context.parse_context.token.value_type != Type::Null
             && context.parse_context.token.value_type != Type::ArrayStart
@@ -2731,7 +2724,7 @@ namespace Internal {
         }
     };
 
-    static void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
+    static inline void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
     {
         if (executionState.error == Error::NoError) {
             executionState.error = context.error;

@@ -58,6 +58,6 @@ int main(int argc, const char **argv)
     ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
     int tool_run = tool.run(newFrontendActionFactory<RootFrontendAction>().get());
-    fprintf(stdout, "\n%s\n", JT::serializeStruct(global_extractor.function_objects).c_str());
+    fprintf(stdout, "%d\n\n%s\n", tool_run, JT::serializeStruct(global_extractor.function_objects).c_str());
     return 0;
 }

@@ -104,5 +104,6 @@ namespace JT
 		name_space = other.name_space;
 		record_type.reset(new Record(*other.record_type.get()));
 		template_parameters = other.template_parameters;
+                return *this;
 	}
 }

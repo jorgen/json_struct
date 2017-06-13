@@ -409,7 +409,6 @@ public:
 
     void run(const MatchFinder::MatchResult &Result) override
     {
-        const CallExpr *func = Result.Nodes.getNodeAs<CallExpr>("func");
         const CXXRecordDecl *callObject = Result.Nodes.getNodeAs<CXXRecordDecl>("callObject");
         extractor.function_objects.push_back(JT::FunctionObject());
         JT::FunctionObject &functionObject = extractor.function_objects.back();
