@@ -14,8 +14,9 @@ add_executable(members-size-test members-size-test.cpp)
 add_executable(compiler-test compiler-test.cpp)
 add_executable(meta-for-tokens meta-for-tokens.cpp)
 add_executable(json-struct-big-test json-struct-big-test.cpp)
-add_executable(json-tools-performance json-tools-performance.cpp)
-
+add_executable(json-tools-performance json-tools-performance.cpp
+                include/json/0.6/jsoncpp.cpp)
+target_include_directories(json-tools-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
 add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
 add_test(NAME json-tokenizer-test COMMAND json-tokenizer-test)
