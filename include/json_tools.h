@@ -781,19 +781,18 @@ inline Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ah
             end++;
             continue;
         }
-        bool found = false;
         while (end + 4 < json_data.size)
         {
-            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
             if (lc == Internal::StrEndOrBackSlash)
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (lc == Internal::StrEndOrBackSlash)
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (lc == Internal::StrEndOrBackSlash)
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (lc  == Internal::StrEndOrBackSlash)
                 break;
             end++;
@@ -820,16 +819,16 @@ inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahe
     {
         while (end + 4 < json_data.size)
         {
-            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
             if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
                 break;
             end++;
@@ -858,22 +857,23 @@ inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ah
     size_t end = cursor_index;
     while (end < json_data.size) {
         while(end + 4 < json_data.size) {
-            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
             if (!(lc & (Internal::NumberEnd)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::NumberEnd)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::NumberEnd)))
                 break;
-            lc = Internal::lookup()[json_data.data[++end]];
+            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
             if (!(lc & (Internal::NumberEnd)))
                 break;
             end++;
         }
         char number_code = json_data.data[end];
         if ((number_code >= '0' && number_code <= '9')) {
+            end++;
             continue;
         } else if (number_code == '.'
                    || number_code == '+'
@@ -900,7 +900,7 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
 
     for (size_t current_pos  = cursor_index; current_pos < json_data.size; current_pos++) {
         const char c = json_data.data[current_pos];
-        unsigned char lc = Internal::lookup()[c];
+        unsigned char lc = Internal::lookup()[(unsigned char)c];
         if (c == '"') {
             *type = Type::String;
             *chars_ahead = current_pos - cursor_index;
@@ -953,7 +953,7 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
             token_state = InTokenState::FindingName;
             *chars_ahead = end - cursor_index;
             return Error::NoError;
-        } else if (!(Internal::lookup()[c] & Internal::WhiteSpaceOrNull)) {
+        } else if (!(Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull)) {
             return Error::ExpectedDelimiter;
         }
     }
@@ -962,7 +962,6 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
-    const char *data = json_data.data;
     for (size_t end = cursor_index; end < json_data.size; end++) {
         const char c = json_data.data[end];
         if (c == ',') {
@@ -972,13 +971,14 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
         } else if (c == ']' || c == '}') {
             *chars_ahead = end - cursor_index;
             return Error::NoError;
-        } else if (Internal::lookup()[c] & Internal::WhiteSpaceOrNull) {
-            //empty
         } else if (c == '\n') {
             if (allow_new_lines) {
                 *chars_ahead = end + 1 - cursor_index;
                 return Error::NoError;
             }
+        } else if (Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull) {
+            continue;
+        
         } else {
             *chars_ahead = end + 1 - cursor_index;
             return Error::InvalidToken;
