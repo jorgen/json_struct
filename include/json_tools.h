@@ -3362,6 +3362,7 @@ public:
         Error error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
+        to_type.reserve(10);
         while(context.token.value_type != JT::Type::ArrayEnd)
         {
             to_type.push_back(T());
