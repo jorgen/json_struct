@@ -5,6 +5,7 @@
 
 #include "include/rapidjson/document.h"
 #include <json/json.h>
+#include "include/sajson/sajson.h"
 
 struct BenchmarkRun
 {
@@ -94,6 +95,20 @@ struct OldJsonCpp : public BenchmarkRun
     }
 };
 
+struct SaJsonRun : public BenchmarkRun
+{
+    std::string name() const override { return "SaJson"; }
+    void run(const std::string &json) override
+    {
+        const sajson::document& document = sajson::parse(sajson::dynamic_allocation(), sajson::string(json.c_str(), json.size()));
+        if (!document.is_valid()) {
+            fprintf(stderr, "Failed to parse Sajson\n");
+        }
+        max_size = document.get_root().get_length();
+        second_name = document.get_root().get_array_element(1).get_value_of_key(sajson::literal("name")).as_string();
+    }
+};
+
 int main()
 {
     BenchmarkRun *run = new JsonTokenizerRun();
@@ -108,6 +123,10 @@ int main()
     //run = new OldJsonCpp();
     //runBenchmark(std::string(generatedJson), *run);
     //delete run;
+    //run = new SaJsonRun();
+    //runBenchmark(std::string(generatedJson), *run);
+    //delete run;
+
 
 
     return 0;

@@ -134,6 +134,56 @@ namespace Internal {
         std::string name;
         std::string data;
     };
+    enum Lookup
+    {
+        StrEndOrBackSlash = 1,
+        AsciiLetters = 2,
+        WhiteSpaceOrNull = 4,
+        PlusOrMinus = 8,
+        Digits = 16,
+        HatUnderscoreAprostoph = 32,
+        NumberEnd = 64
+    };
+
+    static inline const unsigned char * const lookup()
+    {
+        static const unsigned char tmp[] =
+        {
+        /*0*/    4,      0,      0,      0,      0,      0,      0,      0,
+        /*8*/    0,      4,      4,      0,      0,      4,      0,      0,
+        /*16*/   0,      0,      0,      0,      0,      0,      0,      0,
+        /*24*/   0,      0,      0,      0,      0,      0,      0,      0,
+        /*32*/   4,      0,      1,      0,      0,      0,      0,      0,
+        /*40*/   0,      0,      0,      8|64,   0,      8|64,   64,      0,
+        /*48*/   16|64,  16|64,  16|64,  16|64,  16|64,  16|64,  16|64,  16|64,
+        /*56*/   16|64,  16|64,  0,      0,      0,      0,      0,      0,
+        /*64*/   0,      2,      2,      2,      2,      2|64,   2,      2,
+        /*72*/   2,      2,      2,      2,      2,      2,      2,      2,
+        /*80*/   2,      2,      2,      2,      2,      2,      2,      2,
+        /*88*/   2,      2,      2,      0,      1,      32,     32,     32,
+        /*96*/   0,      2,      2,      2,      2,      2|64,   2,      2,
+        /*104*/  2,      2,      2,      2,      2,      2,      2,      2,
+        /*112*/  2,      2,      2,      2,      2,      2,      2,      2,
+        /*120*/  2,      2,      2,      0,      0,      0,      0,      0,
+        /*128*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*136*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*144*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*152*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*160*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*168*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*176*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*184*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*192*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*200*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*208*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*216*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*224*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*232*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*240*/  0,      0,      0,      0,      0,      0,      0,      0,
+        /*248*/  0,      0,      0,      0,      0,      0,      0,      0
+        };
+        return tmp;
+    }
 }
 
 enum class Error : unsigned char
@@ -724,22 +774,40 @@ inline void Tokenizer::resetForNewValue()
 
 inline Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ahead)
 {
-    for (size_t end = cursor_index; end < json_data.size; end++) {
+    size_t end = cursor_index;
+    while (end < json_data.size) {
         if (is_escaped) {
             is_escaped = false;
+            end++;
             continue;
         }
-        switch (*(json_data.data + end)) {
-        case '\\':
-            is_escaped = true;
+        bool found = false;
+        while (end + 4 < json_data.size)
+        {
+            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            if (lc == Internal::StrEndOrBackSlash)
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (lc == Internal::StrEndOrBackSlash)
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (lc == Internal::StrEndOrBackSlash)
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (lc  == Internal::StrEndOrBackSlash)
+                break;
+            end++;
+        }
+        if (end >= json_data.size)
             break;
-        case '"':
+        char c = json_data.data[end];
+        if (c == '\\') {
+            is_escaped = true;
+        } else if (c == '"') {
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
-
-        default:
-            break;
         }
+        end++;
     }
     return Error::NeedMoreData;
 }
@@ -747,11 +815,31 @@ inline Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ah
 inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     assert(property_type == Type::Ascii);
-    for (size_t end = cursor_index; end < json_data.size; end++) {
-        char ascii_code = *(json_data.data + end);
+    size_t end = cursor_index;
+    while (end < json_data.size)
+    {
+        while (end + 4 < json_data.size)
+        {
+            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::AsciiLetters | Internal::Digits | Internal::HatUnderscoreAprostoph)))
+                break;
+            end++;
+        }
+
+        char ascii_code = json_data.data[end];
         if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
             (ascii_code >= '^' && ascii_code <= 'z') ||
             (ascii_code >= '0' && ascii_code <= '9')) {
+            end++;
             continue;
         } else if (ascii_code == '\0') {
             *chars_ahead = end - cursor_index;
@@ -760,27 +848,45 @@ inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahe
             *chars_ahead = end - cursor_index;
             return Error::NoError;
         }
+        end++;
     }
     return Error::NeedMoreData;
 }
 
 inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ahead)
 {
-    for (size_t end = cursor_index; end < json_data.size; end++) {
-        char number_code = *(json_data.data + end);
-        if ((number_code >= '0' && number_code <= '9'))
+    size_t end = cursor_index;
+    while (end < json_data.size) {
+        while(end + 4 < json_data.size) {
+            unsigned char lc = Internal::lookup()[json_data.data[end]];
+            if (!(lc & (Internal::NumberEnd)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::NumberEnd)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::NumberEnd)))
+                break;
+            lc = Internal::lookup()[json_data.data[++end]];
+            if (!(lc & (Internal::NumberEnd)))
+                break;
+            end++;
+        }
+        char number_code = json_data.data[end];
+        if ((number_code >= '0' && number_code <= '9')) {
             continue;
-        switch(number_code) {
-        case '.':
-        case '+':
-        case '-':
-        case 'e':
-        case 'E':
+        } else if (number_code == '.'
+                   || number_code == '+'
+                   || number_code == '-'
+                   || number_code == 'e'
+                   || number_code == 'E'
+                  ) {
             continue;
-        default:
+        } else {
             *chars_ahead = end - cursor_index;
             return Error::NoError;
         }
+        end++;
     }
     return Error::NeedMoreData;
 }
@@ -793,62 +899,40 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
     assert(property_state == InPropertyState::NoStartFound);
 
     for (size_t current_pos  = cursor_index; current_pos < json_data.size; current_pos++) {
-        switch (*(json_data.data + current_pos)) {
-        case ' ':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\0':
-            break;
-        case '"':
+        const char c = json_data.data[current_pos];
+        unsigned char lc = Internal::lookup()[c];
+        if (c == '"') {
             *type = Type::String;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        case '{':
+        } else if (c == '{') {
             *type = Type::ObjectStart;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        case '}':
+        } else if (c == '}') {
             *type = Type::ObjectEnd;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        case '[':
+        } else if (c == '[') {
             *type = Type::ArrayStart;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        case ']':
+        } else if (c == ']') {
             *type = Type::ArrayEnd;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        case '-':
-        case '+':
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
+        } else if (lc & (Internal::PlusOrMinus | Internal::Digits)) {
             *type = Type::Number;
             *chars_ahead = current_pos - cursor_index;
             return Error::NoError;
-        default:
-            char ascii_code = *(json_data.data + current_pos);
-            if ((ascii_code >= 'A' && ascii_code <= 'Z') ||
-                (ascii_code >= '^' && ascii_code <= 'z')) {
+        } else if (lc & Internal::AsciiLetters) {
                 *type = Type::Ascii;
                 *chars_ahead = current_pos - cursor_index;;
                 return Error::NoError;
-            } else {
-                *chars_ahead = current_pos - cursor_index;
-                return Error::EncounteredIlligalChar;
-            }
-            break;
+        } else if (lc == 0) {
+            *chars_ahead = current_pos - cursor_index;
+            return Error::EncounteredIlligalChar;
         }
-
     }
     return Error::NeedMoreData;
 }
@@ -856,28 +940,21 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
 inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ahead)
 {
     for (size_t end = cursor_index; end < json_data.size; end++) {
-        switch(*(json_data.data + end)) {
-        case ':':
+        const char c = json_data.data[end];
+        if (c == ':') {
             token_state = InTokenState::FindingData;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
-        case ',':
+        } else if (c == ',') {
             token_state = InTokenState::FindingName;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
-        case ']':
+        } else if (c == ']') {
             token_state = InTokenState::FindingName;
             *chars_ahead = end - cursor_index;
             return Error::NoError;
-        case ' ':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\0':
-            break;
-        default:
+        } else if (!(Internal::lookup()[c] & Internal::WhiteSpaceOrNull)) {
             return Error::ExpectedDelimiter;
-            break;
         }
     }
     return Error::NeedMoreData;
@@ -885,28 +962,24 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
+    const char *data = json_data.data;
     for (size_t end = cursor_index; end < json_data.size; end++) {
-        switch(*(json_data.data + end)) {
-        case ',':
+        const char c = json_data.data[end];
+        if (c == ',') {
             expecting_prop_or_annonymous_data = true;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
-        case '\n':
+        } else if (c == ']' || c == '}') {
+            *chars_ahead = end - cursor_index;
+            return Error::NoError;
+        } else if (Internal::lookup()[c] & Internal::WhiteSpaceOrNull) {
+            //empty
+        } else if (c == '\n') {
             if (allow_new_lines) {
                 *chars_ahead = end + 1 - cursor_index;
                 return Error::NoError;
             }
-            break;
-        case ']':
-        case '}':
-            *chars_ahead = end - cursor_index;
-            return Error::NoError;
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\0':
-            break;
-        default:
+        } else {
             *chars_ahead = end + 1 - cursor_index;
             return Error::InvalidToken;
         }
