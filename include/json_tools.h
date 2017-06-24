@@ -1962,17 +1962,17 @@ JT_CONSTEXPR Internal::MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char
 }
 
 template<typename T, typename specifier>
-struct TokenParser
+struct TypeHandler
 {
     static inline Error unpackToken(T &to_type, ParseContext &context)
     {
-        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
+        static_assert(sizeof(T) == 0xffffffff, "Missing TypeHandler specialisation\n");
         return Error::NoError;
     }
 
     static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
     {
-        static_assert(sizeof(T) == 0xffffffff, "Missing TokenParser specialisation\n");
+        static_assert(sizeof(T) == 0xffffffff, "Missing TypeHandler specialisation\n");
     }
 };
 
@@ -1985,7 +1985,7 @@ namespace Internal {
 #if JT_HAVE_CONSTEXPR
             assigned_members[index] = true;
 #endif
-            return TokenParser<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
+            return TypeHandler<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
         }
         return Error::MissingPropertyMember;
     }
@@ -2015,7 +2015,7 @@ namespace Internal {
         token.name.size = MI_S;
         token.name_type = Type::Ascii;
 
-        TokenParser<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
+        TypeHandler<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
@@ -2288,7 +2288,7 @@ inline void ParseContext::parseTo(T &to_type)
     error = tokenizer.nextToken(token);
     if (error != JT::Error::NoError)
         return;
-    error = TokenParser<T,T>::unpackToken(to_type, *this);
+    error = TypeHandler<T,T>::unpackToken(to_type, *this);
 }
 
 struct SerializerContext
@@ -2335,7 +2335,7 @@ std::string serializeStruct(const T &from_type)
     std::string ret_string;
     SerializerContext serializeContext(ret_string);
     Token token;
-    TokenParser<T,T>::serializeToken(from_type, token, serializeContext.serializer);
+    TypeHandler<T,T>::serializeToken(from_type, token, serializeContext.serializer);
     serializeContext.flush();
     return ret_string;
 }
@@ -2530,12 +2530,12 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
-            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg), token, context.return_serializer);
+            TypeHandler<Ret, Ret>::serializeToken((container.*functionInfo.function)(arg), token, context.return_serializer);
             return Error::NoError;
         }
     };
@@ -2548,14 +2548,14 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
             Ret ret = (container.*functionInfo.function)(arg, context.error_context);
             if (context.execution_list.back().error == Error::NoError)
-                TokenParser<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
+                TypeHandler<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -2568,14 +2568,14 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
             Ret ret = (container.*functionInfo.function)(arg, context);
             if (context.execution_list.back().error == Error::NoError)
-                    TokenParser<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -2588,7 +2588,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -2605,7 +2605,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -2622,7 +2622,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TokenParser<PureArg, PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg, PureArg>::unpackToken(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -2652,7 +2652,7 @@ namespace Internal {
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
             Token token;
-            TokenParser<Ret, Ret>::serializeToken((container.*functionInfo.function)(), token, context.return_serializer);
+            TypeHandler<Ret, Ret>::serializeToken((container.*functionInfo.function)(), token, context.return_serializer);
             return Error::NoError;
         }
     };
@@ -2669,7 +2669,7 @@ namespace Internal {
             Token token;
             Ret ret = (container.*functionInfo.function)(context.error_context);
             if (context.execution_list.back().error == Error::NoError)
-                    TokenParser<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -2686,7 +2686,7 @@ namespace Internal {
             Token token;
             Ret ret = (container.*functionInfo.function)(context);
             if (context.execution_list.back().error == Error::NoError)
-                    TokenParser<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret, Ret>::serializeToken(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -2929,7 +2929,7 @@ namespace Internal {
 }
 
 template<typename T>
-struct TokenParser<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
+struct TypeHandler<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
 {
 public:
     static inline Error unpackToken(T &to_type, ParseContext &context)
@@ -2997,7 +2997,7 @@ public:
 };
 
 template<>
-struct TokenParser<std::string, std::string>
+struct TypeHandler<std::string, std::string>
 {
 	static inline Error unpackToken(std::string &to_type, ParseContext &context)
 	{
@@ -3015,7 +3015,7 @@ struct TokenParser<std::string, std::string>
 };
 
 template<>
-struct TokenParser<double, double>
+struct TypeHandler<double, double>
 {
 	static inline Error unpackToken(double &to_type, ParseContext &context)
 	{
@@ -3047,7 +3047,7 @@ struct TokenParser<double, double>
 
 
 template<>
-struct TokenParser<float, float>
+struct TypeHandler<float, float>
 {
 	static inline Error unpackToken(float &to_type, ParseContext &context)
 	{
@@ -3076,7 +3076,7 @@ struct TokenParser<float, float>
 };
 
 template<>
-struct TokenParser<int, int>
+struct TypeHandler<int, int>
 {
 	static inline Error unpackToken(int &to_type, ParseContext &context)
 	{
@@ -3104,7 +3104,7 @@ struct TokenParser<int, int>
 };
 
 template<>
-struct TokenParser<unsigned int, unsigned int>
+struct TypeHandler<unsigned int, unsigned int>
 {
 public:
     static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
@@ -3134,7 +3134,7 @@ public:
 };
 
 template<>
-struct TokenParser<int64_t, int64_t>
+struct TypeHandler<int64_t, int64_t>
 {
 public:
     static inline Error unpackToken(int64_t &to_type, ParseContext &context)
@@ -3166,7 +3166,7 @@ public:
 };
 
 template<>
-struct TokenParser<uint64_t, uint64_t>
+struct TypeHandler<uint64_t, uint64_t>
 {
 public:
     static inline Error unpackToken(uint64_t &to_type, ParseContext &context)
@@ -3198,7 +3198,7 @@ public:
 };
 
 template<>
-struct TokenParser<int16_t, int16_t>
+struct TypeHandler<int16_t, int16_t>
 {
 public:
     static inline Error unpackToken(int16_t &to_type, ParseContext &context)
@@ -3230,7 +3230,7 @@ public:
 };
 
 template<>
-struct TokenParser<uint16_t, uint16_t>
+struct TypeHandler<uint16_t, uint16_t>
 {
 public:
     static inline Error unpackToken(uint16_t &to_type, ParseContext &context)
@@ -3262,46 +3262,46 @@ public:
 };
 
 template<typename T>
-struct TokenParser<Optional<T>, Optional<T>>
+struct TypeHandler<Optional<T>, Optional<T>>
 {
 public:
     static inline Error unpackToken(Optional<T> &to_type, ParseContext &context)
     {
-        return TokenParser<T,T>::unpackToken(to_type.data, context);
+        return TypeHandler<T,T>::unpackToken(to_type.data, context);
     }
 
     static inline void serializeToken(const Optional<T> &opt, Token &token, Serializer &serializer)
     {
-        TokenParser<T,T>::serializeToken(opt(), token, serializer);
+        TypeHandler<T,T>::serializeToken(opt(), token, serializer);
     }
 };
 
 template<typename T>
-struct TokenParser<OptionalChecked<T>, OptionalChecked<T>>
+struct TypeHandler<OptionalChecked<T>, OptionalChecked<T>>
 {
 public:
     static inline Error unpackToken(OptionalChecked<T> &to_type, ParseContext &context)
     {
         to_type.assigned = true;
-        return TokenParser<T,T>::unpackToken(to_type.data, context);
+        return TypeHandler<T,T>::unpackToken(to_type.data, context);
     }
 
     static inline void serializeToken(const OptionalChecked<T> &opt, Token &token, Serializer &serializer)
     {
         if (opt.assigned)
-            TokenParser<T,T>::serializeToken(opt(), token, serializer);
+            TypeHandler<T,T>::serializeToken(opt(), token, serializer);
     }
 };
 
 template<typename T>
-struct TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>
+struct TypeHandler<std::unique_ptr<T>, std::unique_ptr<T>>
 {
 public:
     static inline Error unpackToken(std::unique_ptr<T> &to_type, ParseContext &context)
     {
         if (context.token.value_type != Type::Null) {
             to_type.reset(new T());
-            return TokenParser<T,T>::unpackToken(*to_type.get(), context);
+            return TypeHandler<T,T>::unpackToken(*to_type.get(), context);
         }
         to_type.reset(nullptr);
         return Error::NoError;
@@ -3310,7 +3310,7 @@ public:
     static inline void serializeToken(const std::unique_ptr<T> &unique, Token &token, Serializer &serializer)
     {
         if (unique) {
-            TokenParser<T,T>::serializeToken(*unique.get(), token, serializer);
+            TypeHandler<T,T>::serializeToken(*unique.get(), token, serializer);
         } else {
             const char nullChar[] = "null";
             token.value_type = Type::Null;
@@ -3322,7 +3322,7 @@ public:
 };
 
 template<>
-struct TokenParser<bool, bool>
+struct TypeHandler<bool, bool>
 {
 	static inline Error unpackToken(bool &to_type, ParseContext &context)
 	{
@@ -3352,7 +3352,7 @@ struct TokenParser<bool, bool>
 };
 
 template<typename T>
-struct TokenParser<std::vector<T>, std::vector<T>>
+struct TypeHandler<std::vector<T>, std::vector<T>>
 {
 public:
     static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
@@ -3366,7 +3366,7 @@ public:
         while(context.token.value_type != JT::Type::ArrayEnd)
         {
             to_type.push_back(T());
-            error = TokenParser<T,T>::unpackToken(to_type.back(), context);
+            error = TypeHandler<T,T>::unpackToken(to_type.back(), context);
             if (error != JT::Error::NoError)
                 break;
             error = context.nextToken();
@@ -3387,7 +3387,7 @@ public:
 
         for (auto &index : vec)
         {
-            TokenParser<T,T>::serializeToken(index, token, serializer);
+            TypeHandler<T,T>::serializeToken(index, token, serializer);
         }
 
         token.name = DataRef::asDataRef("");
@@ -3399,56 +3399,56 @@ public:
 };
 
 template<>
-struct TokenParser<SilentString, SilentString>
+struct TypeHandler<SilentString, SilentString>
 {
     static inline Error unpackToken(SilentString &to_type, ParseContext &context)
     {
-        return TokenParser<std::string, std::string>::unpackToken(to_type, context);
+        return TypeHandler<std::string, std::string>::unpackToken(to_type, context);
     }
     static inline void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
     {
         if (str.size()) {
-            TokenParser<std::string, std::string>::serializeToken(str, token, serializer);
+            TypeHandler<std::string, std::string>::serializeToken(str, token, serializer);
         }
     }
 };
 
 template<typename T>
-struct TokenParser<SilentVector<T>, SilentVector<T>>
+struct TypeHandler<SilentVector<T>, SilentVector<T>>
 {
 public:
     static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
     {
-        return TokenParser<std::vector<T>, std::vector<T>>::unpackToken(to_type, context);
+        return TypeHandler<std::vector<T>, std::vector<T>>::unpackToken(to_type, context);
     }
 
     static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
     {
         if (vec.size()) {
-            TokenParser<std::vector<T>, std::vector<T>>::serializeToken(vec, token, serializer);
+            TypeHandler<std::vector<T>, std::vector<T>>::serializeToken(vec, token, serializer);
         }
     }
 };
 
 template<typename T>
-struct TokenParser<SilentUniquePtr<T>, SilentUniquePtr<T>>
+struct TypeHandler<SilentUniquePtr<T>, SilentUniquePtr<T>>
 {
 public:
     static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
     {
-        return TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::unpackToken(to_type, context);
+        return TypeHandler<std::unique_ptr<T>, std::unique_ptr<T>>::unpackToken(to_type, context);
     }
 
     static inline void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
     {
         if (ptr) {
-            TokenParser<std::unique_ptr<T>, std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
+            TypeHandler<std::unique_ptr<T>, std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
         }
     }
 };
 
 template<>
-struct TokenParser<std::vector<Token>, std::vector<Token>>
+struct TypeHandler<std::vector<Token>, std::vector<Token>>
 {
 public:
     static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
@@ -3489,21 +3489,21 @@ public:
 };
 
 template<>
-struct TokenParser<JsonTokens, JsonTokens>
+struct TypeHandler<JsonTokens, JsonTokens>
 {
 public:
     static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
     {
-        return TokenParser<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
+        return TypeHandler<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
     }
     static inline void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
     {
-        return TokenParser<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
+        return TypeHandler<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
     }
 };
 
 template<>
-struct TokenParser<JsonArrayRef,JsonArrayRef>
+struct TypeHandler<JsonArrayRef,JsonArrayRef>
 {
 	static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
 	{
@@ -3538,7 +3538,7 @@ struct TokenParser<JsonArrayRef,JsonArrayRef>
 };
 
 template<>
-struct TokenParser<JsonArray,JsonArray>
+struct TypeHandler<JsonArray,JsonArray>
 {
 	static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
 	{
@@ -3569,7 +3569,7 @@ struct TokenParser<JsonArray,JsonArray>
 };
 
 template<>
-struct TokenParser<JsonObjectRef, JsonObjectRef> {
+struct TypeHandler<JsonObjectRef, JsonObjectRef> {
 	static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
 	{
 		if (context.token.value_type != JT::Type::ObjectStart)
@@ -3603,7 +3603,7 @@ struct TokenParser<JsonObjectRef, JsonObjectRef> {
 };
 
 template<>
-struct TokenParser<JsonObject, JsonObject>
+struct TypeHandler<JsonObject, JsonObject>
 {
 	static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
 	{
@@ -3636,31 +3636,31 @@ struct TokenParser<JsonObject, JsonObject>
 namespace Internal
 {
 template<size_t INDEX, typename ...Ts>
-struct TupleTokenParser
+struct TupleTypeHandler
 {
     static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
     {
         using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
-        Error error = TokenParser<Type, Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
+        Error error = TypeHandler<Type, Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
         if (error != JT::Error::NoError)
             return error;
         error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
-        return TupleTokenParser<INDEX - 1, Ts...>::unpackToken(to_type, context);
+        return TupleTypeHandler<INDEX - 1, Ts...>::unpackToken(to_type, context);
     }
 
     static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
-        TokenParser<Type, Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
-        TupleTokenParser<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
+        TypeHandler<Type, Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
+        TupleTypeHandler<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
     }
 
 };
 
 template<typename ...Ts>
-struct TupleTokenParser<0, Ts...>
+struct TupleTypeHandler<0, Ts...>
 {
     static inline Error unpackToken(JT::Tuple<Ts...>, ParseContext &context)
     {
@@ -3674,7 +3674,7 @@ struct TupleTokenParser<0, Ts...>
 }
 
 template<typename ...Ts>
-struct TokenParser<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
+struct TypeHandler<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
 {
     static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
     {
@@ -3683,7 +3683,7 @@ struct TokenParser<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
         Error error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
-        error = JT::Internal::TupleTokenParser<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
+        error = JT::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
         if (error != JT::Error::NoError)
             return error;
         if (context.token.value_type != JT::Type::ArrayEnd)
@@ -3699,7 +3699,7 @@ struct TokenParser<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
 
         token.name = DataRef::asDataRef("");
 
-        JT::Internal::TupleTokenParser<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
+        JT::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
         token.name = DataRef::asDataRef("");
 
         token.value_type = Type::ArrayEnd;
