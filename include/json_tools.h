@@ -34,7 +34,8 @@
 #include <atomic>
 
 #ifdef _MSC_VER
-#pragma warning(disable : 4503)
+
+//#pragma warning(disable : 4503)
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
@@ -1570,52 +1571,53 @@ inline bool Serializer::write(const char *data, size_t size)
 //Tuple start
 namespace Internal
 {
-	template<size_t...> struct Sequence { using type = Sequence; };
+    template<size_t...> struct Sequence { using type = Sequence; };
 
-	template<typename A, typename B> struct Merge;
-	template<size_t ... Is1, size_t ... Is2>
-	struct Merge<Sequence<Is1...>, Sequence<Is2...>>
-	{
-		using type = Sequence<Is1..., (sizeof...(Is1)+Is2)...>;
-	};
+    template<typename A, typename B> struct Merge;
+    template<size_t ... Is1, size_t ... Is2>
+    struct Merge<Sequence<Is1...>, Sequence<Is2...>>
+    {
+        using type = Sequence<Is1..., (sizeof...(Is1)+Is2)...>;
+    };
 
-	template<size_t size> struct GenSequence;
-	template<> struct GenSequence<0> { using type = Sequence<>; };
-	template<> struct GenSequence<1> { using type = Sequence<0>; };
-	template<size_t size>
-	struct GenSequence
-	{
-		using type = typename Merge<typename GenSequence<size / size_t(2)>::type, typename GenSequence<size - size / size_t(2)>::type>::type;
-	};
+    template<size_t size> struct GenSequence;
+    template<> struct GenSequence<0> { using type = Sequence<>; };
+    template<> struct GenSequence<1> { using type = Sequence<0>; };
+    template<size_t size>
+    struct GenSequence
+    {
+        using type = typename Merge<typename GenSequence<size / size_t(2)>::type, typename GenSequence<size - size / size_t(2)>::type>::type;
+    };
 
-	template<size_t index, typename T> struct Element
-	{
-		Element()
-			: data()
-		{
+    template<size_t index, typename T>
+    struct Element
+    {
+        Element()
+            : data()
+        {
 
-		}
+        }
 
-		Element(const T &t)
-			: data(t)
-		{}
-		using type = T;
-		T data;
-	};
+        Element(const T &t)
+            : data(t)
+        {}
+        using type = T;
+        T data;
+    };
 
-	template<typename A, typename ...Bs> struct TupleImpl;
+    template<typename A, typename ...Bs> struct TupleImpl;
 
-	template<size_t ...indices, typename ...Ts>
-	struct TupleImpl<Sequence<indices...>, Ts...> : public Element<indices, Ts>...
-	{
-		TupleImpl()
-			: Element<indices, Ts>()...
-		{}
+    template<size_t ...indices, typename ...Ts>
+    struct TupleImpl<Sequence<indices...>, Ts...> : public Element<indices, Ts>...
+    {
+        TupleImpl()
+            : Element<indices, Ts>()...
+        {}
 
-		TupleImpl(Ts ...args)
-			: Element<indices, Ts>(args)...
-		{}
-	};
+        TupleImpl(Ts ...args)
+            : Element<indices, Ts>(args)...
+        {}
+    };
 }
 
 template<size_t I, typename ...Ts>
@@ -1640,7 +1642,8 @@ struct Tuple
                 : impl(args...)
         {}
 
-        Internal::TupleImpl<typename Internal::GenSequence<sizeof...(Ts)>::type, Ts...> impl;
+		using Seq = typename Internal::GenSequence<sizeof...(Ts)>::type;
+        Internal::TupleImpl<Seq, Ts...> impl;
         static JT_CONSTEXPR const size_t size = sizeof...(Ts);
 
         template<size_t Index>
@@ -1905,7 +1908,8 @@ struct ParseContext
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       static const TT &jt_static_meta_data_info() \
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
        { static auto ret = JT::makeTuple(); return ret; } \
@@ -1915,11 +1919,20 @@ struct ParseContext
     template<typename JT_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_data_info() \
+       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       static const TT &jt_static_meta_data_info() \
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     };
+
+template<typename T, typename U, size_t NAME_SIZE>
+struct MI
+{
+    const char *name;
+    T U::* member;
+    typedef T type;
+};
 
 namespace Internal {
     template <typename T>
@@ -1928,21 +1941,16 @@ namespace Internal {
         typedef char no[2];
 
         template <typename C>
-        static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
+            static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
 
         template <typename>
-        static JT_CONSTEXPR no& test_in_base(...);
+            static JT_CONSTEXPR no& test_in_base(...);
 
         static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(0)) == sizeof(yes);
     };
 
     template<typename T, typename U, size_t NAME_SIZE>
-    struct MemberInfo
-    {
-        const char *name;
-        T U::* member;
-        typedef T type;
-    };
+    using MemberInfo = MI < T, U, NAME_SIZE>;
 
     template<typename T>
     struct SuperInfo
@@ -1955,8 +1963,9 @@ namespace Internal {
         typedef T type;
     };
 }
+
 template<typename T, typename U, size_t NAME_SIZE>
-JT_CONSTEXPR Internal::MemberInfo<T, U, NAME_SIZE - 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member)
+JT_CONSTEXPR MI<T, U, NAME_SIZE - 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member)
 {
     return{ name, member };
 }
@@ -2505,7 +2514,8 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        static const TT &jt_static_meta_functions_info() \
         { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
        { static auto ret = JT::makeTuple(); return ret; } \
@@ -2515,7 +2525,8 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-       static const decltype(JT::makeTuple(__VA_ARGS__)) &jt_static_meta_functions_info() \
+       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       static const TT &jt_static_meta_functions_info() \
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
