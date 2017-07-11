@@ -1926,10 +1926,10 @@ struct ParseContext
         { static auto ret = super_list; return ret; } \
     };
 
-template<typename T, typename U, size_t NAME_SIZE>
+template<typename T, typename U>
 struct MI
 {
-    const char *name;
+    const DataRef name;
     T U::* member;
     typedef T type;
 };
@@ -1949,8 +1949,8 @@ namespace Internal {
         static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(0)) == sizeof(yes);
     };
 
-    template<typename T, typename U, size_t NAME_SIZE>
-    using MemberInfo = MI < T, U, NAME_SIZE>;
+    template<typename T, typename U>
+    using MemberInfo = MI < T, U>;
 
     template<typename T>
     struct SuperInfo
@@ -1965,9 +1965,9 @@ namespace Internal {
 }
 
 template<typename T, typename U, size_t NAME_SIZE>
-JT_CONSTEXPR MI<T, U, NAME_SIZE - 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member)
+JT_CONSTEXPR const MI<T, U> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member)
 {
-    return{ name, member };
+    return { DataRef::asDataRef(name), member };
 }
 
 template<typename T, typename specifier>
@@ -1986,10 +1986,10 @@ struct TypeHandler
 };
 
 namespace Internal {
-    template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, ParseContext &context, size_t index, bool *assigned_members, const char *super_name)
+    template<typename T, typename MI_T, typename MI_M>
+    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M> &memberInfo, ParseContext &context, size_t index, bool *assigned_members, const char *super_name)
     {
-        if (MI_S == context.token.name.size && memcmp(memberInfo.name, context.token.name.data, MI_S) == 0)
+        if (memberInfo.name.size == context.token.name.size && memcmp(memberInfo.name.data, context.token.name.data, memberInfo.name.size) == 0)
         {
 #if JT_HAVE_CONSTEXPR
             assigned_members[index] = true;
@@ -1999,8 +1999,8 @@ namespace Internal {
         return Error::MissingPropertyMember;
     }
 
-    template<typename MI_T, typename MI_M, size_t MI_S>
-    inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
+    template<typename MI_T, typename MI_M>
+    inline Error verifyMember(const MemberInfo<MI_T, MI_M> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
     {
 #if JT_HAVE_CONSTEXPR
         if (assigned_members[index])
@@ -2009,7 +2009,7 @@ namespace Internal {
             return Error::NoError;
 
         std::string to_push = strlen(super_name) ? std::string(super_name) + "::" : std::string();
-        to_push += std::string(memberInfo.name, MI_S);
+        to_push += std::string(memberInfo.name.data, memberInfo.name.size);
         missing_members.push_back(to_push);
         return Error::UnassignedRequiredMember;
 #else
@@ -2017,11 +2017,11 @@ namespace Internal {
 #endif
     }
 
-    template<typename T, typename MI_T, typename MI_M, size_t MI_S>
-    inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_S> &memberInfo, Token &token, Serializer &serializer, const char *super_name)
+    template<typename T, typename MI_T, typename MI_M>
+    inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M> &memberInfo, Token &token, Serializer &serializer, const char *super_name)
     {
-        token.name.data = memberInfo.name;
-        token.name.size = MI_S;
+        token.name.data = memberInfo.name.data;
+        token.name.size = memberInfo.name.size;
         token.name_type = Type::Ascii;
 
         TypeHandler<MI_T, MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
