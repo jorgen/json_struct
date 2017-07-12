@@ -77,7 +77,7 @@ struct SubStruct2
     float Field1;
     bool Field2;
     JT_STRUCT(JT_MEMBER(Field1),
-              JT_MEMBER(Field2));
+              JT_MEMBER_ALIASES(Field2));
 };
 
 struct SubStruct3 : public SubStruct2
