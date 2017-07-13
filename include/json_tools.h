@@ -1989,7 +1989,7 @@ struct TypeHandler
 
 namespace Internal {
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
-    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context, size_t index, bool *assigned_members)
+    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context, size_t index, bool primary, bool *assigned_members)
     {
         if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
         {
@@ -2032,7 +2032,7 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t INDEX>
     struct SuperClassHandler
     {
-        static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members);
+        static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members);
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members);
         static JT_CONSTEXPR size_t membersInSuperClasses();
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer);
@@ -2041,9 +2041,9 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t SIZE>
     struct StartSuperRecursion
     {
-        static Error start(T &to_type, ParseContext &context, bool *assigned)
+        static Error start(T &to_type, ParseContext &context, bool primary, bool *assigned)
         {
-            return SuperClassHandler<T, PAGE, SIZE - 1>::handleSuperClasses(to_type, context, assigned);
+            return SuperClassHandler<T, PAGE, SIZE - 1>::handleSuperClasses(to_type, context, primary, assigned);
         }
 
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
@@ -2073,7 +2073,7 @@ namespace Internal {
     template<typename T, size_t PAGE>
     struct StartSuperRecursion<T, PAGE, 0>
     {
-        static Error start(T &to_type, ParseContext &context, bool *assigned)
+        static Error start(T &to_type, ParseContext &context, bool primary, bool *assigned)
         {
             return Error::MissingPropertyMember;
         }
@@ -2096,13 +2096,13 @@ namespace Internal {
     template<typename T, typename Members, size_t PAGE, size_t INDEX>
     struct MemberChecker
     {
-        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
+        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool primary, bool *assigned_members)
         {
-            Error error = unpackMember(to_type, members.template get<INDEX>(), context, PAGE + INDEX, assigned_members);
+            Error error = unpackMember(to_type, members.template get<INDEX>(), context, PAGE + INDEX, primary, assigned_members);
             if (error != Error::MissingPropertyMember)
                 return error;
 
-            return MemberChecker<T, Members, PAGE, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members);
+            return MemberChecker<T, Members, PAGE, INDEX - 1>::unpackMembers(to_type, members, context, primary, assigned_members);
         }
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
@@ -2123,14 +2123,14 @@ namespace Internal {
     template<typename T, typename Members, size_t PAGE>
     struct MemberChecker<T, Members, PAGE, 0>
     {
-        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
+        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool primary, bool *assigned_members)
         {
-            Error error = unpackMember(to_type, members.template get<0>(), context, PAGE, assigned_members);
+            Error error = unpackMember(to_type, members.template get<0>(), context, PAGE, primary, assigned_members);
             if (error != Error::MissingPropertyMember)
                 return error;
 
             using Super = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
-            return StartSuperRecursion<T, PAGE + Members::size, Super::size>::start(to_type, context, assigned_members);
+            return StartSuperRecursion<T, PAGE + Members::size, Super::size>::start(to_type, context, primary, assigned_members);
         }
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
@@ -2153,20 +2153,20 @@ namespace Internal {
     };
 
     template<typename T, size_t PAGE, size_t INDEX>
-    Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
+    Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
         using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
         const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
-        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members);
+        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
 #if JT_HAVE_CONSTEXPR
-        return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+        return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
 #else
-        return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, assigned_members);
+        return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
 #endif
     }
 
@@ -2219,14 +2219,14 @@ namespace Internal {
     template<typename T, size_t PAGE>
     struct SuperClassHandler<T, PAGE, 0>
     {
-        static Error handleSuperClasses(T &to_type, ParseContext &context, bool *assigned_members)
+        static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
         {
             using Meta = typename std::remove_reference<decltype(T::template JsonToolsBase<T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, Meta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
             const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.c_str();
-            return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members);
+            return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
@@ -2962,7 +2962,7 @@ public:
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
-            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, assigned_members);
+            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
                 if (context.allow_missing_members) {
