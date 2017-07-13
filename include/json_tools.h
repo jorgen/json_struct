@@ -2438,95 +2438,95 @@ inline Error CallFunctionErrorContext::getLatestError() const
     return context.parse_context.error;
 }
 
-template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
+template<typename T, typename Ret, typename Arg, size_t TAKES_CONTEXT>
 struct FunctionInfo
 {
     typedef Ret(T::*Function)(Arg);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
-template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 1>
+template<typename T, typename Ret, typename Arg>
+struct FunctionInfo<T, Ret, Arg, 1>
 {
     typedef Ret(T::*Function)(Arg, CallFunctionErrorContext &);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
 
-template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, Arg, NAME_SIZE, 2>
+template<typename T, typename Ret, typename Arg>
+struct FunctionInfo<T, Ret, Arg, 2>
 {
     typedef Ret(T::*Function)(Arg, CallFunctionContext &);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
-template<typename T, typename Ret, size_t NAME_SIZE, size_t TAKES_CONTEXT>
-struct FunctionInfo<T, Ret, void, NAME_SIZE, TAKES_CONTEXT>
+template<typename T, typename Ret, size_t TAKES_CONTEXT>
+struct FunctionInfo<T, Ret, void, TAKES_CONTEXT>
 {
     typedef Ret(T::*Function)(void);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
-template<typename T, typename Ret, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, void, NAME_SIZE, 1>
+template<typename T, typename Ret>
+struct FunctionInfo<T, Ret, void, 1>
 {
     typedef Ret(T::*Function)(CallFunctionErrorContext &);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
-template<typename T, typename Ret, size_t NAME_SIZE>
-struct FunctionInfo<T, Ret, void, NAME_SIZE, 2>
+template<typename T, typename Ret>
+struct FunctionInfo<T, Ret, void, 2>
 {
     typedef Ret(T::*Function)(CallFunctionContext &);
     typedef Ret returnType;
-    const char *name;
+    DataRef name;
     Function function;
 };
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, Arg, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void))
+JT_CONSTEXPR FunctionInfo<T, Ret, void, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, void, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &))
+JT_CONSTEXPR FunctionInfo<T, Ret, void, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &))
 {
-    return{ name, function };
+    return{ DataRef::asDataRef(name), function };
 }
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
@@ -2554,10 +2554,10 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, NAME_SIZE - 1, 2> makeFunctionInfo(const
     };
 
 namespace Internal {
-    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
+    template<typename T, typename U, typename Ret, typename Arg, size_t TAKES_CONTEXT>
     struct FunctionCaller
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2572,10 +2572,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, Ret, Arg, NAME_SIZE, 1>
+    template<typename T, typename U, typename Ret, typename Arg>
+    struct FunctionCaller<T, U, Ret, Arg, 1>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, 1> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2592,10 +2592,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, Ret, Arg, NAME_SIZE, 2>
+    template<typename T, typename U, typename Ret, typename Arg>
+    struct FunctionCaller<T, U, Ret, Arg, 2>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, Arg, 2> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2612,10 +2612,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
-    struct FunctionCaller<T, U, void, Arg, NAME_SIZE, TAKES_CONTEXT>
+    template<typename T, typename U, typename Arg, size_t TAKES_CONTEXT>
+    struct FunctionCaller<T, U, void, Arg, TAKES_CONTEXT>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2629,10 +2629,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, void, Arg, NAME_SIZE, 1>
+    template<typename T, typename U, typename Arg>
+    struct FunctionCaller<T, U, void, Arg, 1>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, 1> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2646,10 +2646,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Arg, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, void, Arg, NAME_SIZE, 2>
+    template<typename T, typename U, typename Arg>
+    struct FunctionCaller<T, U, void, Arg, 2>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, Arg, 2> &functionInfo, CallFunctionContext &context)
         {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
@@ -2675,10 +2675,10 @@ namespace Internal {
         skipArrayOrObject(context.parse_context);
     }
 
-    template<typename T, typename U, typename Ret, size_t NAME_SIZE, size_t TAKES_CONTEXT>
-    struct FunctionCaller<T, U, Ret, void, NAME_SIZE, TAKES_CONTEXT>
+    template<typename T, typename U, typename Ret, size_t TAKES_CONTEXT>
+    struct FunctionCaller<T, U, Ret, void, TAKES_CONTEXT>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2689,10 +2689,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Ret, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, Ret, void, NAME_SIZE, 1>
+    template<typename T, typename U, typename Ret>
+    struct FunctionCaller<T, U, Ret, void, 1>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, 1> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2706,10 +2706,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, typename Ret, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, Ret, void, NAME_SIZE, 2>
+    template<typename T, typename U, typename Ret>
+    struct FunctionCaller<T, U, Ret, void, 2>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, Ret, void, 2> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2723,10 +2723,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, size_t NAME_SIZE, size_t TAKES_CONTEXT>
-    struct FunctionCaller<T, U, void, void, NAME_SIZE, TAKES_CONTEXT>
+    template<typename T, typename U, size_t TAKES_CONTEXT>
+    struct FunctionCaller<T, U, void, void, TAKES_CONTEXT>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, NAME_SIZE, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, TAKES_CONTEXT> &functionInfo, CallFunctionContext &context)
        {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2737,10 +2737,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, void, void, NAME_SIZE, 1>
+    template<typename T, typename U >
+    struct FunctionCaller<T, U, void, void, 1>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, NAME_SIZE, 1> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, 1> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2751,10 +2751,10 @@ namespace Internal {
         }
     };
 
-    template<typename T, typename U, size_t NAME_SIZE>
-    struct FunctionCaller<T, U, void, void, NAME_SIZE, 2>
+    template<typename T, typename U>
+    struct FunctionCaller<T, U, void, void, 2>
     {
-        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, NAME_SIZE, 2> &functionInfo, CallFunctionContext &context)
+        static Error callFunctionAndSerializeReturn(T &container, FunctionInfo<U, void, void, 2> &functionInfo, CallFunctionContext &context)
         {
             checkValidVoidParameter(context);
             if (context.parse_context.error != Error::NoError)
@@ -2765,12 +2765,12 @@ namespace Internal {
         }
     };
 }
-template<typename T, typename U, typename Ret, typename Arg, size_t NAME_SIZE, size_t TAKES_CONTEXT>
-Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg,NAME_SIZE, TAKES_CONTEXT> &functionInfo)
+template<typename T, typename U, typename Ret, typename Arg, size_t TAKES_CONTEXT>
+Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg, TAKES_CONTEXT> &functionInfo)
 {
-    if (context.parse_context.token.name.size == NAME_SIZE && memcmp(functionInfo.name, context.parse_context.token.name.data, NAME_SIZE) == 0)
+    if (context.parse_context.token.name.size == functionInfo.name.size && memcmp(functionInfo.name.data, context.parse_context.token.name.data, functionInfo.name.size) == 0)
     {
-        return Internal::FunctionCaller<T, U, Ret, Arg, NAME_SIZE, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
+        return Internal::FunctionCaller<T, U, Ret, Arg, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
     }
     return Error::MissingPropertyMember;
 }
