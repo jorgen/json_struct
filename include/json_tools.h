@@ -78,6 +78,11 @@ struct DataRef
         return DataRef(&str[0], str.size());
     }
 
+    static DataRef fromConstCharStar(const char *data)
+    {
+        return DataRef(data, strlen(data));
+    }
+
     const char *data;
     size_t size;
 };
@@ -299,8 +304,9 @@ public:
     {}
     Callback &operator=(const Callback<T> &other)
     {
-        ref.store(other.load());
+        ref.store(other.ref.load());
         callback = other.callback;
+        return *this;
     }
 
     void inc() { ++ref; }
@@ -1969,7 +1975,7 @@ namespace Internal {
 template<typename T, typename U, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
 {
-    return { {DataRef::asDataRef(name), DataRef::asDataRef(aliases)... }, member };
+    return { {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)... }, member };
 }
 
 template<typename T, typename specifier>
