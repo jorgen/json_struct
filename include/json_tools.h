@@ -1991,12 +1991,25 @@ namespace Internal {
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
     inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context, size_t index, bool primary, bool *assigned_members)
     {
-        if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
+        if (primary)
         {
+            if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
+            {
 #if JT_HAVE_CONSTEXPR
-            assigned_members[index] = true;
+                assigned_members[index] = true;
 #endif
-            return TypeHandler<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
+                return TypeHandler<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
+            }
+        } else {
+            for (size_t start = 1; start < MI_NC; start++) {
+                if (memberInfo.name[start].size == context.token.name.size && memcmp(memberInfo.name[start].data, context.token.name.data, context.token.name.size) == 0)
+                {
+#if JT_HAVE_CONSTEXPR
+                    assigned_members[index] = true;
+#endif
+                    return TypeHandler<MI_T, MI_T>::unpackToken(to_type.*memberInfo.member, context);
+                }
+            }
         }
         return Error::MissingPropertyMember;
     }
@@ -2963,7 +2976,10 @@ public:
         {
             std::string token_name(context.token.name.data, context.token.name.size);
             error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
+            if (error == Error::MissingPropertyMember)
+                error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, false, assigned_members);
             if (error == Error::MissingPropertyMember) {
+
                 context.missing_members.push_back(token_name);
                 if (context.allow_missing_members) {
                     Internal::skipArrayOrObject(context);
