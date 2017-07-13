@@ -1989,7 +1989,7 @@ struct TypeHandler
 
 namespace Internal {
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
-    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context, size_t index, bool *assigned_members, const char *super_name)
+    inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context, size_t index, bool *assigned_members)
     {
         if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
         {
@@ -2096,13 +2096,13 @@ namespace Internal {
     template<typename T, typename Members, size_t PAGE, size_t INDEX>
     struct MemberChecker
     {
-        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
+        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
         {
-            Error error = unpackMember(to_type, members.template get<INDEX>(), context, PAGE + INDEX, assigned_members, super_name);
+            Error error = unpackMember(to_type, members.template get<INDEX>(), context, PAGE + INDEX, assigned_members);
             if (error != Error::MissingPropertyMember)
                 return error;
 
-            return MemberChecker<T, Members, PAGE, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members, super_name);
+            return MemberChecker<T, Members, PAGE, INDEX - 1>::unpackMembers(to_type, members, context, assigned_members);
         }
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
@@ -2123,9 +2123,9 @@ namespace Internal {
     template<typename T, typename Members, size_t PAGE>
     struct MemberChecker<T, Members, PAGE, 0>
     {
-        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members, const char *super_name)
+        static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool *assigned_members)
         {
-            Error error = unpackMember(to_type, members.template get<0>(), context, PAGE, assigned_members, super_name);
+            Error error = unpackMember(to_type, members.template get<0>(), context, PAGE, assigned_members);
             if (error != Error::MissingPropertyMember)
                 return error;
 
@@ -2160,7 +2160,7 @@ namespace Internal {
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
         const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
-        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
+        Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
 #if JT_HAVE_CONSTEXPR
@@ -2226,7 +2226,7 @@ namespace Internal {
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
             const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.c_str();
-            return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members, super_name);
+            return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
@@ -2962,7 +2962,7 @@ public:
         while(context.token.value_type != JT::Type::ObjectEnd)
         {
             std::string token_name(context.token.name.data, context.token.name.size);
-            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, assigned_members, "");
+            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, assigned_members);
             if (error == Error::MissingPropertyMember) {
                 context.missing_members.push_back(token_name);
                 if (context.allow_missing_members) {
