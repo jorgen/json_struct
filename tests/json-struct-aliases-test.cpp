@@ -108,10 +108,55 @@ void checkSuperShadow()
     JT_ASSERT(sa.SomeOtherValue == 44);
 }
 
+const char recursive_alias[] = R"json(
+{
+    "first" : "first",
+    "second" : {
+        "one" : "one",
+        "two" : "two",
+        "three" : "three"
+    },
+    "third": "third"
+}
+)json";
+
+struct Second
+{
+    std::string one;
+    std::string two_primary;
+    std::string three;
+
+    JT_STRUCT(JT_MEMBER(one),
+              JT_MEMBER_ALIASES(two_primary, "two"),
+              JT_MEMBER(three));
+};
+struct First
+{
+    std::string first;
+    Second second;
+    std::string third;
+    JT_STRUCT(JT_MEMBER(first),
+              JT_MEMBER(second),
+              JT_MEMBER(third));
+};
+
+void checkRecursiveShadow()
+{
+    JT::ParseContext context(recursive_alias);
+    First f;
+    context.parseTo(f);
+
+    JT_ASSERT(f.first == "first");
+    JT_ASSERT(f.second.two_primary == "two");
+    JT_ASSERT(f.second.three == "three");
+    JT_ASSERT(f.third == "third");
+}
+
 int main()
 {
     checkPlain();
     checkPlainShadow();
     checkSuperShadow();
+    checkRecursiveShadow();
     return 0;
 }
