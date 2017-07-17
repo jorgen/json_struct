@@ -2530,7 +2530,9 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
 }
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
+#define JT_FUNCTION_ALIASES(name, ...) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name, __VA_ARGS__)
 #define JT_FUNCTION_WITH_NAME(name, member) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
+#define JT_FUNCTION_WITH_NAME_ALIASES(name, member, ...) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member, __VA_ARGS__)
 #define JT_FUNCTION_CONTAINER(...) \
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
@@ -2766,33 +2768,42 @@ namespace Internal {
     };
 }
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
-Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg, NAME_COUNT, TAKES_CONTEXT> &functionInfo)
+Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg, NAME_COUNT, TAKES_CONTEXT> &functionInfo, bool primary)
 {
-    if (context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
+    if (primary && context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
     {
         return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
+    } else {
+        for (size_t i = 1; i < NAME_COUNT; i++)
+        {
+            if (primary && context.parse_context.token.name.size == functionInfo.name[i].size && memcmp(functionInfo.name[i].data, context.parse_context.token.name.data, functionInfo.name[i].size) == 0)
+            {
+                return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
+            }
+        }
     }
     return Error::MissingPropertyMember;
 }
+
 namespace Internal {
     template<typename T, size_t INDEX>
     struct FunctionalSuperRecursion
     {
-        static Error callFunction(T &container, CallFunctionContext &context);
+        static Error callFunction(T &container, CallFunctionContext &context, bool primary);
     };
 
     template<typename T, size_t SIZE>
     struct StartFunctionalSuperRecursion
     {
-        static Error callFunction(T &container, CallFunctionContext &context)
+        static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
-            return FunctionalSuperRecursion<T, SIZE - 1>::callFunction(container, context);
+            return FunctionalSuperRecursion<T, SIZE - 1>::callFunction(container, context, primary);
         }
     };
     template<typename T>
     struct StartFunctionalSuperRecursion<T, 0>
     {
-        static Error callFunction(T &container, CallFunctionContext &context)
+        static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
             return Error::MissingPropertyMember;
         }
@@ -2801,31 +2812,31 @@ namespace Internal {
     template<typename T, typename Functions, size_t INDEX>
     struct FunctionObjectTraverser
     {
-        static Error call(T &container, CallFunctionContext &context, Functions &functions)
+        static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
         {
             auto function = functions.template get<INDEX>();
-            Error error = matchAndCallFunction(container, context, function);
+            Error error = matchAndCallFunction(container, context, function, primary);
             if (error == Error::NoError)
                 return Error::NoError;
             if (error != Error::MissingPropertyMember)
                 return context.parse_context.error;
-            return FunctionObjectTraverser<T, Functions, INDEX - 1>::call(container, context, functions);
+            return FunctionObjectTraverser<T, Functions, INDEX - 1>::call(container, context, functions, primary);
         }
     };
 
     template<typename T, typename Functions>
     struct FunctionObjectTraverser<T, Functions, 0>
     {
-        static Error call(T &container, CallFunctionContext &context, Functions &functions)
+        static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
         {
             auto function = functions.template get<0>();
-            Error error = matchAndCallFunction(container, context, function);
+            Error error = matchAndCallFunction(container, context, function, primary);
             if (error == Error::NoError)
                 return Error::NoError;
             if (error != Error::MissingPropertyMember)
                 return error;
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
-            return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context);
+            return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
         }
     };
 
@@ -2886,7 +2897,9 @@ inline Error CallFunctionContext::callFunctions(T &container)
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
-        Error error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions);
+        Error error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
+        if (error == Error::MissingPropertyMember)
+            error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, false);
         if (error != Error::NoError) {
             assert(error == parse_context.error || parse_context.error == Error::NoError);
             parse_context.error = error;
@@ -2935,27 +2948,27 @@ protected:
 };
 namespace Internal {
     template<typename T, size_t INDEX>
-    Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context)
+    Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context, bool primary)
     {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-        Error error = FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions);
+        Error error = FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions, primary);
         if (error != Error::MissingPropertyMember)
             return error;
 
-        return FunctionalSuperRecursion<T, INDEX - 1>::callFunction(container, context);
+        return FunctionalSuperRecursion<T, INDEX - 1>::callFunction(container, context, primary);
     }
 
     template<typename T>
     struct FunctionalSuperRecursion<T, 0>
     {
-        static Error callFunction(T &container, CallFunctionContext &context)
+        static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             auto functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-            return FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions);
+            return FunctionObjectTraverser<Super, decltype(functions), decltype(functions)::size - 1>::call(container, context, functions, primary);
         }
     };
 }

@@ -392,6 +392,61 @@ void call_error_check()
 	JT_ASSERT(errorCheck.executed4);
 	JT_ASSERT(json_out.size() == 3);
 }
+
+const char json_alias[] = R"json(
+{
+    "execute_one" : 4,
+    "execute_two" : 5,
+    "execute_three": 6
+}
+)json";
+
+struct JsonAlias
+{
+    bool executeOne = false;
+    bool executeTwo = false;
+    bool executeThree = false;
+
+    void execute_one(int x)
+    {
+        JT_ASSERT(x == 4);
+        executeOne = true;
+    }
+
+    void execute_two_primary(int x)
+    {
+        JT_ASSERT(x == 5);
+        executeTwo = true;
+    }
+
+    void execute_three(int x)
+    {
+        JT_ASSERT(x == 6);
+        executeThree = true;
+    }
+
+    JT_FUNCTION_CONTAINER(
+        JT_FUNCTION(execute_one),
+        JT_FUNCTION_ALIASES(execute_two_primary, "execute_two"),
+        JT_FUNCTION(execute_three));
+};
+
+void call_json_alias()
+{
+    JsonAlias cont;
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(json_alias, sizeof(json_alias), json_out);
+    context.callFunctions(cont);
+
+    JT_ASSERT(cont.executeOne);
+    JT_ASSERT(cont.executeTwo);
+    JT_ASSERT(cont.executeThree);
+
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+}
+
 int main()
 {
     simpleTest();
@@ -400,5 +455,6 @@ int main()
     super_class_param_test();
     call_void_test();
 	call_error_check();
+    call_json_alias();
 }
 
