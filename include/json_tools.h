@@ -68,14 +68,15 @@ struct DataRef
     {}
 
     template <size_t N>
-    static DataRef asDataRef(const char (&data)[N])
-    {
-        return DataRef(data, N - 1);
-    }
+    explicit DataRef(const char (&data)[N])
+        : data(data)
+        , size(N -1)
+    {}
 
-    static DataRef asDataRef(const std::string &str)
+    explicit DataRef(const std::string &str)
+        : data(&str[0])
+        , size(str.size())
     {
-        return DataRef(&str[0], str.size());
     }
 
     static DataRef fromConstCharStar(const char *data)
@@ -600,7 +601,7 @@ inline void Tokenizer::addData(const char *data, size_t data_size)
 template<size_t N>
 inline void Tokenizer::addData(const char (&data)[N])
 {
-    data_list.push_back(DataRef::asDataRef(data));
+    data_list.push_back(DataRef(data));
 }
 
 inline void Tokenizer::addData(const std::vector<Token> *parsedData)
@@ -1142,7 +1143,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
 
             if (intermediate_token.active) {
                 intermediate_token.name.append(data.data, data.size);
-                data = DataRef::asDataRef(intermediate_token.name);
+                data = DataRef(intermediate_token.name);
                 type = intermediate_token.name_type;
             }
 
@@ -1230,9 +1231,9 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
                     intermediate_token.data_type = type;
                     intermediate_token.data_type_set = true;
                 }
-                tmp_token.name = DataRef::asDataRef(intermediate_token.name);
+                tmp_token.name = DataRef(intermediate_token.name);
                 tmp_token.name_type = intermediate_token.name_type;
-                data = DataRef::asDataRef(intermediate_token.data);
+                data = DataRef(intermediate_token.data);
                 type = intermediate_token.data_type;
             }
 
@@ -1908,7 +1909,7 @@ struct ParseContext
 #define JT_MEMBER_WITH_NAME(name, member) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
 #define JT_MEMBER_WITH_NAME_AND_ALIASES(name, member, ...) JT::makeMemberInfo(name, &JT_STRUCT_T::member, __VA_ARGS__)
 
-#define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(JT::DataRef::asDataRef(#super))
+#define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(JT::DataRef(#super))
 
 #define JT_SUPER_CLASSES(...) JT::makeTuple(__VA_ARGS__)
 
@@ -1975,7 +1976,7 @@ namespace Internal {
 template<typename T, typename U, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
 {
-    return { {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)... }, member };
+    return { {DataRef(name), DataRef::fromConstCharStar(aliases)... }, member };
 }
 
 template<typename T, typename specifier>
@@ -2496,37 +2497,37 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
 {
-    return { { DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
+    return { { DataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
 {
-    return { { DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
+    return { { DataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
 {
-    return { {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...},   function };
+    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...},   function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
 {
-    return { {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
 {
-    return { {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
 {
-    return{ {DataRef::asDataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return{ {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
 }
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
@@ -2891,7 +2892,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
         return error;
     Token token;
     token.value_type = Type::ArrayStart;
-    token.value = DataRef::asDataRef("[");
+    token.value = DataRef("[");
     return_serializer.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
@@ -2915,7 +2916,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
             return error;
     }
     token.value_type = Type::ArrayEnd;
-    token.value = DataRef::asDataRef("]");
+    token.value = DataRef("]");
     return_serializer.write(token);
     return Error::NoError;
 }
@@ -3031,7 +3032,7 @@ public:
         static const char objectStart[] = "{";
         static const char objectEnd[] = "}";
         token.value_type = Type::ObjectStart;
-        token.value = DataRef::asDataRef(objectStart);
+        token.value = DataRef(objectStart);
         serializer.write(token);
         auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
         Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::serializeMembers(from_type, members, token, serializer, "");
@@ -3039,7 +3040,7 @@ public:
         token.name.data = "";
         token.name_type = Type::String;
         token.value_type = Type::ObjectEnd;
-        token.value = DataRef::asDataRef(objectEnd);
+        token.value = DataRef(objectEnd);
         serializer.write(token);
     }
 };
@@ -3362,7 +3363,7 @@ public:
         } else {
             const char nullChar[] = "null";
             token.value_type = Type::Null;
-            token.value = DataRef::asDataRef(nullChar);
+            token.value = DataRef(nullChar);
             serializer.write(token);
         }
     }
@@ -3390,10 +3391,10 @@ struct TypeHandler<bool, bool>
 		const char falseChar[] = "false";
 		token.value_type = Type::Bool;
 		if (b) {
-			token.value = DataRef::asDataRef(trueChar);
+			token.value = DataRef(trueChar);
 		}
 		else {
-			token.value = DataRef::asDataRef(falseChar);
+			token.value = DataRef(falseChar);
 		}
 		serializer.write(token);
 	}
@@ -3428,20 +3429,20 @@ public:
     static inline void serializeToken(const std::vector<T> &vec, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
-        token.value = DataRef::asDataRef("[");
+        token.value = DataRef("[");
         serializer.write(token);
 
-        token.name = DataRef::asDataRef("");
+        token.name = DataRef("");
 
         for (auto &index : vec)
         {
             TypeHandler<T,T>::serializeToken(index, token, serializer);
         }
 
-        token.name = DataRef::asDataRef("");
+        token.name = DataRef("");
 
         token.value_type = Type::ArrayEnd;
-        token.value = DataRef::asDataRef("]");
+        token.value = DataRef("]");
         serializer.write(token);
     }
 };
@@ -3742,16 +3743,16 @@ struct TypeHandler<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
     static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
-        token.value = DataRef::asDataRef("[");
+        token.value = DataRef("[");
         serializer.write(token);
 
-        token.name = DataRef::asDataRef("");
+        token.name = DataRef("");
 
         JT::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
-        token.name = DataRef::asDataRef("");
+        token.name = DataRef("");
 
         token.value_type = Type::ArrayEnd;
-        token.value = DataRef::asDataRef("]");
+        token.value = DataRef("]");
         serializer.write(token);
     }
 };
