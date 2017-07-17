@@ -1908,7 +1908,7 @@ struct ParseContext
 #define JT_MEMBER_WITH_NAME(name, member) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
 #define JT_MEMBER_WITH_NAME_AND_ALIASES(name, member, ...) JT::makeMemberInfo(name, &JT_STRUCT_T::member, __VA_ARGS__)
 
-#define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(std::string(#super))
+#define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(JT::DataRef::asDataRef(#super))
 
 #define JT_SUPER_CLASSES(...) JT::makeTuple(__VA_ARGS__)
 
@@ -1964,10 +1964,10 @@ namespace Internal {
     struct SuperInfo
     {
         explicit
-            SuperInfo(const std::string &name)
+            SuperInfo(const DataRef &name)
             : name(name)
         {}
-        const std::string name;
+        const DataRef name;
         typedef T type;
     };
 }
@@ -2178,7 +2178,7 @@ namespace Internal {
         using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
+        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
@@ -2196,7 +2196,7 @@ namespace Internal {
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.c_str();
+        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
 #if JT_HAVE_CONSTEXPR
         Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
@@ -2244,7 +2244,7 @@ namespace Internal {
             using Super = typename TypeAt<0, Meta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.c_str();
+            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
@@ -2253,7 +2253,7 @@ namespace Internal {
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.c_str();
+            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
         JT_CONSTEXPR static size_t membersInSuperClasses()
