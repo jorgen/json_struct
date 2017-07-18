@@ -67,17 +67,21 @@ void test_simple()
     JT::Error called = context.callFunctions(executor);
 
     JT_ASSERT(context.execution_list.size() == 2);
+#if JT_HAVE_CONSTEXPR
     JT_ASSERT(context.execution_list[0].unassigned_required_members.size() == 1);
     JT_ASSERT(context.execution_list[0].unassigned_required_members[0] == "prop3");
+#endif
     JT_ASSERT(context.execution_list[0].missing_members.size() == 0);
 
+#if JT_HAVE_CONSTEXPR
     JT_ASSERT(context.execution_list[1].missing_members.size() == 1);
     JT_ASSERT(context.execution_list[1].missing_members[0] == "second_prop");
+#endif
     JT_ASSERT(context.execution_list[1].unassigned_required_members.size() == 0);
 }
 
 int main()
 {
-    test_simple();
+   test_simple();
     return 0;
 }

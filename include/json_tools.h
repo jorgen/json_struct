@@ -57,32 +57,33 @@
 namespace JT {
 struct DataRef
 {
-    DataRef()
+    JT_CONSTEXPR DataRef()
         : data("")
         , size(0)
     {}
 
-    DataRef(const char *data, size_t size)
+    JT_CONSTEXPR DataRef(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
 
     template <size_t N>
-    explicit DataRef(const char (&data)[N])
+    JT_CONSTEXPR explicit DataRef(const char (&data)[N])
         : data(data)
         , size(N -1)
     {}
 
-    explicit DataRef(const std::string &str)
+    JT_CONSTEXPR explicit DataRef(const std::string &str)
         : data(&str[0])
         , size(str.size())
     {
     }
 
-    static DataRef fromConstCharStar(const char *data)
-    {
-        return DataRef(data, strlen(data));
-    }
+	JT_CONSTEXPR explicit DataRef(const char *data)
+		: data(data)
+		, size(strlen(data))
+	{
+	}
 
     const char *data;
     size_t size;
@@ -1976,7 +1977,7 @@ namespace Internal {
 template<typename T, typename U, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
 {
-    return { {DataRef(name), DataRef::fromConstCharStar(aliases)... }, member };
+    return { {DataRef(name), DataRef(aliases)... }, member };
 }
 
 template<typename T, typename specifier>
@@ -2497,37 +2498,37 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
 {
-    return { { DataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
+    return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
 {
-    return { { DataRef(name), DataRef::fromConstCharStar(aliases)...} , function };
+    return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
 {
-    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...},   function };
+    return { {DataRef(name), DataRef(aliases)...},   function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
 {
-    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
 {
-    return { {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
 {
-    return{ {DataRef(name), DataRef::fromConstCharStar(aliases)...}, function };
+    return{ {DataRef(name), DataRef(aliases)...}, function };
 }
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)

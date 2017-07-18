@@ -5,8 +5,9 @@
 
 #include "include/rapidjson/document.h"
 #include <json/json.h>
+#ifndef WIN32
 #include "include/sajson/sajson.h"
-
+#endif
 struct BenchmarkRun
 {
     virtual ~BenchmarkRun() { }
@@ -95,6 +96,7 @@ struct OldJsonCpp : public BenchmarkRun
     }
 };
 
+#ifndef WIN32
 struct SaJsonRun : public BenchmarkRun
 {
     std::string name() const override { return "SaJson"; }
@@ -108,6 +110,7 @@ struct SaJsonRun : public BenchmarkRun
         second_name = document.get_root().get_array_element(1).get_value_of_key(sajson::literal("name")).as_string();
     }
 };
+#endif
 
 int main()
 {
@@ -123,9 +126,11 @@ int main()
     //run = new OldJsonCpp();
     //runBenchmark(std::string(generatedJson), *run);
     //delete run;
+#ifndef WIN32
     //run = new SaJsonRun();
     //runBenchmark(std::string(generatedJson), *run);
     //delete run;
+#endif
 
 
 
