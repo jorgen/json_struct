@@ -73,13 +73,13 @@ struct DataRef
         , size(N -1)
     {}
 
-    JT_CONSTEXPR explicit DataRef(const std::string &str)
+    explicit DataRef(const std::string &str)
         : data(&str[0])
         , size(str.size())
     {
     }
 
-	JT_CONSTEXPR explicit DataRef(const char *data)
+	explicit DataRef(const char *data)
 		: data(data)
 		, size(strlen(data))
 	{
@@ -1650,7 +1650,7 @@ struct Tuple
                 : impl(args...)
         {}
 
-		using Seq = typename Internal::GenSequence<sizeof...(Ts)>::type;
+        using Seq = typename Internal::GenSequence<sizeof...(Ts)>::type;
         Internal::TupleImpl<Seq, Ts...> impl;
         static JT_CONSTEXPR const size_t size = sizeof...(Ts);
 
@@ -2974,7 +2974,138 @@ namespace Internal {
         }
     };
 }
+namespace Internal {
+    enum class ParseEnumStringState
+    {
+        FindingNameStart,
+        FindingNameEnd,
+        FindingSeperator
+    };
+    template <size_t N>
+    void populateEnumNames(std::vector<DataRef> &names, const char(&data)[N])
+    {
+        size_t name_starts_at = 0;
+        ParseEnumStringState state = ParseEnumStringState::FindingNameStart;
+        for (size_t i = 0; i < N; i++)
+        {
+            char c = data[i];
+            assert(c != '=');
+            switch (state)
+            {
+                case ParseEnumStringState::FindingNameStart:
+                    if ((c >= 'A' && c <= 'Z')
+                            || (c >= 'a' && c <= 'z')) {
+                        name_starts_at = i;
+                        state = ParseEnumStringState::FindingNameEnd;
+                    }
+                    break;
+                case ParseEnumStringState::FindingNameEnd:
+                    if (c == '\0' || c == '\t' || c == '\n' || c == '\r' || c == ' ' || c == ',') {
+                        names.push_back(DataRef(data + name_starts_at, i - name_starts_at));
+                        state = c == ',' ? ParseEnumStringState::FindingNameStart : ParseEnumStringState::FindingSeperator;
+                    }
+                    break;
+                case ParseEnumStringState::FindingSeperator:
+                    if (c == ',')
+                        state = ParseEnumStringState::FindingNameStart;
+                    break;
+            }
+        }
+    }
+}
+} //JT namespace
 
+#define JT_ENUM(name, ...) \
+enum class name \
+{ \
+    __VA_ARGS__ \
+}; \
+struct jt_##name##_string_struct \
+{ \
+    template <size_t N> \
+    JT_CONSTEXPR explicit jt_##name##_string_struct(const char(&data)[N]) \
+    { \
+        fprintf(stderr, "Initializing with %s\n", data); \
+        JT::Internal::populateEnumNames(_strings, data); \
+    } \
+    std::vector<JT::DataRef> _strings; \
+    \
+    static const std::vector<JT::DataRef> & strings() \
+    { \
+        static jt_##name##_string_struct ret(#__VA_ARGS__); \
+        return ret._strings; \
+    } \
+}; \
+
+#define JT_ENUM_DECLARE_STRING_PARSER(name) \
+namespace JT { \
+template<> \
+struct TypeHandler<name, name> \
+{ \
+    static inline Error unpackToken(name&to_type, ParseContext &context) \
+    { \
+        return Internal::EnumHandler<name, jt_##name##_string_struct>::unpackToken(to_type, context); \
+    } \
+    static inline void serializeToken(const name &from_type, Token &token, Serializer &serializer) \
+    { \
+        return Internal::EnumHandler<name , jt_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+    } \
+}; \
+}
+
+#define JT_ENUM_NAMESPACE_DECLARE_STRING_PARSER(ns, name) \
+namespace JT { \
+template<> \
+struct TypeHandler<ns::name, ns::name> \
+{ \
+    static inline Error unpackToken(ns::name &to_type, ParseContext &context) \
+    { \
+        return Internal::EnumHandler<ns::name, ns::jt_##name##_string_struct>::unpackToken(to_type, context); \
+    } \
+    static inline void serializeToken(const ns::name &from_type, Token &token, Serializer &serializer) \
+    { \
+        return Internal::EnumHandler<ns::name , ns::jt_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+    } \
+}; \
+}
+
+namespace JT
+{
+namespace Internal {
+    template<typename T, typename F>
+    struct EnumHandler
+    {
+        static inline Error unpackToken(T &to_type, ParseContext &context)
+        {
+            if (context.token.value_type == Type::String)
+            {
+                auto &strings = F::strings();
+                for (size_t i = 0; i < strings.size(); i++)
+                {
+                    const DataRef &ref = strings[i];
+                    if (ref.size == context.token.value.size) {
+                        if (memcmp(ref.data, context.token.value.data, ref.size) == 0) {
+                            to_type = static_cast<T>(i);
+                            return Error::NoError;
+                        }
+                    }
+                }
+            }
+            return Error::IlligalDataValue;
+        }
+
+        static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
+        {
+            size_t i = static_cast<size_t>(from_type);
+            token.value = F::strings()[i];
+            token.value_type = Type::String;
+            serializer.write(token);
+        }
+    };
+}
+}
+
+namespace JT {
 template<typename T>
 struct TypeHandler<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
 {
