@@ -55,18 +55,37 @@
 #undef min
 #endif
 namespace JT {
+/*!
+ *  \bief Pointer to data
+ *
+ *  DataRef is used to refere to some data inside a json string. It holds the
+ *  start posisition of the data, and its size.
+ */
 struct DataRef
 {
-    JT_CONSTEXPR DataRef()
+    /*!
+     * Constructs a null Dataref pointing to "" with size 0.
+     */
+    JT_CONSTEXPR explicit DataRef()
         : data("")
         , size(0)
     {}
 
-    JT_CONSTEXPR DataRef(const char *data, size_t size)
+    /*!
+     * Constructs a DataRef pointing to data and size.
+     * \param data points to start of data.
+     * \param size size of data.
+     */
+    JT_CONSTEXPR explicit DataRef(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
 
+    /*!  Cobstructs a DataRef pointing to an array. This will \b NOT look for
+     * the null terminator, but just initialize the DataRef to the size of the
+     * array - 1. This function is intended to be used with string literals.
+     * \param data  start of the data.
+     */
     template <size_t N>
     JT_CONSTEXPR explicit DataRef(const char (&data)[N])
         : data(data)
@@ -1689,6 +1708,8 @@ struct TypeAt<I, Tuple<Ts...>>
         using type = typename element::type;
 };
 
+/*!  \internal
+ */
 template<>
 struct Tuple<>
 {
