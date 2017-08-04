@@ -320,10 +320,32 @@ struct JsonObjectTester
               JT_MEMBER(number));
 };
 
+struct JsonObjectOrArrayObjectTester
+{
+    std::string field;
+    JT::JsonObjectOrArray obj;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(field),
+              JT_MEMBER(obj),
+              JT_MEMBER(number));
+};
+
 struct JsonObjectRefTester
 {
     std::string field;
     JT::JsonObjectRef obj;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(field),
+              JT_MEMBER(obj),
+              JT_MEMBER(number));
+};
+
+struct JsonObjectOrArrayObjectRefTester
+{
+    std::string field;
+    JT::JsonObjectOrArrayRef obj;
     int number = 0;
 
     JT_STRUCT(JT_MEMBER(field),
@@ -355,10 +377,38 @@ void check_json_object()
     JT_ASSERT(out == jsonObjectTest);
 }
 
+void check_json_object_or_array_object()
+{
+    JT::ParseContext context(jsonObjectTest);
+    JsonObjectOrArrayObjectTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.field == "hello");
+    JT_ASSERT(obj.obj.size() > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonObjectTest);
+}
+
 void check_json_object_ref()
 {
     JT::ParseContext context(jsonObjectTest);
     JsonObjectRefTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.field == "hello");
+    JT_ASSERT(obj.obj.size > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonObjectTest);
+}
+
+void check_json_object_or_array_object_ref()
+{
+    JT::ParseContext context(jsonObjectTest);
+    JsonObjectOrArrayObjectRefTester obj;
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.field == "hello");
@@ -380,10 +430,32 @@ struct JsonArrayTester
               JT_MEMBER(number));
 };
 
+struct JsonObjectOrArrayArrayTester
+{
+    std::string string;
+    JT::JsonObjectOrArray array;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(string),
+              JT_MEMBER(array),
+              JT_MEMBER(number));
+};
+
 struct JsonArrayRefTester
 {
     std::string string;
     JT::JsonArrayRef array;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(string),
+              JT_MEMBER(array),
+              JT_MEMBER(number));
+};
+
+struct JsonObjectOrArrayArrayRefTester
+{
+    std::string string;
+    JT::JsonObjectOrArrayRef array;
     int number = 0;
 
     JT_STRUCT(JT_MEMBER(string),
@@ -417,6 +489,20 @@ void check_json_array()
     JT_ASSERT(out == jsonArrayTest);
 }
 
+void check_json_object_or_array_array()
+{
+    JT::ParseContext context(jsonArrayTest);
+    JsonObjectOrArrayArrayTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.string == "foo");
+    JT_ASSERT(obj.array.size() > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonArrayTest);
+}
+
 void check_json_array_ref()
 {
     JT::ParseContext context(jsonArrayTest);
@@ -431,6 +517,21 @@ void check_json_array_ref()
     JT_ASSERT(out == jsonArrayTest);
 }
 
+void check_json_object_or_array_array_ref()
+{
+    JT::ParseContext context(jsonArrayTest);
+    JsonObjectOrArrayArrayRefTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.string == "foo");
+    JT_ASSERT(obj.array.size > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonArrayTest);
+}
+
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -440,8 +541,12 @@ int main(int, char **)
     check_json_missing_object();
     check_json_error_in_sub();
     check_json_object();
+	check_json_object_or_array_object();
     check_json_object_ref();
+	check_json_object_or_array_object_ref();
     check_json_array();
+	check_json_object_or_array_array();
     check_json_array_ref();
+	check_json_object_or_array_array_ref();
     return 0;
 }

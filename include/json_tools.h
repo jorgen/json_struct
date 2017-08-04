@@ -1819,6 +1819,20 @@ struct JsonArray : public std::string
 #endif
 };
 
+struct JsonObjectOrArrayRef : public DataRef
+{
+#if JT_HAS_USING_CONSTRUCTOR
+    using DataRef::DataRef;
+#endif
+};
+
+struct JsonObjectOrArray : public std::string
+{
+#if JT_HAS_USING_CONSTRUCTOR
+    using std::string::string;
+#endif
+};
+
 struct JsonTokens : public std::vector<JT::Token>
 {
 #if JT_HAS_USING_CONSTRUCTOR
@@ -3729,7 +3743,7 @@ struct TypeHandler<JsonArrayRef,JsonArrayRef>
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+       to_type.size = context.token.value.data + context.token.value.size - to_type.data;
 
         return error;
     }
@@ -3840,6 +3854,104 @@ struct TypeHandler<JsonObject, JsonObject>
     }
 
     static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = DataRef(from_type);
+        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TypeHandler<JsonObjectOrArrayRef, JsonObjectOrArrayRef> {
+    static inline Error unpackToken(JsonObjectOrArrayRef &to_type, ParseContext &context)
+    {
+        JT::Type openType;
+        JT::Type closeType;
+        if (context.token.value_type == JT::Type::ObjectStart)
+        {
+            openType = JT::Type::ObjectStart;
+            closeType = JT::Type::ObjectEnd;
+        }
+        else if (context.token.value_type == JT::Type::ArrayStart)
+        {
+            openType = JT::Type::ArrayStart;
+            closeType = JT::Type::ArrayEnd;
+        }
+        else {
+            return Error::ExpectedObjectStart;
+        }
+
+        bool buffer_change = false;
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+                                                                  {
+                                                                  buffer_change = true;
+                                                                  });
+
+        to_type.data = context.token.value.data;
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level && buffer_change == false) {
+            error = context.nextToken();
+            if (context.token.value_type == openType)
+                level++;
+            else if (context.token.value_type == closeType)
+                level--;
+        }
+        if (buffer_change)
+            return Error::NonContigiousMemory;
+
+        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+        return error;
+    }
+
+    static inline void serializeToken(const JsonObjectOrArrayRef &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = from_type;
+        token.value_type = Type::Null;
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TypeHandler<JsonObjectOrArray, JsonObjectOrArray>
+{
+    static inline Error unpackToken(JsonObjectOrArray &to_type, ParseContext &context)
+    {
+        JT::Type openType;
+        JT::Type closeType;
+        if (context.token.value_type == JT::Type::ObjectStart)
+        {
+            openType = JT::Type::ObjectStart;
+            closeType = JT::Type::ObjectEnd;
+        }
+        else if (context.token.value_type == JT::Type::ArrayStart)
+        {
+            openType = JT::Type::ArrayStart;
+            closeType = JT::Type::ArrayEnd;
+        }
+        else {
+            return Error::ExpectedObjectStart;
+        }
+
+
+        context.tokenizer.copyFromValue(context.token, to_type);
+
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level) {
+            error = context.nextToken();
+            if (context.token.value_type == openType)
+                level++;
+            else if (context.token.value_type == closeType)
+                level--;
+        }
+
+        context.tokenizer.copyIncludingValue(context.token, to_type);
+
+        return error;
+    }
+
+    static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
         token.value = DataRef(from_type);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
