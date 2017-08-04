@@ -98,11 +98,11 @@ struct DataRef
     {
     }
 
-	explicit DataRef(const char *data)
-		: data(data)
-		, size(strlen(data))
-	{
-	}
+    explicit DataRef(const char *data)
+        : data(data)
+          , size(strlen(data))
+    {
+    }
 
     const char *data;
     size_t size;
@@ -718,17 +718,15 @@ inline void Tokenizer::copyFromValue(const Token &token, std::string &to_buffer)
         auto pair = std::make_pair(index, &to_buffer);
         copy_buffers.push_back(pair);
     }
-
-    
-
 }
+
 inline void Tokenizer::copyIncludingValue(const Token &token, std::string &to_buffer)
 {
     auto it = std::find_if(copy_buffers.begin(), copy_buffers.end(), [&to_buffer] (const std::pair<size_t, std::string *> &pair) { return &to_buffer == pair.second; });
     assert(it != copy_buffers.end());
     assert(it->first <= cursor_index);
-    std::string data(data_list.front().data + it->first, cursor_index - it->first);
-    to_buffer += data;
+    if (cursor_index - it->first != 0)
+        to_buffer.append(data_list.front().data + it->first, cursor_index - it->first);
     copy_buffers.erase(it);
 }
 
@@ -3201,108 +3199,108 @@ public:
 template<>
 struct TypeHandler<std::string, std::string>
 {
-	static inline Error unpackToken(std::string &to_type, ParseContext &context)
-	{
-		to_type = std::string(context.token.value.data, context.token.value.size);
-		return Error::NoError;
-	}
+    static inline Error unpackToken(std::string &to_type, ParseContext &context)
+    {
+        to_type = std::string(context.token.value.data, context.token.value.size);
+        return Error::NoError;
+    }
 
-	static inline void serializeToken(const std::string &str, Token &token, Serializer &serializer)
-	{
-		token.value_type = Type::Ascii;
-		token.value.data = &str[0];
-		token.value.size = str.size();
-		serializer.write(token);
-	}
+    static inline void serializeToken(const std::string &str, Token &token, Serializer &serializer)
+    {
+        token.value_type = Type::Ascii;
+        token.value.data = &str[0];
+        token.value.size = str.size();
+        serializer.write(token);
+    }
 };
 
 template<>
 struct TypeHandler<double, double>
 {
-	static inline Error unpackToken(double &to_type, ParseContext &context)
-	{
-		char *pointer;
-		to_type = strtod(context.token.value.data, &pointer);
-		if (context.token.value.data == pointer)
-			return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
-		return Error::NoError;
-	}
+    static inline Error unpackToken(double &to_type, ParseContext &context)
+    {
+        char *pointer;
+        to_type = strtod(context.token.value.data, &pointer);
+        if (context.token.value.data == pointer)
+            return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
+        return Error::NoError;
+    }
 
-	static inline void serializeToken(const double &d, Token &token, Serializer &serializer)
-	{
-		//char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-		char buf[1 + (308 + 1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+    static inline void serializeToken(const double &d, Token &token, Serializer &serializer)
+    {
+        //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+        char buf[1 + (308 + 1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
 
-		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
 
-		if (size < 0) {
-			fprintf(stderr, "error serializing float token\n");
-			return;
-		}
+        if (size < 0) {
+            fprintf(stderr, "error serializing float token\n");
+            return;
+        }
 
-		token.value_type = Type::Number;
-		token.value.data = buf;
-		token.value.size = size;
-		serializer.write(token);
-	}
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
 };
 
 
 template<>
 struct TypeHandler<float, float>
 {
-	static inline Error unpackToken(float &to_type, ParseContext &context)
-	{
-		char *pointer;
-		to_type = strtof(context.token.value.data, &pointer);
-		if (context.token.value.data == pointer)
-			return Error::FailedToParseFloat;
-		return Error::NoError;
-	}
+    static inline Error unpackToken(float &to_type, ParseContext &context)
+    {
+        char *pointer;
+        to_type = strtof(context.token.value.data, &pointer);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseFloat;
+        return Error::NoError;
+    }
 
-	static inline void serializeToken(const float &f, Token &token, Serializer &serializer)
-	{
-		//char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-		char buf[1/*'-'*/ + (38 + 1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", f);
-		if (size < 0) {
-			fprintf(stderr, "error serializing float token\n");
-			return;
-		}
+    static inline void serializeToken(const float &f, Token &token, Serializer &serializer)
+    {
+        //char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+        char buf[1/*'-'*/ + (38 + 1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", f);
+        if (size < 0) {
+            fprintf(stderr, "error serializing float token\n");
+            return;
+        }
 
-		token.value_type = Type::Number;
-		token.value.data = buf;
-		token.value.size = size;
-		serializer.write(token);
-	}
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
 };
 
 template<>
 struct TypeHandler<int, int>
 {
-	static inline Error unpackToken(int &to_type, ParseContext &context)
-	{
-		char *pointer;
-		to_type = strtol(context.token.value.data, &pointer, 10);
-		if (context.token.value.data == pointer)
-			return Error::FailedToParseInt;
-		return Error::NoError;
-	}
+    static inline Error unpackToken(int &to_type, ParseContext &context)
+    {
+        char *pointer;
+        to_type = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return Error::NoError;
+    }
 
-	static inline void serializeToken(const int&d, Token &token, Serializer &serializer)
-	{
-		char buf[11];
-		int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
-		if (size < 0) {
-			fprintf(stderr, "error serializing int token\n");
-			return;
-		}
+    static inline void serializeToken(const int&d, Token &token, Serializer &serializer)
+    {
+        char buf[11];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
 
-		token.value_type = Type::Number;
-		token.value.data = buf;
-		token.value.size = size;
-		serializer.write(token);
-	}
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size;
+        serializer.write(token);
+    }
 };
 
 template<>
@@ -3526,31 +3524,31 @@ public:
 template<>
 struct TypeHandler<bool, bool>
 {
-	static inline Error unpackToken(bool &to_type, ParseContext &context)
-	{
-		if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
-			to_type = true;
-		else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
-			to_type = false;
-		else
-			return Error::FailedToParseBoolen;
+    static inline Error unpackToken(bool &to_type, ParseContext &context)
+    {
+        if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
+            to_type = true;
+        else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
+            to_type = false;
+        else
+            return Error::FailedToParseBoolen;
 
-		return Error::NoError;
-	}
+        return Error::NoError;
+    }
 
-	static inline void serializeToken(const bool &b, Token &token, Serializer &serializer)
-	{
-		const char trueChar[] = "true";
-		const char falseChar[] = "false";
-		token.value_type = Type::Bool;
-		if (b) {
-			token.value = DataRef(trueChar);
-		}
-		else {
-			token.value = DataRef(falseChar);
-		}
-		serializer.write(token);
-	}
+    static inline void serializeToken(const bool &b, Token &token, Serializer &serializer)
+    {
+        const char trueChar[] = "true";
+        const char falseChar[] = "false";
+        token.value_type = Type::Bool;
+        if (b) {
+            token.value = DataRef(trueChar);
+        }
+        else {
+            token.value = DataRef(falseChar);
+        }
+        serializer.write(token);
+    }
 };
 
 template<typename T>
@@ -3707,132 +3705,147 @@ public:
 template<>
 struct TypeHandler<JsonArrayRef,JsonArrayRef>
 {
-	static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
-	{
-		if (context.token.value_type != JT::Type::ArrayStart)
-			return Error::ExpectedArrayStart;
+    static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart)
+            return Error::ExpectedArrayStart;
 
-		bool buffer_change = false;
-		auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
-		{
-			buffer_change = true;
-		});
+        bool buffer_change = false;
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+                                                                  {
+                                                                  buffer_change = true;
+                                                                  });
 
-		size_t level = 1;
-		Error error = Error::NoError;
-		while (error == JT::Error::NoError && level && buffer_change == false) {
-			error = context.nextToken();
-			if (context.token.value_type == Type::ArrayStart)
-				level++;
-			else if (context.token.value_type == Type::ArrayEnd)
-				level--;
-		}
-		if (buffer_change)
-			return Error::NonContigiousMemory;
+        to_type.data = context.token.value.data;
 
-		return error;
-	}
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level && buffer_change == false) {
+            error = context.nextToken();
+            if (context.token.value_type == Type::ArrayStart)
+                level++;
+            else if (context.token.value_type == Type::ArrayEnd)
+                level--;
+        }
+        if (buffer_change)
+            return Error::NonContigiousMemory;
 
-	static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
-	{
-		serializer.write(from_type.data, from_type.size);
-	}
+        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+
+        return error;
+    }
+
+    static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = from_type;
+        token.value_type = Type::Null;
+        serializer.write(token);
+    }
 };
 
 template<>
 struct TypeHandler<JsonArray,JsonArray>
 {
-	static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
-	{
-		if (context.token.value_type != JT::Type::ArrayStart)
-			return Error::ExpectedArrayStart;
+    static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ArrayStart)
+            return Error::ExpectedArrayStart;
 
-		context.tokenizer.copyFromValue(context.token, to_type);
+        context.tokenizer.copyFromValue(context.token, to_type);
 
-		size_t level = 1;
-		Error error = Error::NoError;
-		while (error == JT::Error::NoError && level) {
-			error = context.nextToken();
-			if (context.token.value_type == Type::ArrayStart)
-				level++;
-			else if (context.token.value_type == Type::ArrayStart)
-				level--;
-		}
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level) {
+            error = context.nextToken();
+            if (context.token.value_type == Type::ArrayStart)
+                level++;
+            else if (context.token.value_type == Type::ArrayEnd)
+                level--;
+        }
 
-		context.tokenizer.copyIncludingValue(context.token, to_type);
+        if (error == JT::Error::NoError)
+            context.tokenizer.copyIncludingValue(context.token, to_type);
 
-		return error;
-	}
+        return error;
+    }
 
-	static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
-	{
-		serializer.write(from_type);
-	}
+    static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = DataRef(from_type);
+        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        serializer.write(token);
+    }
 };
 
 template<>
 struct TypeHandler<JsonObjectRef, JsonObjectRef> {
-	static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
-	{
-		if (context.token.value_type != JT::Type::ObjectStart)
-			return Error::ExpectedObjectStart;
+    static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ObjectStart)
+            return Error::ExpectedObjectStart;
 
-		bool buffer_change = false;
-		auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
-		{
-			buffer_change = true;
-		});
+        bool buffer_change = false;
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+                                                                  {
+                                                                  buffer_change = true;
+                                                                  });
 
-		size_t level = 1;
-		Error error = Error::NoError;
-		while (error == JT::Error::NoError && level && buffer_change == false) {
-			error = context.nextToken();
-			if (context.token.value_type == Type::ObjectStart)
-				level++;
-			else if (context.token.value_type == Type::ObjectEnd)
-				level--;
-		}
-		if (buffer_change)
-			return Error::NonContigiousMemory;
+        to_type.data = context.token.value.data;
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level && buffer_change == false) {
+            error = context.nextToken();
+            if (context.token.value_type == Type::ObjectStart)
+                level++;
+            else if (context.token.value_type == Type::ObjectEnd)
+                level--;
+        }
+        if (buffer_change)
+            return Error::NonContigiousMemory;
 
-		return error;
-	}
+        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+        return error;
+    }
 
-	static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
-	{
-		serializer.write(from_type.data, from_type.size);
-	}
+    static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = from_type;
+        token.value_type = Type::Null;
+        serializer.write(token);
+    }
 };
 
 template<>
 struct TypeHandler<JsonObject, JsonObject>
 {
-	static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
-	{
-		if (context.token.value_type != JT::Type::ObjectStart)
-			return Error::ExpectedObjectStart;
+    static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != JT::Type::ObjectStart)
+            return Error::ExpectedObjectStart;
 
-		context.tokenizer.copyFromValue(context.token, to_type);
+        context.tokenizer.copyFromValue(context.token, to_type);
 
-		size_t level = 1;
-		Error error = Error::NoError;
-		while (error == JT::Error::NoError && level) {
-			error = context.nextToken();
-			if (context.token.value_type == Type::ObjectStart)
-				level++;
-			else if (context.token.value_type == Type::ObjectEnd)
-				level--;
-		}
+        size_t level = 1;
+        Error error = Error::NoError;
+        while (error == JT::Error::NoError && level) {
+            error = context.nextToken();
+            if (context.token.value_type == Type::ObjectStart)
+                level++;
+            else if (context.token.value_type == Type::ObjectEnd)
+                level--;
+        }
 
-		context.tokenizer.copyIncludingValue(context.token, to_type);
+        context.tokenizer.copyIncludingValue(context.token, to_type);
 
-		return error;
-	}
+        return error;
+    }
 
-	static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
-	{
-		serializer.write(from_type);
-	}
+    static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
+    {
+        token.value = DataRef(from_type);
+        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        serializer.write(token);
+    }
 };
 
 namespace Internal

@@ -309,6 +309,128 @@ void check_json_error_in_sub()
     JT_ASSERT(sub.not_assigned.data == 999);
 }
 
+struct JsonObjectTester
+{
+    std::string field;
+    JT::JsonObject obj;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(field),
+              JT_MEMBER(obj),
+              JT_MEMBER(number));
+};
+
+struct JsonObjectRefTester
+{
+    std::string field;
+    JT::JsonObjectRef obj;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(field),
+              JT_MEMBER(obj),
+              JT_MEMBER(number));
+};
+
+const char jsonObjectTest[] = R"json({
+    "field" : "hello",
+    "obj" : {
+        "some_sub_filed" : 2,
+        "some_sub_array" : [ "a", "b", "c"],
+        "some_sub_object" : { "field" : "not hello" }
+    },
+    "number" : 43
+})json";
+
+void check_json_object()
+{
+    JT::ParseContext context(jsonObjectTest);
+    JsonObjectTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.field == "hello");
+    JT_ASSERT(obj.obj.size() > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonObjectTest);
+}
+
+void check_json_object_ref()
+{
+    JT::ParseContext context(jsonObjectTest);
+    JsonObjectRefTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.field == "hello");
+    JT_ASSERT(obj.obj.size > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonObjectTest);
+}
+
+struct JsonArrayTester
+{
+    std::string string;
+    JT::JsonArray array;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(string),
+              JT_MEMBER(array),
+              JT_MEMBER(number));
+};
+
+struct JsonArrayRefTester
+{
+    std::string string;
+    JT::JsonArrayRef array;
+    int number = 0;
+
+    JT_STRUCT(JT_MEMBER(string),
+              JT_MEMBER(array),
+              JT_MEMBER(number));
+};
+
+const char jsonArrayTest[] = R"json({
+    "string" : "foo",
+    "array" : [
+        ["a","b","c"],
+        {
+            "sub object" : 44.50
+        },
+        12345
+    ],
+    "number" : 43
+})json";
+
+void check_json_array()
+{
+    JT::ParseContext context(jsonArrayTest);
+    JsonArrayTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.string == "foo");
+    JT_ASSERT(obj.array.size() > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonArrayTest);
+}
+
+void check_json_array_ref()
+{
+    JT::ParseContext context(jsonArrayTest);
+    JsonArrayRefTester obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(obj.string == "foo");
+    JT_ASSERT(obj.array.size > 0);
+    JT_ASSERT(obj.number == 43);
+
+    std::string out = JT::serializeStruct(obj);
+    JT_ASSERT(out == jsonArrayTest);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -317,5 +439,9 @@ int main(int, char **)
     check_json_tree_deep_tree();
     check_json_missing_object();
     check_json_error_in_sub();
+    check_json_object();
+    check_json_object_ref();
+    check_json_array();
+    check_json_array_ref();
     return 0;
 }
