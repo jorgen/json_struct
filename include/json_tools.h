@@ -34,8 +34,7 @@
 #include <atomic>
 
 #ifdef _MSC_VER
-
-//#pragma warning(disable : 4503)
+#pragma warning(disable : 4503)
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
