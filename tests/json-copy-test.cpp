@@ -234,10 +234,10 @@ void jt_copy_tokens()
     parseContext.parseTo(parent);
 
     JT_ASSERT(parseContext.error == JT::Error::NoError);
-    JT_ASSERT(parent.child.size() == 4);
+    JT_ASSERT(parent.child.data.size() == 4);
 
     JT::ParseContext childContext;
-    childContext.tokenizer.addData(&parent.child);
+    childContext.tokenizer.addData(&parent.child.data);
     SecondChild child;
     childContext.parseTo(child);
     JT_ASSERT(child.another_int == 495);

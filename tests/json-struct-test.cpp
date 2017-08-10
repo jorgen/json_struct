@@ -370,7 +370,7 @@ void check_json_object()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.size() > 0);
+    JT_ASSERT(obj.obj.data.size() > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -384,7 +384,7 @@ void check_json_object_or_array_object()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.size() > 0);
+    JT_ASSERT(obj.obj.data.size() > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -398,7 +398,7 @@ void check_json_object_ref()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.size > 0);
+    JT_ASSERT(obj.obj.ref.size > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -412,7 +412,7 @@ void check_json_object_or_array_object_ref()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.size > 0);
+    JT_ASSERT(obj.obj.ref.size > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -482,7 +482,7 @@ void check_json_array()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.size() > 0);
+    JT_ASSERT(obj.array.data.size() > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -496,7 +496,7 @@ void check_json_object_or_array_array()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.size() > 0);
+    JT_ASSERT(obj.array.data.size() > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -510,7 +510,7 @@ void check_json_array_ref()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.size > 0);
+    JT_ASSERT(obj.array.ref.size > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);
@@ -524,7 +524,7 @@ void check_json_object_or_array_array_ref()
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
     JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.size > 0);
+    JT_ASSERT(obj.array.ref.size > 0);
     JT_ASSERT(obj.number == 43);
 
     std::string out = JT::serializeStruct(obj);

@@ -38,16 +38,13 @@
 #if _MSC_VER > 1800
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
-#define JT_HAS_USING_CONSTRUCTOR 1
 #else
 #define JT_CONSTEXPR
 #define JT_HAVE_CONSTEXPR 0
-#define JT_HAS_USING_CONSTRUCTOR 0
 #endif
 #else
 #define JT_CONSTEXPR constexpr
 #define JT_HAVE_CONSTEXPR 1
-#define JT_HAS_USING_CONSTRUCTOR 1
 #endif
 
 #ifdef min
@@ -1769,75 +1766,56 @@ struct OptionalChecked
     typedef bool IsOptionalType;
 };
 
-class SilentString : public std::string
+struct SilentString
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::string::string;
-#endif
+	std::string data;
 };
+
 template<typename T, typename A = std::allocator<T>>
-class SilentVector : public std::vector<T, A>
+struct SilentVector
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::vector<T, A>::vector;
-#endif
+	std::vector<T, A> data;
 };
 
 template<typename T, typename Deleter = std::default_delete<T>>
-class SilentUniquePtr : public std::unique_ptr<T, Deleter>
+struct SilentUniquePtr
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::unique_ptr<T, Deleter>::unique_ptr;
-#endif
+	std::unique_ptr<T, Deleter> data;
 };
 
-class JsonObjectRef : public DataRef
+struct JsonObjectRef
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using DataRef::DataRef;
-#endif
+	DataRef ref;
 };
 
-struct JsonObject : public std::string
+struct JsonObject
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::string::string;
-#endif
+	std::string data;
 };
 
-struct JsonArrayRef : public DataRef
+struct JsonArrayRef
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using DataRef::DataRef;
-#endif
+	DataRef ref;
 };
 
-struct JsonArray : public std::string
+struct JsonArray
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::string::string;
-#endif
+	std::string data;
 };
 
-struct JsonObjectOrArrayRef : public DataRef
+struct JsonObjectOrArrayRef
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using DataRef::DataRef;
-#endif
+	DataRef ref;
 };
 
-struct JsonObjectOrArray : public std::string
+struct JsonObjectOrArray
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::string::string;
-#endif
+	std::string data;
 };
 
-struct JsonTokens : public std::vector<JT::Token>
+struct JsonTokens
 {
-#if JT_HAS_USING_CONSTRUCTOR
-    using std::vector<JT::Token>::vector;
-#endif
+	std::vector<JT::Token> data;
 };
 
 struct JsonMeta
@@ -1852,14 +1830,14 @@ struct JsonMeta
 static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 {
     std::vector<JsonMeta> meta;
-    meta.reserve(tokens.size() / 4);
+    meta.reserve(tokens.data.size() / 4);
     std::vector<int> parent;
-    for (unsigned int i = 0; i < tokens.size(); i++)
+    for (unsigned int i = 0; i < tokens.data.size(); i++)
     {
         for (int parent_index : parent) {
             meta[parent_index].size++;
         }
-        const JT::Token &token = tokens.at(i);
+        const JT::Token &token = tokens.data.at(i);
         if (token.value_type == Type::ArrayEnd
             || token.value_type == Type::ObjectEnd)
         {
@@ -3616,12 +3594,12 @@ struct TypeHandler<SilentString, SilentString>
 {
     static inline Error unpackToken(SilentString &to_type, ParseContext &context)
     {
-        return TypeHandler<std::string, std::string>::unpackToken(to_type, context);
+        return TypeHandler<std::string, std::string>::unpackToken(to_type.data, context);
     }
     static inline void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
     {
-        if (str.size()) {
-            TypeHandler<std::string, std::string>::serializeToken(str, token, serializer);
+        if (str.data.size()) {
+            TypeHandler<std::string, std::string>::serializeToken(str.data, token, serializer);
         }
     }
 };
@@ -3707,11 +3685,11 @@ struct TypeHandler<JsonTokens, JsonTokens>
 public:
     static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
     {
-        return TypeHandler<std::vector<Token>, std::vector<Token>>::unpackToken(to_type, context);
+        return TypeHandler<std::vector<Token>, std::vector<Token>>::unpackToken(to_type.data, context);
     }
     static inline void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
     {
-        return TypeHandler<std::vector<Token>, std::vector<Token>>::serializeToken(from, token, serializer);
+        return TypeHandler<std::vector<Token>, std::vector<Token>>::serializeToken(from.data, token, serializer);
     }
 };
 
@@ -3729,7 +3707,7 @@ struct TypeHandler<JsonArrayRef,JsonArrayRef>
                                                                   buffer_change = true;
                                                                   });
 
-        to_type.data = context.token.value.data;
+        to_type.ref.data = context.token.value.data;
 
         size_t level = 1;
         Error error = Error::NoError;
@@ -3743,14 +3721,14 @@ struct TypeHandler<JsonArrayRef,JsonArrayRef>
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-       to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+       to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
 
         return error;
     }
 
     static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
     {
-        token.value = from_type;
+        token.value = from_type.ref;
         token.value_type = Type::Null;
         serializer.write(token);
     }
@@ -3764,7 +3742,7 @@ struct TypeHandler<JsonArray,JsonArray>
         if (context.token.value_type != JT::Type::ArrayStart)
             return Error::ExpectedArrayStart;
 
-        context.tokenizer.copyFromValue(context.token, to_type);
+        context.tokenizer.copyFromValue(context.token, to_type.data);
 
         size_t level = 1;
         Error error = Error::NoError;
@@ -3777,14 +3755,14 @@ struct TypeHandler<JsonArray,JsonArray>
         }
 
         if (error == JT::Error::NoError)
-            context.tokenizer.copyIncludingValue(context.token, to_type);
+            context.tokenizer.copyIncludingValue(context.token, to_type.data);
 
         return error;
     }
 
     static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type);
+        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
         serializer.write(token);
     }
@@ -3803,7 +3781,7 @@ struct TypeHandler<JsonObjectRef, JsonObjectRef> {
                                                                   buffer_change = true;
                                                                   });
 
-        to_type.data = context.token.value.data;
+        to_type.ref.data = context.token.value.data;
         size_t level = 1;
         Error error = Error::NoError;
         while (error == JT::Error::NoError && level && buffer_change == false) {
@@ -3816,13 +3794,13 @@ struct TypeHandler<JsonObjectRef, JsonObjectRef> {
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+        to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
         return error;
     }
 
     static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
     {
-        token.value = from_type;
+        token.value = from_type.ref;
         token.value_type = Type::Null;
         serializer.write(token);
     }
@@ -3836,7 +3814,7 @@ struct TypeHandler<JsonObject, JsonObject>
         if (context.token.value_type != JT::Type::ObjectStart)
             return Error::ExpectedObjectStart;
 
-        context.tokenizer.copyFromValue(context.token, to_type);
+        context.tokenizer.copyFromValue(context.token, to_type.data);
 
         size_t level = 1;
         Error error = Error::NoError;
@@ -3848,14 +3826,14 @@ struct TypeHandler<JsonObject, JsonObject>
                 level--;
         }
 
-        context.tokenizer.copyIncludingValue(context.token, to_type);
+        context.tokenizer.copyIncludingValue(context.token, to_type.data);
 
         return error;
     }
 
     static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type);
+        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
         serializer.write(token);
     }
@@ -3887,7 +3865,7 @@ struct TypeHandler<JsonObjectOrArrayRef, JsonObjectOrArrayRef> {
                                                                   buffer_change = true;
                                                                   });
 
-        to_type.data = context.token.value.data;
+        to_type.ref.data = context.token.value.data;
         size_t level = 1;
         Error error = Error::NoError;
         while (error == JT::Error::NoError && level && buffer_change == false) {
@@ -3900,13 +3878,13 @@ struct TypeHandler<JsonObjectOrArrayRef, JsonObjectOrArrayRef> {
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-        to_type.size = context.token.value.data + context.token.value.size - to_type.data;
+        to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
         return error;
     }
 
     static inline void serializeToken(const JsonObjectOrArrayRef &from_type, Token &token, Serializer &serializer)
     {
-        token.value = from_type;
+        token.value = from_type.ref;
         token.value_type = Type::Null;
         serializer.write(token);
     }
@@ -3934,7 +3912,7 @@ struct TypeHandler<JsonObjectOrArray, JsonObjectOrArray>
         }
 
 
-        context.tokenizer.copyFromValue(context.token, to_type);
+        context.tokenizer.copyFromValue(context.token, to_type.data);
 
         size_t level = 1;
         Error error = Error::NoError;
@@ -3946,14 +3924,14 @@ struct TypeHandler<JsonObjectOrArray, JsonObjectOrArray>
                 level--;
         }
 
-        context.tokenizer.copyIncludingValue(context.token, to_type);
+        context.tokenizer.copyIncludingValue(context.token, to_type.data);
 
         return error;
     }
 
     static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type);
+        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
         serializer.write(token);
     }
