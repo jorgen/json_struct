@@ -1917,8 +1917,8 @@ struct ParseContext
 
 #define JT_MEMBER(member) JT::makeMemberInfo(#member, &JT_STRUCT_T::member)
 #define JT_MEMBER_ALIASES(member, ...) JT::makeMemberInfo(#member, &JT_STRUCT_T::member, __VA_ARGS__)
-#define JT_MEMBER_WITH_NAME(name, member) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
-#define JT_MEMBER_WITH_NAME_AND_ALIASES(name, member, ...) JT::makeMemberInfo(name, &JT_STRUCT_T::member, __VA_ARGS__)
+#define JT_MEMBER_WITH_NAME(member, name) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
+#define JT_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JT::makeMemberInfo(name, &JT_STRUCT_T::member, __VA_ARGS__)
 
 #define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(JT::DataRef(#super))
 
@@ -2543,8 +2543,8 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
 
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
 #define JT_FUNCTION_ALIASES(name, ...) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name, __VA_ARGS__)
-#define JT_FUNCTION_WITH_NAME(name, member) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
-#define JT_FUNCTION_WITH_NAME_ALIASES(name, member, ...) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member, __VA_ARGS__)
+#define JT_FUNCTION_WITH_NAME(member, name) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
+#define JT_FUNCTION_WITH_NAME_ALIASES(member, name, ...) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member, __VA_ARGS__)
 #define JT_FUNCTION_CONTAINER(...) \
     template<typename JT_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
