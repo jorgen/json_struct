@@ -10,6 +10,7 @@ find_package (LLVM HINTS $ENV{LLVM_MODULE})
 find_package (Clang HINTS $ENV{LLVM_MODULE})
 
 add_subdirectory(jsonmod)
+add_subdirectory(examples)
 if (LLVM_FOUND AND Clang_FOUND)
 	add_subdirectory(extractor)
 endif()

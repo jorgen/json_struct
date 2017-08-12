@@ -20,6 +20,62 @@
  * OF THIS SOFTWARE.
 */
 
+/*! \mainpage json_tools
+ *
+ * json_tools is a set of classes meant for simple and efficient parse,
+ * tokenize and validate json.
+ *
+ * json_tools support parsing json into a stream of tokens using the \ref
+ * tokenizer "Tokenizer" api, or parsing json into c++ structures using the
+ * \ref jt_struct "JT_STRUCT" api.
+ */
+
+/*! \page tokenizer
+ *
+ * Tokenizing json JT::Tokenizer can be used to extract tokens
+ * from a json stream.  Tokens does not describe a full object, but only
+ * key-value pairs. So a object would be: "some key" and object start. Then the
+ * next token would be the first key value pair of that object. Then at some
+ * point the object is finished, and an object end value with no key would be
+ * the token.
+ *
+ * Arrays would be expressed in a similar fashion, but the tokens would have no
+ * key, and each element in the array would be tokens with only a value
+ * specified.
+ *
+ * The root object would be a token with no key data, but only object or array
+ * start
+ *
+ * A crude example of this is showed \ref simple_tokenize.cpp here.
+ *
+ * Tokenizing json in this way allows you parse arbitrary large json data.
+ * Also the tokenizer has mechanisms for asking for more data, making it easy
+ * to stream json data. Using this interface to parse json is a bit verbose and
+ * requires the application code to keep some extra state. json_tools also has
+ * functionality for parsing json data directly into c++ structures. This is
+ * done by adding some metadata to the structure, or by adding a template
+ * specialisation of a class.  \ref jt_struct "describes this" in more detail.
+ */
+
+/*! \example simple_tokenize.cpp
+ *
+ * This example show very basic usage of how JT::Tokenizer can be used
+ */
+
+/*! \example simple_struct.cpp
+ *
+ * This example shows basic usage of parsing Json directly into structs
+ */
+
+/*! \page jt_struct Parsing json into C++ structs
+ *
+ * jt_tools makes it very easy to put your json data into c++ structures or
+ * take data from c++ structures and generate json.
+ *
+ * This is best shown with an example: \include simple_struct.cpp
+
+*/
+
 #ifndef JSON_TOOLS_H
 #define JSON_TOOLS_H
 
