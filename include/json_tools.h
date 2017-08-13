@@ -20,17 +20,19 @@
  * OF THIS SOFTWARE.
 */
 
+/*! \file */
+
 /*! \mainpage json_tools
  *
  * json_tools is a set of classes meant for simple and efficient parse,
  * tokenize and validate json.
  *
  * json_tools support parsing json into a stream of tokens using the \ref
- * tokenizer "Tokenizer" api, or parsing json into c++ structures using the
+ * tokenizer "JT::Tokenizer" api, or parsing json into c++ structures using the
  * \ref jt_struct "JT_STRUCT" api.
  */
 
-/*! \page tokenizer
+/*! \page tokenizer Parsing json using JT::Tokenizer
  *
  * Tokenizing json JT::Tokenizer can be used to extract tokens
  * from a json stream.  Tokens does not describe a full object, but only
@@ -46,7 +48,8 @@
  * The root object would be a token with no key data, but only object or array
  * start
  *
- * A crude example of this is showed \ref simple_tokenize.cpp here.
+ * A crude example of this is viewed in \ref simple_tokenize.cpp here:
+ * \include simple_tokenize.cpp
  *
  * Tokenizing json in this way allows you parse arbitrary large json data.
  * Also the tokenizer has mechanisms for asking for more data, making it easy
@@ -73,7 +76,37 @@
  * take data from c++ structures and generate json.
  *
  * This is best shown with an example: \include simple_struct.cpp
-
+ *
+ * The two interesting sections here are the lines are the:
+ * \code{.cpp}
+ *    JT_STRUCT(JT_MEMBER(key),
+ *              JT_MEMBER(number),
+ *              JT_MEMBER(boolean));
+ * \endcode
+ *
+ * and
+ *
+ * \code{.cpp}
+ *    JT::ParseContext parseContext(json);
+ *    JsonData dataStruct;
+ *    parseContext.parseTo(dataStruct);
+ * \endcode
+ *
+ * The JT_STRUCT call inside the JsonData struct will create a nested struct
+ * declaration inside the JsonData struct. This nested struct will expose some
+ * meta data about the struct, exposing the names of the members at runtime.
+ * json_tools can then use this runtime information to populate the struct.
+ *
+ * Populating the struct is done by first creating a JT::ParseContext. The
+ * JT::ParseContext contains a JT::Tokenizer. This tokenizer is what the actual
+ * state holder for the parsing. If allowing using '\n' instead of ',' to
+ * seperate object and array elements, then this should be set on the
+ * JT::Tokenizer.
+ *
+ * Since types will dictate the schema of the input json, the JT::ParseContext
+ * will expose a list containing what members where not populated by the input
+ * json, and what member in the input json that did not have any member to
+ * populate.
 */
 
 #ifndef JSON_TOOLS_H
@@ -106,6 +139,8 @@
 #ifdef min
 #undef min
 #endif
+
+
 namespace JT {
 /*!
  *  \bief Pointer to data
@@ -1736,6 +1771,7 @@ struct Tuple
         }
 };
 
+/// \private
 template<size_t I, typename ...Ts>
 struct TypeAt<I, const Tuple<Ts...>>
 {
@@ -1747,6 +1783,7 @@ struct TypeAt<I, const Tuple<Ts...>>
         using type = typename element::type;
 };
 
+/// \private
 template<size_t I, typename ...Ts>
 struct TypeAt<I, Tuple<Ts...>>
 {
@@ -1758,7 +1795,7 @@ struct TypeAt<I, Tuple<Ts...>>
         using type = typename element::type;
 };
 
-/*!  \internal
+/*!  \private
  */
 template<>
 struct Tuple<>
@@ -1934,6 +1971,7 @@ struct IsOptionalType {
     static JT_CONSTEXPR const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
 };
 
+/// \private
 template <typename T>
 struct IsOptionalType<std::unique_ptr<T>>
 {
@@ -1971,6 +2009,37 @@ struct ParseContext
     bool allow_unnasigned_required__members = true;
 };
 
+/*! \def JT_MEMBER
+ *
+ * Create meta information of the member with the same name as
+ * the member.
+ */
+/*! \def JT_MEMBER_ALIASES
+ *
+ * Create meta information where the primary name is the same as the member and
+ * the subsequent names are aliases.
+ */
+/*! \def JT_MEMBER_WITH_NAME
+ *
+ * Create meta information where the primary name is argument name, and the subsequent
+ * names are aliases.
+ */
+/*! \def JT_MEMBER_WITH_NAME_AND_ALIASES
+ *
+ * Creates meta information where the primary name is argument name, a
+ * and subsequent names are aliases
+ */
+
+/*! \def JT_SUPER_CLASS
+ *
+ * Creates superclass meta data which is used inside the JT_SUPER_CLASSES macro
+ */
+
+/*! \def JT_SUPER_CLASSES
+ *
+ * Macro to contain the super class definitions
+ */
+
 #define JT_MEMBER(member) JT::makeMemberInfo(#member, &JT_STRUCT_T::member)
 #define JT_MEMBER_ALIASES(member, ...) JT::makeMemberInfo(#member, &JT_STRUCT_T::member, __VA_ARGS__)
 #define JT_MEMBER_WITH_NAME(member, name) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
@@ -2002,6 +2071,9 @@ struct ParseContext
         { static auto ret = super_list; return ret; } \
     };
 
+/*!
+ * \private
+ */
 template<typename T, typename U, size_t NAME_COUNT>
 struct MI
 {
@@ -2515,6 +2587,7 @@ struct FunctionInfo
     Function function;
 };
 
+/// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_COUNT>
 struct FunctionInfo<T, Ret, Arg, NAME_COUNT, 1>
 {
@@ -2524,7 +2597,7 @@ struct FunctionInfo<T, Ret, Arg, NAME_COUNT, 1>
     Function function;
 };
 
-
+/// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_COUNT>
 struct FunctionInfo<T, Ret, Arg, NAME_COUNT, 2>
 {
@@ -2534,6 +2607,7 @@ struct FunctionInfo<T, Ret, Arg, NAME_COUNT, 2>
     Function function;
 };
 
+/// \private
 template<typename T, typename Ret, size_t NAME_COUNT, size_t TAKES_CONTEXT>
 struct FunctionInfo<T, Ret, void, NAME_COUNT, TAKES_CONTEXT>
 {
@@ -2543,6 +2617,7 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, TAKES_CONTEXT>
     Function function;
 };
 
+/// \private
 template<typename T, typename Ret, size_t NAME_COUNT>
 struct FunctionInfo<T, Ret, void, NAME_COUNT, 1>
 {
@@ -2552,6 +2627,7 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 1>
     Function function;
 };
 
+/// \private
 template<typename T, typename Ret, size_t NAME_COUNT>
 struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
 {
@@ -2561,36 +2637,42 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
     Function function;
 };
 
+/// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
+/// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
+/// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...},   function };
 }
 
+/// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
+/// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
+/// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
 JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
 {
@@ -3172,6 +3254,7 @@ namespace Internal {
 }
 
 namespace JT {
+/// \private
 template<typename T>
 struct TypeHandler<T, typename std::enable_if<Internal::HasJsonToolsBase<T>::value, T>::type>
 {
@@ -3243,6 +3326,7 @@ public:
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<std::string, std::string>
 {
@@ -3261,6 +3345,7 @@ struct TypeHandler<std::string, std::string>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<double, double>
 {
@@ -3293,6 +3378,7 @@ struct TypeHandler<double, double>
 };
 
 
+/// \private
 template<>
 struct TypeHandler<float, float>
 {
@@ -3322,6 +3408,7 @@ struct TypeHandler<float, float>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<int, int>
 {
@@ -3350,6 +3437,7 @@ struct TypeHandler<int, int>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<unsigned int, unsigned int>
 {
@@ -3380,6 +3468,7 @@ public:
 
 };
 
+/// \private
 template<>
 struct TypeHandler<int64_t, int64_t>
 {
@@ -3412,6 +3501,7 @@ public:
 
 };
 
+/// \private
 template<>
 struct TypeHandler<uint64_t, uint64_t>
 {
@@ -3444,6 +3534,7 @@ public:
 
 };
 
+/// \private
 template<>
 struct TypeHandler<int16_t, int16_t>
 {
@@ -3476,6 +3567,7 @@ public:
 
 };
 
+/// \private
 template<>
 struct TypeHandler<uint16_t, uint16_t>
 {
@@ -3508,6 +3600,7 @@ public:
 
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<Optional<T>, Optional<T>>
 {
@@ -3523,6 +3616,7 @@ public:
     }
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<OptionalChecked<T>, OptionalChecked<T>>
 {
@@ -3540,6 +3634,7 @@ public:
     }
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<std::unique_ptr<T>, std::unique_ptr<T>>
 {
@@ -3568,6 +3663,7 @@ public:
 
 };
 
+/// \private
 template<>
 struct TypeHandler<bool, bool>
 {
@@ -3598,6 +3694,7 @@ struct TypeHandler<bool, bool>
     }
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<std::vector<T>, std::vector<T>>
 {
@@ -3645,6 +3742,7 @@ public:
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<SilentString, SilentString>
 {
@@ -3660,6 +3758,7 @@ struct TypeHandler<SilentString, SilentString>
     }
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<SilentVector<T>, SilentVector<T>>
 {
@@ -3677,6 +3776,7 @@ public:
     }
 };
 
+/// \private
 template<typename T>
 struct TypeHandler<SilentUniquePtr<T>, SilentUniquePtr<T>>
 {
@@ -3694,6 +3794,7 @@ public:
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<std::vector<Token>, std::vector<Token>>
 {
@@ -3735,6 +3836,7 @@ public:
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonTokens, JsonTokens>
 {
@@ -3749,6 +3851,7 @@ public:
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonArrayRef,JsonArrayRef>
 {
@@ -3790,6 +3893,7 @@ struct TypeHandler<JsonArrayRef,JsonArrayRef>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonArray,JsonArray>
 {
@@ -3824,6 +3928,7 @@ struct TypeHandler<JsonArray,JsonArray>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonObjectRef, JsonObjectRef> {
     static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
@@ -3862,6 +3967,7 @@ struct TypeHandler<JsonObjectRef, JsonObjectRef> {
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonObject, JsonObject>
 {
@@ -3895,6 +4001,7 @@ struct TypeHandler<JsonObject, JsonObject>
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonObjectOrArrayRef, JsonObjectOrArrayRef> {
     static inline Error unpackToken(JsonObjectOrArrayRef &to_type, ParseContext &context)
@@ -3946,6 +4053,7 @@ struct TypeHandler<JsonObjectOrArrayRef, JsonObjectOrArrayRef> {
     }
 };
 
+/// \private
 template<>
 struct TypeHandler<JsonObjectOrArray, JsonObjectOrArray>
 {
@@ -4019,6 +4127,7 @@ struct TupleTypeHandler
 
 };
 
+/// \private
 template<typename ...Ts>
 struct TupleTypeHandler<0, Ts...>
 {
@@ -4033,6 +4142,7 @@ struct TupleTypeHandler<0, Ts...>
 };
 }
 
+/// \private
 template<typename ...Ts>
 struct TypeHandler<JT::Tuple<Ts...>, JT::Tuple<Ts...>>
 {
