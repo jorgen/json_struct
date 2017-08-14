@@ -116,6 +116,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <algorithm>
 #include <stdlib.h>
 #include <memory>
@@ -187,7 +188,7 @@ struct DataRef
 
     explicit DataRef(const char *data)
         : data(data)
-          , size(strlen(data))
+        , size(strlen(data))
     {
     }
 
@@ -2121,73 +2122,8 @@ JT_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&n
 template<typename T>
 struct TypeHandler
 {
-    static inline Error unpackToken(T &to_type, ParseContext &context)
-    {
-        static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
-        if (context.token.value_type != JT::Type::ObjectStart)
-            return Error::ExpectedObjectStart;
-        Error error = context.tokenizer.nextToken(context.token);
-        if (error != JT::Error::NoError)
-            return error;
-        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-#if JT_HAVE_CONSTEXPR
-        bool assigned_members[Internal::memberCount<T, 0>()];
-        memset(assigned_members, 0, sizeof(assigned_members));
-#else
-        bool *assigned_members = nullptr;
-#endif
-        while(context.token.value_type != JT::Type::ObjectEnd)
-        {
-            std::string token_name(context.token.name.data, context.token.name.size);
-            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
-            if (error == Error::MissingPropertyMember)
-                error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, false, assigned_members);
-            if (error == Error::MissingPropertyMember) {
-
-                context.missing_members.push_back(token_name);
-                if (context.allow_missing_members) {
-                    Internal::skipArrayOrObject(context);
-                    if (context.error != Error::NoError)
-                        return context.error;
-                }
-                else {
-                    return error;
-                }
-            } else if (error != Error::NoError) {
-                return error;
-            }
-            context.nextToken();
-            if (context.error != Error::NoError)
-                return context.error;
-
-        }
-        std::vector<std::string> unassigned_required_members;
-        error = Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
-        if (error == Error::UnassignedRequiredMember) {
-            context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
-            if (context.allow_unnasigned_required__members)
-                error = Error::NoError;
-        }
-        return error;
-    }
-
-    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
-    {
-        static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
-        static const char objectStart[] = "{";
-        static const char objectEnd[] = "}";
-        token.value_type = Type::ObjectStart;
-        token.value = DataRef(objectStart);
-        serializer.write(token);
-        auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
-        Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::serializeMembers(from_type, members, token, serializer, "");
-        token.name.size = 0;
-        token.name.data = "";
-        token.name_type = Type::String;
-        token.value_type = Type::ObjectEnd;
-        token.value = DataRef(objectEnd);
-        serializer.write(token);
-    }
+    static inline Error unpackToken(T &to_type, ParseContext &context);
+    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer);
 };
 
 namespace Internal {
@@ -2375,7 +2311,6 @@ namespace Internal {
         using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
         auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-        const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
@@ -2441,7 +2376,6 @@ namespace Internal {
             using Super = typename TypeAt<0, Meta>::type::type;
             using Members = typename std::remove_reference<decltype(Super::template JsonToolsBase<Super>::jt_static_meta_data_info())>::type;
             auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
-            const char *super_name = T::template JsonToolsBase<T>::jt_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
@@ -3228,9 +3162,8 @@ enum class name \
 struct jt_##name##_string_struct \
 { \
     template <size_t N> \
-    JT_CONSTEXPR explicit jt_##name##_string_struct(const char(&data)[N]) \
+    explicit jt_##name##_string_struct(const char(&data)[N]) \
     { \
-        fprintf(stderr, "Initializing with %s\n", data); \
         JT::Internal::populateEnumNames(_strings, data); \
     } \
     std::vector<JT::DataRef> _strings; \
@@ -3276,6 +3209,76 @@ struct TypeHandler<ns::name> \
 
 namespace JT
 {
+template <typename T>
+inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
+{
+    static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
+    if (context.token.value_type != JT::Type::ObjectStart)
+        return Error::ExpectedObjectStart;
+    Error error = context.tokenizer.nextToken(context.token);
+    if (error != JT::Error::NoError)
+        return error;
+    auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
+#if JT_HAVE_CONSTEXPR
+    bool assigned_members[Internal::memberCount<T, 0>()];
+    memset(assigned_members, 0, sizeof(assigned_members));
+#else
+    bool *assigned_members = nullptr;
+#endif
+    while(context.token.value_type != JT::Type::ObjectEnd)
+    {
+        std::string token_name(context.token.name.data, context.token.name.size);
+        error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
+        if (error == Error::MissingPropertyMember)
+            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, false, assigned_members);
+        if (error == Error::MissingPropertyMember) {
+
+            context.missing_members.push_back(token_name);
+            if (context.allow_missing_members) {
+                Internal::skipArrayOrObject(context);
+                if (context.error != Error::NoError)
+                    return context.error;
+            }
+            else {
+                return error;
+            }
+        } else if (error != Error::NoError) {
+            return error;
+        }
+        context.nextToken();
+        if (context.error != Error::NoError)
+            return context.error;
+
+    }
+    std::vector<std::string> unassigned_required_members;
+    error = Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
+    if (error == Error::UnassignedRequiredMember) {
+        context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
+        if (context.allow_unnasigned_required__members)
+            error = Error::NoError;
+    }
+    return error;
+}
+
+template<typename T>
+void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer &serializer)
+{
+    static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
+    static const char objectStart[] = "{";
+    static const char objectEnd[] = "}";
+    token.value_type = Type::ObjectStart;
+    token.value = DataRef(objectStart);
+    serializer.write(token);
+    auto members = T::template JsonToolsBase<T>::jt_static_meta_data_info();
+    Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::serializeMembers(from_type, members, token, serializer, "");
+    token.name.size = 0;
+    token.name.data = "";
+    token.name_type = Type::String;
+    token.value_type = Type::ObjectEnd;
+    token.value = DataRef(objectEnd);
+    serializer.write(token);
+}
+
 namespace Internal {
     template<typename T, typename F>
     struct EnumHandler
@@ -3757,8 +3760,8 @@ public:
 
     static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
     {
-        if (vec.size()) {
-            TypeHandler<std::vector<T>>::serializeToken(vec, token, serializer);
+        if (vec.data.size()) {
+            TypeHandler<std::vector<T>>::serializeToken(vec.data, token, serializer);
         }
     }
 };
@@ -3770,13 +3773,13 @@ struct TypeHandler<SilentUniquePtr<T>>
 public:
     static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<std::unique_ptr<T>>::unpackToken(to_type, context);
+        return TypeHandler<std::unique_ptr<T>>::unpackToken(to_type.data, context);
     }
 
     static inline void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
     {
-        if (ptr) {
-            TypeHandler<std::unique_ptr<T>>::serializeToken(ptr, token, serializer);
+        if (ptr.data) {
+            TypeHandler<std::unique_ptr<T>>::serializeToken(ptr.data, token, serializer);
         }
     }
 };

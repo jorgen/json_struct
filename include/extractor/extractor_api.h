@@ -94,15 +94,16 @@ namespace JT
 	inline TypeDef::TypeDef(const TypeDef &other)
 		: type(other.type)
 		, name_space(other.name_space)
-		, record_type(other.record_type.get() ? new Record(*other.record_type.get()) : nullptr)
 		, template_parameters(other.template_parameters)
-	{}
+	{
+            record_type.data.reset(other.record_type.data.get());
+        }
 
 	inline TypeDef &TypeDef::operator=(const TypeDef &other)
 	{
 		type = other.type;
 		name_space = other.name_space;
-		record_type.reset(new Record(*other.record_type.get()));
+		record_type.data.reset(new Record(*other.record_type.data.get()));
 		template_parameters = other.template_parameters;
                 return *this;
 	}

@@ -162,10 +162,10 @@ public:
         const FieldDecl *field = Result.Nodes.getNodeAs<clang::FieldDecl>("member_ref");
         const StringLiteral *nameLiteral = Result.Nodes.getNodeAs<clang::StringLiteral>("string_name");
         assert(field && nameLiteral);
-        if (!type_def.record_type)
-            type_def.record_type.reset(new JT::Record());
-        type_def.record_type->members.push_back(JT::Member());
-        JT::Member &member = type_def.record_type->members.back();
+        if (!type_def.record_type.data)
+            type_def.record_type.data.reset(new JT::Record());
+        type_def.record_type.data->members.push_back(JT::Member());
+        JT::Member &member = type_def.record_type.data->members.back();
         member.name = nameLiteral->getString().str();
         commentForDecl(field, member.comment);
 
@@ -219,14 +219,14 @@ public :
         std::vector<const CXXRecordDecl *> super_classes;
         get_super_classes(super_func, super_classes);
         if (super_classes.size()) {
-            if (!json_typedef.record_type)
-                json_typedef.record_type.reset(new JT::Record());
-            json_typedef.record_type->super_classes.reserve(super_classes.size());
+            if (!json_typedef.record_type.data)
+                json_typedef.record_type.data.reset(new JT::Record());
+            json_typedef.record_type.data->super_classes.data.reserve(super_classes.size());
         }
         for (const CXXRecordDecl *super : super_classes)
         {
-            json_typedef.record_type->super_classes.push_back(JT::TypeDef());
-            JT::TypeDef &super_typedef = json_typedef.record_type->super_classes.back();
+            json_typedef.record_type.data->super_classes.data.push_back(JT::TypeDef());
+            JT::TypeDef &super_typedef = json_typedef.record_type.data->super_classes.data.back();
             typeDefForQual(extractor, QualType(super->getTypeForDecl(), 0), super_typedef);
         }
 
@@ -272,8 +272,8 @@ static void typeDefForQual(Extractor &extractor, clang::QualType type, JT::TypeD
                 const TemplateArgument &arg = t_decl->getTemplateArgs().get(n);
                 if (arg.getKind() != TemplateArgument::Type)
                     continue;
-                json_type.template_parameters.push_back(JT::TypeDef());
-                JT::TypeDef &template_arg_typedef = json_type.template_parameters.back();
+                json_type.template_parameters.data.push_back(JT::TypeDef());
+                JT::TypeDef &template_arg_typedef = json_type.template_parameters.data.back();
                 typeDefForQual(extractor, arg.getAsType(), template_arg_typedef);
             }
         }
@@ -361,11 +361,11 @@ public:
         const CXXMethodDecl *super_func = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("super_func");
         std::vector<const CXXRecordDecl *> super_classes;
         get_super_classes(super_func, super_classes);
-        functionObject.super_classes.reserve(super_classes.size());
+        functionObject.super_classes.data.reserve(super_classes.size());
         for (const CXXRecordDecl *super_class : super_classes)
         {
-            functionObject.super_classes.push_back(JT::FunctionObject());
-            JT::FunctionObject &super_class_object = functionObject.super_classes.back();
+            functionObject.super_classes.data.push_back(JT::FunctionObject());
+            JT::FunctionObject &super_class_object = functionObject.super_classes.data.back();
             ClassWithFunctionMetaMatcher functionObjectMatcher(super_class_object, extractor);
             clang::ast_matchers::MatchFinder finder;
             finder.addMatcher(ClassWithFunctionMetaMatcher::metaMatcher(), &functionObjectMatcher);
