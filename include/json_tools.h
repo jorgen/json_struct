@@ -2476,6 +2476,14 @@ struct SerializerContext
         flush();
     }
 
+	template<typename T>
+	void serialize(const T &type)
+	{
+		JT::Token token;
+		JT::TypeHandler<T>::serializeToken(type, token, serializer);
+		flush();
+	}
+
     void flush()
     {
         if (serializer.buffers().empty() || !serializer.buffers().back().used)
