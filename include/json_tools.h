@@ -506,7 +506,6 @@ public:
 
     NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
     ReleaseCBRef registerReleaseCallback(std::function<void(const char *)> &callback);
-    void registerTokenTransformer(std::function<void(Token &next_token)> token_transformer);
     Error nextToken(Token &next_token);
 
     void copyFromValue(const Token &token, std::string &to_buffer);
@@ -568,7 +567,6 @@ private:
     Internal::CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
     const std::vector<Token> *parsed_data_vector;
-    std::function<void(Token &next_token)> token_transformer;
     Internal::ErrorContext error_context;
 };
 
@@ -638,7 +636,6 @@ public:
     bool write(const Token &token);
     bool write(const char *data, size_t size);
     bool write(const std::string &str) { return write(str.c_str(), str.size()); }
-    void registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer);
 
     const BufferRequestCBRef addRequestBufferCallback(std::function<void(Serializer &)> callback);
     const std::vector<SerializerBuffer> &buffers() const;
@@ -774,16 +771,7 @@ inline Error Tokenizer::nextToken(Token &next_token)
 
     continue_after_need_more_data = error == Error::NeedMoreData;
 
-    if (error == Error::NoError && token_transformer != nullptr) {
-        token_transformer(next_token);
-    }
-
     return error;
-}
-
-inline void Tokenizer::registerTokenTransformer(std::function<void(Token &next_token)> token_transformer)
-{
-    token_transformer = token_transformer;
 }
 
 static bool isValueInIntermediateToken(const Token &token, const Internal::IntermediateToken &intermediate)
@@ -1584,11 +1572,6 @@ inline bool Serializer::write(const Token &in_token)
         m_option.setDepth(m_option.depth() + 1);
     }
     return true;
-}
-
-inline void Serializer::registerTokenTransformer(std::function<const Token&(const Token &)> token_transformer)
-{
-    this->m_token_transformer = token_transformer;
 }
 
 inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::function<void(Serializer &)> callback)
