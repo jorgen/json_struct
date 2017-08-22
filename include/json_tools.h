@@ -4176,5 +4176,39 @@ struct TypeHandler<JT::Tuple<Ts...>>
         serializer.write(token);
     }
 };
+template<typename T>
+struct OneOrMany
+{
+    std::vector<T> data;
+};
+
+template<typename T>
+class TypeHandler<OneOrMany<T>>
+{
+public:
+    static inline Error unpackToken(OneOrMany<T> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type == Type::ArrayStart)
+        {
+            context.error = TypeHandler<std::vector<T>>::unpackToken(to_type.data, context);
+        }
+        else {
+            to_type.data.push_back(T());
+            context.error = TypeHandler<T>::unpackToken(to_type.data.back(), context);
+        }
+        return context.error;
+    }
+    static void serializeToken(const OneOrMany<T> &from, Token &token, Serializer &serializer)
+    {
+        if (from.data.empty())
+            return;
+        if (from.data.size() > 1) {
+            TypeHandler<std::vector<T>>::serializeToken(from.data, token, serializer);
+        }
+        else {
+            TypeHandler<T>::serializeToken(from.data.front(), token, serializer);
+        }
+    }
+};
 } //Namespace
 #endif //JSON_TOOLS_H
