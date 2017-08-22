@@ -2564,11 +2564,12 @@ protected:
 
 inline Error CallFunctionErrorContext::setError(Error error, const std::string &errorString)
 {
-    assert(context.execution_list.size());
     context.parse_context.error = error;
-    context.execution_list.back().error = error;
+	if (context.execution_list.size()) {
+		context.execution_list.back().error = error;
+		context.execution_list.back().error_string = context.parse_context.tokenizer.makeErrorString();
+	}
     context.parse_context.tokenizer.updateErrorContext(error, errorString);
-    context.execution_list.back().error_string = context.parse_context.tokenizer.makeErrorString();
     return error;
 }
 
