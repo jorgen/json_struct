@@ -4210,5 +4210,52 @@ public:
         }
     }
 };
+
+template<typename Key, typename Value>
+class TypeHandler<std::unordered_map<Key, Value>>
+{
+public:
+    static inline Error unpackToken(std::unordered_map<Key, Value> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type != Type::ObjectStart)
+        {
+			return JT::Error::ExpectedObjectStart;
+        }
+
+        Error error = context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
+		while (context.token.value_type != Type::ObjectEnd)
+		{
+			Value v;
+			error = TypeHandler<Value>::unpackToken(v, context);
+			to_type[Key(context.token.name.data, context.token.name.size)] = v;
+			if (error != JT::Error::NoError)
+				return error;
+			error = context.nextToken();
+		}
+
+        return error;
+    }
+
+    static void serializeToken(const std::unordered_map<Key, Value> &from, Token &token, Serializer &serializer)
+	{
+		token.value_type = Type::ObjectStart;
+		token.value = DataRef("{");
+		serializer.write(token);
+		for (auto it = from.begin(); it != from.end(); ++it)
+		{
+			token.name = DataRef(it->first);
+			token.name = Type::String;
+            TypeHandler<T>::serializeToken(it->second, token, serializer);
+		}
+		token.name.size = 0;
+		token.name.data = "";
+		token.name_type = Type::String;
+		token.value_type = Type::ObjectEnd;
+		token.value = DataRef("}");
+		serializer.write(token);
+	}
+};
 } //Namespace
 #endif //JSON_TOOLS_H

@@ -23,6 +23,7 @@
 #include "json_tools.h"
 
 #include "assert.h"
+#include <unordered_map>
 
 const char json_data1[] = "{\n"
     "\"StringNode\" : \"Some test data\",\n"
@@ -531,6 +532,27 @@ void check_json_object_or_array_array_ref()
     JT_ASSERT(out == jsonArrayTest);
 }
 
+struct JsonMapTest
+{
+	std::unordered_map<std::string, JT::JsonTokens> map;
+
+	JT_STRUCT(JT_MEMBER(map));
+};
+
+const char jsonMapTest[] = R"json({
+    "map" : {
+		"hello" : { "some object" : 3 },
+		"bye" : [4]
+	}
+})json";
+
+void check_json_map()
+{
+    JT::ParseContext context(jsonMapTest);
+    JsonMapTest obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+}
 
 int main(int, char **)
 {
@@ -548,5 +570,6 @@ int main(int, char **)
 	check_json_object_or_array_array();
     check_json_array_ref();
 	check_json_object_or_array_array_ref();
+	check_json_map();
     return 0;
 }
