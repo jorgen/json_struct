@@ -211,7 +211,7 @@ const char json_data3[] = "{\n"
 
 struct SuperSuperClass {
     int SuperSuper;
-    JT_STRUCT(JT_MEMBER(SuperSuper))
+    JT_STRUCT(JT_MEMBER(SuperSuper));
 };
 
 struct SuperClass : public SuperSuperClass
@@ -548,8 +548,55 @@ const char jsonMapTest[] = R"json({
 
 void check_json_map()
 {
+#ifdef JT_UNORDERED_MAP_HANDLER
     JT::ParseContext context(jsonMapTest);
     JsonMapTest obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+#endif
+}
+
+struct TypeHandlerTypes
+{
+    double doubleN;
+    float floatN;
+    int intN;
+    unsigned int uintN;
+    int64_t int64N;
+    uint64_t uint64N;
+    int16_t int16N;
+    uint16_t uint16N;
+    bool boolN;
+
+
+    JT_STRUCT(JT_MEMBER(doubleN),
+              JT_MEMBER(floatN),
+              JT_MEMBER(intN),
+              JT_MEMBER(uintN),
+              JT_MEMBER(int64N),
+              JT_MEMBER(uint64N),
+              JT_MEMBER(int16N),
+              JT_MEMBER(uint16N),
+              JT_MEMBER(boolN)
+              );
+};
+
+const char jsonTypeHandlerTypes[] = R"json({
+    "doubleN" : 44.50,
+    "floatN" : 33.40,
+    "intN" : -345,
+    "uintN" : 567,
+    "int64N" : -1234,
+    "uint64N" : 987,
+    "int16N" : -23,
+    "uint16N" : 45,
+    "boolN" : true
+})json";
+
+void check_json_type_handler_types()
+{
+    JT::ParseContext context(jsonTypeHandlerTypes);
+    TypeHandlerTypes obj;
     context.parseTo(obj);
     JT_ASSERT(context.error == JT::Error::NoError);
 }
@@ -563,13 +610,14 @@ int main(int, char **)
     check_json_missing_object();
     check_json_error_in_sub();
     check_json_object();
-	check_json_object_or_array_object();
+    check_json_object_or_array_object();
     check_json_object_ref();
-	check_json_object_or_array_object_ref();
+    check_json_object_or_array_object_ref();
     check_json_array();
-	check_json_object_or_array_array();
+    check_json_object_or_array_array();
     check_json_array_ref();
-	check_json_object_or_array_array_ref();
-	check_json_map();
+    check_json_object_or_array_array_ref();
+    check_json_map();
+    check_json_type_handler_types();
     return 0;
 }

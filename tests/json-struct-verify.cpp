@@ -33,7 +33,7 @@ struct ContainsStringNode
 {
     std::string StringNode;
 
-    JT_STRUCT(JT_MEMBER(StringNode))
+    JT_STRUCT(JT_MEMBER(StringNode));
 };
 
 struct SubStruct : public ContainsStringNode
@@ -136,7 +136,7 @@ void testClassHirarchyVerifyMissingMemberInStruct()
 
 struct SuperSuperClass {
     int SuperSuper;
-    JT_STRUCT(JT_MEMBER(SuperSuper))
+    JT_STRUCT(JT_MEMBER(SuperSuper));
 };
 
 struct SuperClass2 : public SuperSuperClass

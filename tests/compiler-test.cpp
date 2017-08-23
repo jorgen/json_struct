@@ -43,7 +43,7 @@
         { \
             static auto list = std::make_tuple(__VA_ARGS__); return list; \
         } \
-    };
+    }
 
 template<typename T>
 struct SubElem

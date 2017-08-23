@@ -103,7 +103,7 @@ struct CallFunctionSuperSuper
 
     bool called_one = false;
 
-    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one))
+    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one));
 };
 
 struct CallFunctionSuper

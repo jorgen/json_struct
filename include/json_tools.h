@@ -123,6 +123,10 @@
 #include <assert.h>
 #include <atomic>
 
+#ifdef JT_UNORDERED_MAP_HANDLER
+#include <unordered_map>
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(disable : 4503)
 #if _MSC_VER > 1800
@@ -141,10 +145,11 @@
 #undef min
 #endif
 
+#define JT_UNUSED(x) (void)(x)
 
 namespace JT {
 /*!
- *  \bief Pointer to data
+ *  \brief Pointer to data
  *
  *  DataRef is used to refere to some data inside a json string. It holds the
  *  start posisition of the data, and its size.
@@ -214,10 +219,10 @@ struct Token
 {
     Token();
 
-    Type name_type;
-    Type value_type;
     DataRef name;
     DataRef value;
+    Type name_type;
+    Type value_type;
 };
 
 namespace Internal {
@@ -260,7 +265,7 @@ namespace Internal {
         NumberEnd = 64
     };
 
-    static inline const unsigned char * const lookup()
+    static inline const unsigned char * lookup()
     {
         static const unsigned char tmp[] =
         {
@@ -492,7 +497,6 @@ class Tokenizer
 {
 public:
     Tokenizer();
-    ~Tokenizer();
 
     void allowAsciiType(bool allow);
     void allowNewLineAsTokenDelimiter(bool allow);
@@ -589,8 +593,8 @@ public:
     bool convertAsciiToString() const;
     void setConvertAsciiToString(bool set);
 
-    int depth() const;
-    void setDepth(int depth);
+    unsigned char depth() const;
+    void setDepth(unsigned char depth);
 
     void skipDelimiter(bool skip);
 
@@ -659,10 +663,10 @@ private:
 // IMPLEMENTATION
 
 inline Token::Token()
-    : name_type(Type::String)
-    , value_type(Type::String)
-    , name()
+    : name()
     , value()
+    , name_type(Type::String)
+    , value_type(Type::String)
 {
 
 }
@@ -680,8 +684,6 @@ inline Tokenizer::Tokenizer()
     , line_range_context(256)
     , range_context(38)
     , parsed_data_vector(nullptr)
-{}
-inline Tokenizer::~Tokenizer()
 {}
 
 inline void Tokenizer::allowAsciiType(bool allow)
@@ -790,13 +792,13 @@ inline void Tokenizer::copyFromValue(const Token &token, std::string &to_buffer)
         copy_buffers.push_back(pair);
     } else {
         assert(token.value.data > data_list.front().data && token.value.data < data_list.front().data + data_list.front().size);
-        size_t index = token.value.data - data_list.front().data;
+        long index = token.value.data - data_list.front().data;
         auto pair = std::make_pair(index, &to_buffer);
         copy_buffers.push_back(pair);
     }
 }
 
-inline void Tokenizer::copyIncludingValue(const Token &token, std::string &to_buffer)
+inline void Tokenizer::copyIncludingValue(const Token &, std::string &to_buffer)
 {
     auto it = std::find_if(copy_buffers.begin(), copy_buffers.end(), [&to_buffer] (const std::pair<size_t, std::string *> &pair) { return &to_buffer == pair.second; });
     assert(it != copy_buffers.end());
@@ -1147,12 +1149,12 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const Dat
         }
     }
 
-    int size_adjustment = 0;
+    size_t negative_size_adjustment = 0;
     if (property_state == InPropertyState::FindingEnd) {
         switch (type) {
         case Type::String:
             error = findStringEnd(json_data, &diff);
-            size_adjustment = -1;
+            negative_size_adjustment = 1;
             break;
         case Type::Ascii:
             error = findAsciiEnd(json_data, &diff);
@@ -1169,7 +1171,7 @@ inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const Dat
         }
 
         cursor_index += diff;
-        data.size = cursor_index - current_data_start + size_adjustment;
+        data.size =  cursor_index - current_data_start - negative_size_adjustment;
         property_state = InPropertyState::FoundEnd;
     }
 
@@ -1375,9 +1377,9 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     lines.push_back({0, cursor_index});
 
     const DataRef json_data = parsed_data_vector && parsed_data_vector->size() ?
-        DataRef(parsed_data_vector->front().value.data, parsed_data_vector->back().value.data - parsed_data_vector->front().value.data) : data_list.front();
+        DataRef(parsed_data_vector->front().value.data, size_t(parsed_data_vector->back().value.data - parsed_data_vector->front().value.data)) : data_list.front();
     size_t real_cursor_index = parsed_data_vector && parsed_data_vector->size() ?
-        parsed_data_vector->at(cursor_index).value.data - json_data.data : cursor_index;
+        size_t(parsed_data_vector->at(cursor_index).value.data - json_data.data) : cursor_index;
     const size_t stop_back = cursor_index - std::min(cursor_index, line_range_context);
     const size_t stop_forward = std::min(real_cursor_index + line_range_context, json_data.size);
     assert(real_cursor_index <= json_data.size);
@@ -1452,7 +1454,7 @@ inline SerializerOptions::SerializerOptions(Style style)
 
 inline int SerializerOptions::shiftSize() const { return m_shift_size; }
 
-inline int SerializerOptions::depth() const { return m_depth; }
+inline unsigned char SerializerOptions::depth() const { return m_depth; }
 
 inline SerializerOptions::Style SerializerOptions::style() const { return m_style; }
 
@@ -1482,7 +1484,7 @@ inline void SerializerOptions::skipDelimiter(bool skip)
         m_token_delimiter = ",";
 }
 
-inline void SerializerOptions::setDepth(int depth)
+inline void SerializerOptions::setDepth(unsigned char depth)
 {
     m_depth = depth;
     m_prefix = m_style == Pretty ? std::string(depth * m_shift_size, ' ') : std::string();
@@ -1493,13 +1495,13 @@ inline const std::string &SerializerOptions::tokenDelimiter() const { return m_t
 inline const std::string &SerializerOptions::valueDelimiter() const { return m_value_delimiter; }
 inline const std::string &SerializerOptions::postfix() const { return m_postfix; }
 
-inline bool SerializerBuffer::append(const char *data, size_t size)
+inline bool SerializerBuffer::append(const char *data, size_t data_size)
 {
-    if (used + size > this->size)
+    if (used + data_size > size)
         return false;
 
-    memcpy(buffer + used, data, size);
-    used += size;
+    memcpy(buffer + used, data, data_size);
+    used += data_size;
     return true;
 }
 
@@ -1897,7 +1899,7 @@ struct JsonTokens
 
 struct JsonMeta
 {
-    unsigned int position;
+    size_t position;
     unsigned int size;
     unsigned int skip;
     unsigned int children;
@@ -1908,10 +1910,10 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 {
     std::vector<JsonMeta> meta;
     meta.reserve(tokens.data.size() / 4);
-    std::vector<int> parent;
-    for (unsigned int i = 0; i < tokens.data.size(); i++)
+    std::vector<size_t> parent;
+    for (size_t i = 0; i < tokens.data.size(); i++)
     {
-        for (int parent_index : parent) {
+        for (size_t parent_index : parent) {
             meta[parent_index].size++;
         }
         const JT::Token &token = tokens.data.at(i);
@@ -1930,7 +1932,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
         if (token.value_type == Type::ArrayStart
             || token.value_type == Type::ObjectStart)
         {
-            for (int parent_index: parent) {
+            for (size_t parent_index: parent) {
                 meta[parent_index].skip++;
             }
             meta.push_back({ i, 1, 1, 0, token.value_type == Type::ArrayStart });
@@ -2042,7 +2044,7 @@ struct ParseContext
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
        { static auto ret = JT::makeTuple(); return ret; } \
-    };
+    }
 
 #define JT_STRUCT_WITH_SUPER(super_list, ...) \
     template<typename JT_STRUCT_T> \
@@ -2053,7 +2055,7 @@ struct ParseContext
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
-    };
+    }
 
 /*!
  * \private
@@ -2157,6 +2159,7 @@ namespace Internal {
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
     inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, Token &token, Serializer &serializer, const char *super_name)
     {
+        JT_UNUSED(super_name);
         token.name.data = memberInfo.name[0].data;
         token.name.size = memberInfo.name[0].size;
         token.name_type = Type::Ascii;
@@ -2210,11 +2213,17 @@ namespace Internal {
     {
         static Error start(T &to_type, ParseContext &context, bool primary, bool *assigned)
         {
+            JT_UNUSED(to_type);
+            JT_UNUSED(context);
+            JT_UNUSED(primary);
+            JT_UNUSED(assigned);
             return Error::MissingPropertyMember;
         }
 
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
+            JT_UNUSED(assigned_members);
+            JT_UNUSED(missing_members);
             return Error::NoError;
         }
 
@@ -2225,6 +2234,9 @@ namespace Internal {
 
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
         {
+            JT_UNUSED(from_type);
+            JT_UNUSED(token);
+            JT_UNUSED(serializer);
         }
     };
 
@@ -2437,16 +2449,16 @@ inline void ParseContext::parseTo(T &to_type)
 
 struct SerializerContext
 {
-    SerializerContext(std::string &json_out)
+    SerializerContext(std::string &json_out_p)
         : serializer()
-        , cb_ref(serializer.addRequestBufferCallback([this](Serializer &serializer)
+        , cb_ref(serializer.addRequestBufferCallback([this](Serializer &serializer_p)
                                                     {
                 size_t end = this->json_out.size();
                 this->json_out.resize(end * 2);
-                serializer.appendBuffer(&(this->json_out[0]) + end, end);
+                serializer_p.appendBuffer(&(this->json_out[0]) + end, end);
                 this->last_pos = end;
                                                     }))
-        , json_out(json_out)
+        , json_out(json_out_p)
         , last_pos(0)
     {
         if (json_out.empty())
@@ -2529,6 +2541,7 @@ struct CallFunctionContext
         , error_context(*this)
     {}
 
+    virtual ~CallFunctionContext() {}
     template<typename T>
     Error callFunctions(T &container);
 
@@ -2541,7 +2554,7 @@ struct CallFunctionContext
     void *user_handle = nullptr;
 
 protected:
-    virtual void beforeCallFunctions() {};
+    virtual void beforeCallFunctions() {}
     virtual void afterCallFunctions() {}
 };
 
@@ -2675,7 +2688,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
         { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
        { static auto ret = JT::makeTuple(); return ret; } \
-    };
+    }
 
 #define JT_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
     template<typename JT_CONTAINER_STRUCT_T> \
@@ -2686,7 +2699,7 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
-    };
+    }
 
 namespace Internal {
     template<typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
@@ -2938,6 +2951,9 @@ namespace Internal {
     {
         static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
+            JT_UNUSED(container);
+            JT_UNUSED(context);
+            JT_UNUSED(primary);
             return Error::MissingPropertyMember;
         }
     };
@@ -3030,7 +3046,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
-        Error error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
+        error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
         if (error == Error::MissingPropertyMember)
             error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, false);
         if (error != Error::NoError) {
@@ -3354,7 +3370,7 @@ struct TypeHandler<double>
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 };
@@ -3385,7 +3401,7 @@ struct TypeHandler<float>
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 };
@@ -3397,7 +3413,8 @@ struct TypeHandler<int>
     static inline Error unpackToken(int &to_type, ParseContext &context)
     {
         char *pointer;
-        to_type = strtol(context.token.value.data, &pointer, 10);
+        long value = strtol(context.token.value.data, &pointer, 10);
+        to_type = int(value);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
         return Error::NoError;
@@ -3414,7 +3431,7 @@ struct TypeHandler<int>
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 };
@@ -3427,7 +3444,8 @@ public:
     static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
     {
         char *pointer;
-        to_type = strtoul(context.token.value.data, &pointer, 10);
+        unsigned long value = strtoul(context.token.value.data, &pointer, 10);
+        to_type = static_cast<unsigned int>(value);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
         return Error::NoError;
@@ -3444,7 +3462,7 @@ public:
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 
@@ -3477,7 +3495,7 @@ public:
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 
@@ -3510,11 +3528,34 @@ public:
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 
 };
+
+template<typename FromT, typename ToT>
+Error boundsAssigner(FromT value, ToT &to_type)
+{
+    static_assert(sizeof(FromT) >= sizeof(ToT), "boundsAssigner with type missmatch");
+    if (value < std::numeric_limits<ToT>::lowest())
+    {
+        fprintf(stderr, "input is lower than types range: %ld : %d\n",
+                value,
+                std::numeric_limits<ToT>::lowest());
+    return Error::FailedToParseInt;
+    }
+    if (value > std::numeric_limits<ToT>::max())
+    {
+        fprintf(stderr, "input is higher than types range: %ld : %d\n",
+                value,
+                std::numeric_limits<ToT>::max());
+        return Error::FailedToParseInt;
+    }
+
+    to_type = ToT(value);
+    return Error::NoError;
+}
 
 /// \private
 template<>
@@ -3525,10 +3566,10 @@ public:
     {
         static_assert(sizeof(to_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
         char *pointer;
-        to_type = strtol(context.token.value.data, &pointer, 10);
+        long value = strtol(context.token.value.data, &pointer, 10);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
-        return Error::NoError;
+        return boundsAssigner(value, to_type);
     }
 
     static inline void serializeToken(const int16_t &from_type, Token &token, Serializer &serializer)
@@ -3543,7 +3584,7 @@ public:
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 
@@ -3558,10 +3599,10 @@ public:
     {
         static_assert(sizeof(to_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long unsinged int");
         char *pointer;
-        to_type = strtol(context.token.value.data, &pointer, 10);
+        unsigned long value = strtoul(context.token.value.data, &pointer, 10);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
-        return Error::NoError;
+        return boundsAssigner(value, to_type);
     }
 
     static inline void serializeToken(const uint16_t &from_type, Token &token, Serializer &serializer)
@@ -3576,7 +3617,7 @@ public:
 
         token.value_type = Type::Number;
         token.value.data = buf;
-        token.value.size = size;
+        token.value.size = size_t(size);
         serializer.write(token);
     }
 
@@ -3790,6 +3831,7 @@ public:
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
         {
+            JT_UNUSED(tokenizer);
             buffer_change = true;
         });
 
@@ -3845,6 +3887,7 @@ struct TypeHandler<JsonArrayRef>
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
                                                                   {
+                                                                  JT_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
@@ -3862,7 +3905,7 @@ struct TypeHandler<JsonArrayRef>
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-       to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
+        to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
 
         return error;
     }
@@ -3921,6 +3964,7 @@ struct TypeHandler<JsonObjectRef> {
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
                                                                   {
+                                                                  JT_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
@@ -3937,7 +3981,7 @@ struct TypeHandler<JsonObjectRef> {
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-        to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
+        to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
         return error;
     }
 
@@ -4007,6 +4051,7 @@ struct TypeHandler<JsonObjectOrArrayRef> {
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
                                                                   {
+                                                                  JT_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
@@ -4023,7 +4068,7 @@ struct TypeHandler<JsonObjectOrArrayRef> {
         if (buffer_change)
             return Error::NonContigiousMemory;
 
-        to_type.ref.size = context.token.value.data + context.token.value.size - to_type.ref.data;
+        to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
         return error;
     }
 
@@ -4115,11 +4160,15 @@ struct TupleTypeHandler<0, Ts...>
 {
     static inline Error unpackToken(JT::Tuple<Ts...>, ParseContext &context)
     {
+        JT_UNUSED(context);
         return Error::NoError;
     }
 
     static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
+        JT_UNUSED(from_type);
+        JT_UNUSED(token);
+        JT_UNUSED(serializer);
     }
 };
 }
@@ -4194,6 +4243,7 @@ public:
     }
 };
 
+#ifdef JT_UNORDERED_MAP_HANDLER
 template<typename Key, typename Value>
 class TypeHandler<std::unordered_map<Key, Value>>
 {
@@ -4240,5 +4290,6 @@ public:
 		serializer.write(token);
 	}
 };
+#endif
 } //Namespace
 #endif //JSON_TOOLS_H
