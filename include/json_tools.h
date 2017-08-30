@@ -1899,11 +1899,22 @@ struct JsonTokens
 
 struct JsonMeta
 {
+	JsonMeta(size_t pos, bool is_array)
+		: position(pos)
+		, size(1)
+		, skip(1)
+		, children(0)
+		, complex_children(0)
+		, is_array(is_array)
+		, has_data(false)
+	{}
     size_t position;
     unsigned int size;
     unsigned int skip;
     unsigned int children;
+	unsigned int complex_children;
     bool is_array : 1;
+	bool has_data : 1;
 };
 
 static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
@@ -1932,15 +1943,47 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
         if (token.value_type == Type::ArrayStart
             || token.value_type == Type::ObjectStart)
         {
-            for (size_t parent_index: parent) {
+			if (parent.size())
+				meta[parent.back()].complex_children++;
+             for (size_t parent_index: parent) {
                 meta[parent_index].skip++;
             }
-            meta.push_back({ i, 1, 1, 0, token.value_type == Type::ArrayStart });
+            meta.push_back(JsonMeta(i, token.value_type == Type::ArrayStart));
             parent.push_back(meta.size()-1);
-        }
+		}
+		else if (token.value_type != JT::Type::ArrayEnd && token.value_type != JT::Type::ObjectEnd)
+		{
+			for (size_t parent_index : parent) {
+				meta[parent_index].has_data = true;
+			}
+		}
     }
     assert(!parent.size());
     return meta;
+}
+
+namespace Internal
+{
+	int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+	{
+		const JsonMeta &meta = meta_vec[start_index];
+		if (!meta.has_data)
+			return -1;
+
+		size_t skip_size = 0;
+		size_t child_index = 0;
+		for (int i = 0; i < meta.complex_children; i++)
+		{
+			size_t current_child = start_index + 1 + skip_size;
+			int child = findFirstChildWithData(meta_vec, current_child);
+			if (child >= 0 && child_index > 0)
+				return 0;
+			if (child >= 0)
+				child_index = skip_size + 1 + child;
+			skip_size += meta_vec[current_child].skip;
+		}
+		return child_index;
+	}
 }
 
 template <typename T>
