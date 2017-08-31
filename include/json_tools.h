@@ -1377,15 +1377,15 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     error_context.custom_message = custom_message;
     if ((!parsed_data_vector || parsed_data_vector->empty()) && data_list.empty())
         return error;
-    std::vector<Internal::Lines> lines;
-    lines.push_back({0, cursor_index});
-
+    
     const DataRef json_data = parsed_data_vector && parsed_data_vector->size() ?
         DataRef(parsed_data_vector->front().value.data, size_t(parsed_data_vector->back().value.data - parsed_data_vector->front().value.data)) : data_list.front();
     size_t real_cursor_index = parsed_data_vector && parsed_data_vector->size() ?
         size_t(parsed_data_vector->at(cursor_index).value.data - json_data.data) : cursor_index;
-    const size_t stop_back = cursor_index - std::min(cursor_index, line_range_context);
+    const size_t stop_back = real_cursor_index - std::min(real_cursor_index, line_range_context);
     const size_t stop_forward = std::min(real_cursor_index + line_range_context, json_data.size);
+    std::vector<Internal::Lines> lines;
+    lines.push_back({0, real_cursor_index});
     assert(real_cursor_index <= json_data.size);
     size_t lines_back = 0;
     size_t lines_forward = 0;
