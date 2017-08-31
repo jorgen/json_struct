@@ -147,6 +147,10 @@
 
 #define JT_UNUSED(x) (void)(x)
 
+#ifndef JT
+#define JT JT
+#endif
+
 namespace JT {
 /*!
  *  \brief Pointer to data
