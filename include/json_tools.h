@@ -325,7 +325,6 @@ enum class Error : unsigned char
     IlligalPropertyName,
     IlligalPropertyType,
     IlligalDataValue,
-    IlligalVoidFunctionArgument,
     EncounteredIlligalChar,
     NodeNotFound,
     MissingPropertyMember,
@@ -828,7 +827,6 @@ inline std::string Tokenizer::makeErrorString() const
         "IlligalPropertyName",
         "IlligalPropertyType",
         "IlligalDataValue",
-        "IlligalVoidFunctionArgument",
         "EncounteredIlligalChar",
         "NodeNotFound",
         "MissingPropertyMember",
@@ -2863,10 +2861,10 @@ namespace Internal {
     {
         if (context.parse_context.token.value_type != Type::Null
             && context.parse_context.token.value_type != Type::ArrayStart
-            && context.parse_context.token.value_type != Type::ObjectStart)
+            && context.parse_context.token.value_type != Type::ObjectStart
+            && context.parse_context.token.value_type != Type::Bool)
         {
-            context.parse_context.error = Error::IlligalVoidFunctionArgument;
-            return;
+            fprintf(stderr, "Passing data arguments to a void function\n");
         }
         skipArrayOrObject(context.parse_context);
     }
