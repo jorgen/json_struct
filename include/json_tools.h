@@ -3826,6 +3826,56 @@ public:
     }
 };
 
+    /// \private
+    template<>
+    struct TypeHandler<std::vector<bool>>
+    {
+    public:
+        static inline Error unpackToken(std::vector<bool> &to_type, ParseContext &context)
+        {
+            if (context.token.value_type != JT::Type::ArrayStart)
+                return Error::ExpectedArrayStart;
+            Error error = context.nextToken();
+            if (error != JT::Error::NoError)
+                return error;
+            to_type.reserve(10);
+            while(context.token.value_type != JT::Type::ArrayEnd)
+            {
+                
+                bool toBool;
+                error = TypeHandler<bool>::unpackToken(toBool, context);
+                to_type.push_back(toBool);
+                if (error != JT::Error::NoError)
+                    break;
+                error = context.nextToken();
+                if (error != JT::Error::NoError)
+                    break;
+            }
+            
+            return error;
+        }
+        
+        static inline void serializeToken(const std::vector<bool> &vec, Token &token, Serializer &serializer)
+        {
+            token.value_type = Type::ArrayStart;
+            token.value = DataRef("[");
+            serializer.write(token);
+            
+            token.name = DataRef("");
+            
+            for (bool index : vec)
+            {
+                TypeHandler<bool>::serializeToken(index, token, serializer);
+            }
+            
+            token.name = DataRef("");
+            
+            token.value_type = Type::ArrayEnd;
+            token.value = DataRef("]");
+            serializer.write(token);
+        }
+    };
+
 /// \private
 template<>
 struct TypeHandler<SilentString>
