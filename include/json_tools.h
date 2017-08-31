@@ -1903,22 +1903,23 @@ struct JsonTokens
 
 struct JsonMeta
 {
-	JsonMeta(size_t pos, bool is_array)
-		: position(pos)
-		, size(1)
-		, skip(1)
-		, children(0)
-		, complex_children(0)
-		, is_array(is_array)
-		, has_data(false)
-	{}
+    JsonMeta(size_t pos, bool is_array)
+        : position(pos)
+          , size(1)
+          , skip(1)
+          , children(0)
+          , complex_children(0)
+          , is_array(is_array)
+          , has_data(false)
+    {}
+
     size_t position;
     unsigned int size;
     unsigned int skip;
     unsigned int children;
-	unsigned int complex_children;
+    unsigned int complex_children;
     bool is_array : 1;
-	bool has_data : 1;
+    bool has_data : 1;
 };
 
 static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
@@ -1947,20 +1948,20 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
         if (token.value_type == Type::ArrayStart
             || token.value_type == Type::ObjectStart)
         {
-			if (parent.size())
-				meta[parent.back()].complex_children++;
+            if (parent.size())
+                meta[parent.back()].complex_children++;
              for (size_t parent_index: parent) {
                 meta[parent_index].skip++;
             }
             meta.push_back(JsonMeta(i, token.value_type == Type::ArrayStart));
             parent.push_back(meta.size()-1);
-		}
-		else if (token.value_type != JT::Type::ArrayEnd && token.value_type != JT::Type::ObjectEnd)
-		{
-			for (size_t parent_index : parent) {
-				meta[parent_index].has_data = true;
-			}
-		}
+        }
+        else if (token.value_type != JT::Type::ArrayEnd && token.value_type != JT::Type::ObjectEnd)
+        {
+            for (size_t parent_index : parent) {
+                meta[parent_index].has_data = true;
+            }
+        }
     }
     assert(!parent.size());
     return meta;
@@ -1968,26 +1969,26 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 
 namespace Internal
 {
-	static int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
-	{
-		const JsonMeta &meta = meta_vec[start_index];
-		if (!meta.has_data)
-			return -1;
+    static int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+    {
+        const JsonMeta &meta = meta_vec[start_index];
+        if (!meta.has_data)
+            return -1;
 
-		size_t skip_size = 0;
-		size_t child_index = 0;
-		for (int i = 0; i < meta.complex_children; i++)
-		{
-			size_t current_child = start_index + 1 + skip_size;
-			int child = findFirstChildWithData(meta_vec, current_child);
-			if (child >= 0 && child_index > 0)
-				return 0;
-			if (child >= 0)
-				child_index = skip_size + 1 + child;
-			skip_size += meta_vec[current_child].skip;
-		}
-		return child_index;
-	}
+        size_t skip_size = 0;
+        size_t child_index = 0;
+        for (int i = 0; i < meta.complex_children; i++)
+        {
+            size_t current_child = start_index + 1 + skip_size;
+            int child = findFirstChildWithData(meta_vec, current_child);
+            if (child >= 0 && child_index > 0)
+                return 0;
+            if (child >= 0)
+                child_index = skip_size + 1 + child;
+            skip_size += meta_vec[current_child].skip;
+        }
+        return child_index;
+    }
 }
 
 template <typename T>
@@ -2518,13 +2519,13 @@ struct SerializerContext
         flush();
     }
 
-	template<typename T>
-	void serialize(const T &type)
-	{
-		JT::Token token;
-		JT::TypeHandler<T>::serializeToken(type, token, serializer);
-		flush();
-	}
+    template<typename T>
+    void serialize(const T &type)
+    {
+        JT::Token token;
+        JT::TypeHandler<T>::serializeToken(type, token, serializer);
+        flush();
+    }
 
     void flush()
     {
@@ -2608,10 +2609,10 @@ protected:
 inline Error CallFunctionErrorContext::setError(Error error, const std::string &errorString)
 {
     context.parse_context.error = error;
-	if (context.execution_list.size()) {
-		context.execution_list.back().error = error;
-		context.execution_list.back().error_string = context.parse_context.tokenizer.makeErrorString();
-	}
+    if (context.execution_list.size()) {
+        context.execution_list.back().error = error;
+        context.execution_list.back().error_string = context.parse_context.tokenizer.makeErrorString();
+    }
     context.parse_context.tokenizer.updateErrorContext(error, errorString);
     return error;
 }
@@ -3071,6 +3072,26 @@ namespace Internal {
     };
 }
 
+namespace Internal {
+	struct ArrayEndWriter
+	{
+		ArrayEndWriter(Serializer &serializer, Token &token)
+			: serializer(serializer)
+			, token(token)
+		{}
+
+		~ArrayEndWriter()
+		{
+			token.value_type = Type::ArrayEnd;
+			token.value = DataRef("]");
+			serializer.write(token);
+		}
+
+		Serializer &serializer;
+		Token &token;
+	};
+}
+
 template<typename T>
 inline Error CallFunctionContext::callFunctions(T &container)
 {
@@ -3088,6 +3109,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     Token token;
     token.value_type = Type::ArrayStart;
     token.value = DataRef("[");
+	Internal::ArrayEndWriter endWriter(return_serializer, token);
     return_serializer.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
@@ -3110,9 +3132,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
         if (error != JT::Error::NoError)
             return error;
     }
-    token.value_type = Type::ArrayEnd;
-    token.value = DataRef("]");
-    return_serializer.write(token);
+    
     return Error::NoError;
 }
 
@@ -4299,43 +4319,43 @@ public:
     {
         if (context.token.value_type != Type::ObjectStart)
         {
-			return JT::Error::ExpectedObjectStart;
+            return JT::Error::ExpectedObjectStart;
         }
 
         Error error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
-		while (context.token.value_type != Type::ObjectEnd)
-		{
-			Value v;
-			error = TypeHandler<Value>::unpackToken(v, context);
-			to_type[Key(context.token.name.data, context.token.name.size)] = v;
-			if (error != JT::Error::NoError)
-				return error;
-			error = context.nextToken();
-		}
+        while (context.token.value_type != Type::ObjectEnd)
+        {
+            Value v;
+            error = TypeHandler<Value>::unpackToken(v, context);
+            to_type[Key(context.token.name.data, context.token.name.size)] = v;
+            if (error != JT::Error::NoError)
+                return error;
+            error = context.nextToken();
+        }
 
         return error;
     }
 
     static void serializeToken(const std::unordered_map<Key, Value> &from, Token &token, Serializer &serializer)
-	{
-		token.value_type = Type::ObjectStart;
-		token.value = DataRef("{");
-		serializer.write(token);
-		for (auto it = from.begin(); it != from.end(); ++it)
-		{
-			token.name = DataRef(it->first);
-			token.name = Type::String;
-            TypeHandler<T>::serializeToken(it->second, token, serializer);
-		}
-		token.name.size = 0;
-		token.name.data = "";
-		token.name_type = Type::String;
-		token.value_type = Type::ObjectEnd;
-		token.value = DataRef("}");
-		serializer.write(token);
-	}
+    {
+        token.value_type = Type::ObjectStart;
+        token.value = DataRef("{");
+        serializer.write(token);
+        for (auto it = from.begin(); it != from.end(); ++it)
+        {
+            token.name = DataRef(it->first);
+            token.name_type = Type::String;
+            TypeHandler<Value>::serializeToken(it->second, token, serializer);
+        }
+        token.name.size = 0;
+        token.name.data = "";
+        token.name_type = Type::String;
+        token.value_type = Type::ObjectEnd;
+        token.value = DataRef("}");
+        serializer.write(token);
+    }
 };
 #endif
 } //Namespace
