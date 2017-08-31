@@ -1968,7 +1968,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 
 namespace Internal
 {
-	int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+	static int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
 	{
 		const JsonMeta &meta = meta_vec[start_index];
 		if (!meta.has_data)
