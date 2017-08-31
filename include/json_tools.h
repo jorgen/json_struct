@@ -3073,23 +3073,23 @@ namespace Internal {
 }
 
 namespace Internal {
-	struct ArrayEndWriter
-	{
-		ArrayEndWriter(Serializer &serializer, Token &token)
-			: serializer(serializer)
-			, token(token)
-		{}
+    struct ArrayEndWriter
+    {
+        ArrayEndWriter(Serializer &serializer, Token &token)
+            : serializer(serializer)
+              , token(token)
+        {}
 
-		~ArrayEndWriter()
-		{
-			token.value_type = Type::ArrayEnd;
-			token.value = DataRef("]");
-			serializer.write(token);
-		}
+        ~ArrayEndWriter()
+        {
+            token.value_type = Type::ArrayEnd;
+            token.value = DataRef("]");
+            serializer.write(token);
+        }
 
-		Serializer &serializer;
-		Token &token;
-	};
+        Serializer &serializer;
+        Token &token;
+    };
 }
 
 template<typename T>
@@ -3109,7 +3109,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     Token token;
     token.value_type = Type::ArrayStart;
     token.value = DataRef("[");
-	Internal::ArrayEndWriter endWriter(return_serializer, token);
+    Internal::ArrayEndWriter endWriter(return_serializer, token);
     return_serializer.write(token);
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
@@ -3386,10 +3386,6 @@ namespace Internal {
         }
     };
 }
-}
-
-namespace JT {
-/// \private
 
 /// \private
 template<>
