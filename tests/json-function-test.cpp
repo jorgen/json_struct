@@ -321,10 +321,9 @@ void call_void_test()
     JT_ASSERT(voidStruct.executed_2);
     JT_ASSERT(voidStruct.executed_3);
     JT_ASSERT(voidStruct.executed_4);
-    JT_ASSERT(!voidStruct.executed_5);
+    JT_ASSERT(voidStruct.executed_5);
     JT_ASSERT(voidStruct.executed_6);
     JT_ASSERT(context.execution_list.size() == 6);
-    JT_ASSERT(context.execution_list[4].error == JT::Error::IlligalVoidFunctionArgument);
 }
 
 const char call_error_check_json[] = R"json(
