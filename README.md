@@ -59,7 +59,7 @@ template specialisations for a number of types such as:
 * `float`
 * `int`
 * `unsigned int`
-* `int65_t`
+* `int64_t`
 * `uint64_t`
 * `int16_t`
 * `uint16_t`
