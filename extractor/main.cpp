@@ -16,6 +16,8 @@ static llvm::cl::OptionCategory ExtractorExtraOptions("extractor options");
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 static cl::extrahelp MoreHelp("\nMore help text...\n");
+static cl::opt<std::string>    OutputFile("o", cl::Optional, cl::ValueRequired, cl::desc("Output file name"), cl::cat(ExtractorExtraOptions));
+static cl::opt<bool>           Linking("l", cl::Optional, cl::ValueDisallowed, cl::desc("Linking mode"), cl::cat(ExtractorExtraOptions));
 
 static Extractor global_extractor;
 
@@ -55,9 +57,64 @@ private:
 int main(int argc, const char **argv)
 {
     CommonOptionsParser OptionsParser(argc, argv, ExtractorExtraOptions);
-    ClangTool tool(OptionsParser.getCompilations(),
-                   OptionsParser.getSourcePathList());
-    int tool_run = tool.run(newFrontendActionFactory<RootFrontendAction>().get());
-    fprintf(stdout, "%d\n\n%s\n", tool_run, JT::serializeStruct(global_extractor.function_objects).c_str());
+    if (Linking)
+    {
+        fprintf(stderr, "Linking!!!!!\n");
+        std::vector<JT::FunctionObject> out_function_objects;
+
+        for (auto &path : OptionsParser.getSourcePathList())
+        {
+            FILE *in_file = fopen(path.c_str(), "rb");
+            if (!in_file)
+            {
+                fprintf(stderr, "Failed to read infile.\n");
+                return 321;
+            }
+            
+            fseek(in_file, 0, SEEK_END);
+            size_t size = ftell(in_file);
+            fseek(in_file, 0, SEEK_SET);
+            char *data = new char[size];
+            fread(data, 1, size, in_file);
+            fclose(in_file);
+            std::vector<JT::FunctionObject> file_function_objects;
+            JT::ParseContext pc(data, size);
+            pc.parseTo(file_function_objects);
+            out_function_objects.insert(out_function_objects.end(), file_function_objects.begin(), file_function_objects.end());
+        }
+        FILE *output = stdout;
+        if (OutputFile.size())
+        {
+            output = fopen(OutputFile.c_str(), "wb");
+            if (!output)
+            {
+                fprintf(stderr, "Failed to write to output file %s\n", OutputFile.c_str());
+                return 123;
+            }
+            
+        }
+        fprintf(output, "%s\n", JT::serializeStruct(out_function_objects).c_str());
+        if (output != stdout)
+            fclose(output);
+        
+    } else {
+        ClangTool tool(OptionsParser.getCompilations(),
+                       OptionsParser.getSourcePathList());
+        int tool_run = tool.run(newFrontendActionFactory<RootFrontendAction>().get());
+        FILE *output = stdout;
+        if (OutputFile.size())
+        {
+            output = fopen(OutputFile.c_str(), "wb");
+            if (!output)
+            {
+                fprintf(stderr, "Failed to write to output file %s\n", OutputFile.c_str());
+                return 123;
+            }
+            
+        }
+        fprintf(output, "%s\n", JT::serializeStruct(global_extractor.function_objects).c_str());
+        if (output != stdout)
+            fclose(output);
+    }
     return 0;
 }

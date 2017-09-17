@@ -186,7 +186,8 @@ static ClassTemplateSpecializationDecl *getJTMetaSpecialisation(Extractor &extra
     TemplateArgument t_args(QualType(parentClass->getTypeForDecl(), 0));
     auto template_arg = llvm::makeArrayRef(t_args);
     ClassTemplateSpecializationDecl *retval = ClassTemplateSpecializationDecl::Create(parentClass->getASTContext(), TTK_Class, const_cast<CXXRecordDecl *>(parentClass)->getDeclContext(), {}, {}, metaTemplate, template_arg, nullptr);
-    bool is_incomplete = extractor.current_instance->getSema().RequireCompleteType({}, parentClass->getASTContext().getTypeDeclType(retval), 0);
+    retval->dump();
+    bool is_incomplete = extractor.current_instance->getSema().RequireCompleteType(parentClass->getSourceRange().getBegin(), parentClass->getASTContext().getTypeDeclType(retval), 1);
     return is_incomplete ? nullptr : retval;
 }
 
@@ -237,7 +238,7 @@ public :
         for (auto *method : meta_specialization->methods()) {
             if (method->getName().str() == "jt_static_meta_data_info") {
                 const LValueReferenceType *ref = method->getReturnType()->getAs<LValueReferenceType>();
-                return_type = ref->getPointeeType()->getAs<DecltypeType>();
+                return_type = ref->getPointeeType()->getAs<TypedefType>()->getDecl()->getUnderlyingType()->getAs<DecltypeType>();
                 break;
             }
         }
@@ -377,7 +378,7 @@ public:
         for (auto *method : meta_specialization->methods()) {
             if (method->getName().str() == "jt_static_meta_functions_info") {
                 const LValueReferenceType *ref = method->getReturnType()->getAs<LValueReferenceType>();
-                return_type = ref->getPointeeType()->getAs<DecltypeType>();
+                return_type = ref->getPointeeType()->getAs<TypedefType>()->getDecl()->getUnderlyingType()->getAs<DecltypeType>();
             }
         }
         assert(return_type);

@@ -12,7 +12,8 @@ add_executable(extractor main.cpp
                          astvisitor.h
                          astvisitor.cpp
                          astmatcher.h
-                         astmatcher.cpp)
+                         astmatcher.cpp
+                         ${JSON_TOOLS_INCLUDE_DIR}/extractor/extractor_api.h)
 target_include_directories(extractor PRIVATE
 				     ${LLVM_INCLUDE_DIRS}
 				     ${JSON_TOOLS_INCLUDE_DIR})

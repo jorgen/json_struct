@@ -38,3 +38,7 @@ add_test(NAME json-struct-aliases-test COMMAND json-struct-aliases-test)
 add_test(NAME json-enum-test COMMAND json-enum-test)
 add_test(NAME json-meta-test COMMAND json-meta-test)
 add_test(NAME json-tools-performance COMMAND json-tools-performance)
+
+if (ENABLE_EXTRACTOR)
+    add_subdirectory(extractor)
+endif()

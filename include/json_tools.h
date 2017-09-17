@@ -3899,7 +3899,7 @@ struct TypeHandler<SilentVector<T>>
 public:
     static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<std::vector<T>>::unpackToken(to_type, context);
+        return TypeHandler<std::vector<T>>::unpackToken(to_type.data, context);
     }
 
     static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
