@@ -41,14 +41,15 @@ struct TypeDef
 
 struct Member
 {
-    TypeDef type;
     std::string name;
+    TypeDef type;
     JT::OptionalChecked<std::string> default_value;
     JT::OptionalChecked<Comment> comment;
 
 
-    JT_STRUCT(JT_MEMBER(type),
+    JT_STRUCT(
         JT_MEMBER(name),
+        JT_MEMBER(type),
         JT_MEMBER(default_value),
         JT_MEMBER(comment));
 };
@@ -106,7 +107,7 @@ inline TypeDef &TypeDef::operator=(const TypeDef &other)
 {
     type = other.type;
     name_space = other.name_space;
-    record_type.data.reset(new Record(*other.record_type.data.get()));
+    record_type.data.reset(other.record_type.data ? new Record(*other.record_type.data.get()) : nullptr);
     template_parameters = other.template_parameters;
     return *this;
 }
