@@ -2,6 +2,7 @@
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/TargetSelect.h>
 
 #include "astvisitor.h"
 #include "astmatcher.h"
@@ -126,6 +127,8 @@ void add_function_object(std::vector<JT::FunctionObject> &objects, JT::FunctionO
 
 int main(int argc, const char **argv)
 {
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmParser();
     CommonOptionsParser OptionsParser(argc, argv, ExtractorExtraOptions);
     if (linking)
     {
@@ -186,6 +189,9 @@ int main(int argc, const char **argv)
         ClangTool tool(OptionsParser.getCompilations(),
                        OptionsParser.getSourcePathList());
         int tool_run = tool.run(newFrontendActionFactory<RootFrontendAction>().get());
+
+		if (tool_run)
+			return 987;
         FILE *output = stdout;
         if (outputFile.size())
         {

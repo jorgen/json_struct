@@ -20,4 +20,14 @@ target_include_directories(extractor PRIVATE
 target_link_libraries(extractor
                       clangTooling
                       clangBasic
-                      clangASTMatchers)
+                      clangASTMatchers
+                      LLVMX86AsmParser
+                      LLVMTarget
+                      LLVMX86AsmParser
+                      LLVMX86AsmPrinter
+                      LLVMX86CodeGen
+                      LLVMX86Desc
+                      LLVMX86Disassembler
+                      LLVMX86Info
+                      LLVMX86Utils
+                      )

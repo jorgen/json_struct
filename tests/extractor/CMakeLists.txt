@@ -11,8 +11,13 @@ function(add_json_extract)
         endif()
         get_filename_component(filename ${f} NAME)
         set(OUTPUT_NAME "${CMAKE_CURRENT_BINARY_DIR}/${filename}.json")
+        if (WIN32)
+            set(CLANG_ARGS "-std=c++14")
+        else()
+            set(CLANG_ARGS "-I${PROJECT_SOURCE_DIR}/include/extractor/clang_headers -I${PROJECT_SOURCE_DIR}/include/extractor/c++/v1  -std=c++11")
+        endif()
         add_custom_command(OUTPUT "${OUTPUT_NAME}"
-                            COMMAND ${EXTRACTOR_EXECUTABLE} -o "${OUTPUT_NAME}" "${f}" -- clang++ -I${PROJECT_SOURCE_DIR}/include/ -I${PROJECT_SOURCE_DIR}/include/extractor/clang_headers -I${PROJECT_SOURCE_DIR}/include/extractor/c++/v1  -std=c++11
+                            COMMAND ${EXTRACTOR_EXECUTABLE} -o "${OUTPUT_NAME}" "${f}" -- clang++ -I${PROJECT_SOURCE_DIR}/include ${CLANG_ARGS}
                             IMPLICIT_DEPENDS CXX "${f}")
         list(APPEND LIST_OF_OUTPUT_FILES "${OUTPUT_NAME}")
     endforeach()
