@@ -2964,13 +2964,14 @@ namespace Internal {
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
 Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg, NAME_COUNT, TAKES_CONTEXT> &functionInfo, bool primary)
 {
-    if (primary && context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
+    if (primary)
     {
-        return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
+        if (context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
+            return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
     } else {
         for (size_t i = 1; i < NAME_COUNT; i++)
         {
-            if (primary && context.parse_context.token.name.size == functionInfo.name[i].size && memcmp(functionInfo.name[i].data, context.parse_context.token.name.data, functionInfo.name[i].size) == 0)
+            if (context.parse_context.token.name.size == functionInfo.name[i].size && memcmp(functionInfo.name[i].data, context.parse_context.token.name.data, functionInfo.name[i].size) == 0)
             {
                 return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
             }
