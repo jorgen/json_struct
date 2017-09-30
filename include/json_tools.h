@@ -589,7 +589,6 @@ public:
     SerializerOptions(Style style = Style::Pretty);
 
     int shiftSize() const;
-    void setShiftSize(int size);
 
     Style style() const;
     void setStyle(Style style);
@@ -1456,7 +1455,6 @@ inline SerializerOptions::SerializerOptions(Style style)
 }
 
 inline int SerializerOptions::shiftSize() const { return m_shift_size; }
-inline void SerializerOptions::setShiftSize(int size) { m_shift_size = size; }
 
 inline unsigned char SerializerOptions::depth() const { return m_depth; }
 
@@ -2575,6 +2573,7 @@ struct CallFunctionErrorContext
     {}
 
     Error setError(Error error, const std::string &error_string);
+    Error setError(const std::string &error_string) { return setError(Error::UserDefinedErrors, error_string); }
     Error getLatestError() const;
 
 private:
@@ -2964,11 +2963,10 @@ namespace Internal {
 template<typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
 Error matchAndCallFunction(T &container, CallFunctionContext &context, FunctionInfo<U,Ret,Arg, NAME_COUNT, TAKES_CONTEXT> &functionInfo, bool primary)
 {
-    if (primary)
+    if (primary && context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
     {
-        if (context.parse_context.token.name.size == functionInfo.name[0].size && memcmp(functionInfo.name[0].data, context.parse_context.token.name.data, functionInfo.name[0].size) == 0)
-            return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
-    } else {
+        return Internal::FunctionCaller<T, U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT>::callFunctionAndSerializeReturn(container, functionInfo, context);
+    } else if (!primary) {
         for (size_t i = 1; i < NAME_COUNT; i++)
         {
             if (context.parse_context.token.name.size == functionInfo.name[i].size && memcmp(functionInfo.name[i].data, context.parse_context.token.name.data, functionInfo.name[i].size) == 0)
@@ -3902,7 +3900,7 @@ struct TypeHandler<SilentVector<T>>
 public:
     static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<std::vector<T>>::unpackToken(to_type.data, context);
+        return TypeHandler<std::vector<T>>::unpackToken(to_type, context);
     }
 
     static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
@@ -3939,8 +3937,11 @@ public:
     static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
     {
         if (context.token.value_type != JT::Type::ArrayStart &&
-            context.token.value_type != JT::Type::ObjectStart)
-            return Error::ExpectedObjectStart;
+                context.token.value_type != JT::Type::ObjectStart)
+        {
+            to_type.push_back(context.token);
+            return context.error;
+        }
         to_type.push_back(context.token);
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
@@ -4357,6 +4358,47 @@ public:
     }
 };
 
+template<typename T, size_t N>
+class TypeHandler<T[N]>
+{
+public:
+	static inline Error unpackToken(T (&to_type)[N], ParseContext &context)
+	{
+		if (context.token.value_type != Type::ArrayStart)
+			return JT::Error::ExpectedArrayStart;
+
+		Error error = context.nextToken();
+		if (error != JT::Error::NoError)
+			return error;
+		for (size_t i = 0; i < N; i++)
+		{
+			context.error = TypeHandler<T>::unpackToken(to_type[i], context);
+			if (error != JT::Error::NoError)
+				return error;
+
+			Error error = context.nextToken();
+		}
+
+		if (context.token.value_type != Type::ArrayEnd)
+			return JT::Error::ExpectedArrayEnd;
+		return context.error;
+	}
+	static void serializeToken(const T (&from)[N], Token &token, Serializer &serializer)
+    {
+        token.value_type = Type::ArrayStart;
+        token.value = DataRef("[");
+        serializer.write(token);
+
+        token.name = DataRef("");
+		for (size_t i = 0; i < N; i++)
+            TypeHandler<T>::serializeToken(from[i], token, serializer);
+        
+		token.name = DataRef("");
+        token.value_type = Type::ArrayEnd;
+        token.value = DataRef("]");
+        serializer.write(token);
+    }
+};
 #ifdef JT_UNORDERED_MAP_HANDLER
 template<typename Key, typename Value>
 class TypeHandler<std::unordered_map<Key, Value>>

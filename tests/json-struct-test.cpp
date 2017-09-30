@@ -601,6 +601,26 @@ void check_json_type_handler_types()
     JT_ASSERT(context.error == JT::Error::NoError);
 }
 
+struct ArrayTest 
+{
+    double data[3];
+
+	JT_STRUCT(JT_MEMBER(data)
+	);
+};
+
+const char arrayTestJson[] = R"json({
+    "data" : [4, 5, 6]
+})json";
+
+void check_json_array_test()
+{
+    JT::ParseContext context(arrayTestJson);
+    ArrayTest obj;
+    context.parseTo(obj);
+    JT_ASSERT(context.error == JT::Error::NoError);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -619,5 +639,6 @@ int main(int, char **)
     check_json_object_or_array_array_ref();
     check_json_map();
     check_json_type_handler_types();
+	check_json_array_test();
     return 0;
 }
