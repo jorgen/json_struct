@@ -334,6 +334,7 @@ enum class Error : unsigned char
     FailedToParseInt,
     UnassignedRequiredMember,
     NonContigiousMemory,
+    ScopeHasEnded,
     UnknownError,
     UserDefinedErrors
 };
@@ -476,6 +477,24 @@ namespace Internal {
     private:
         std::vector<Callback<T>> vec;
     };
+    
+    struct ScopeCounter
+    {
+        JT::Type type;
+        uint16_t depth;
+        inline void handleType(JT::Type in_type)
+        {
+            if (type == JT::Type::ArrayStart || type == JT::Type::ObjectStart)
+            {
+                if (in_type == type)
+                    depth++;
+                else if (in_type == JT::Type(static_cast<int>(type)+1))
+                    depth--;
+            } else {
+                depth--;
+            }
+        }
+    };
 }
 
 template<typename T>
@@ -517,6 +536,10 @@ public:
 
     void copyFromValue(const Token &token, std::string &to_buffer);
     void copyIncludingValue(const Token &token, std::string &to_buffer);
+
+    void pushScope(JT::Type type);
+    void popScope();
+    JT::Error goToEndOfScope(JT::Token &token);
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
@@ -570,6 +593,7 @@ private:
     size_t range_context;
     Internal::IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
+    std::vector<Internal::ScopeCounter> scope_counter;
     Internal::CallbackContainer<void(const char *)> release_callbacks;
     Internal::CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
@@ -738,6 +762,12 @@ inline ReleaseCBRef Tokenizer::registerReleaseCallback(std::function<void(const 
 
 inline Error Tokenizer::nextToken(Token &next_token)
 {
+    assert(!scope_counter.size() ||
+            (scope_counter.back().type != JT::Type::ArrayEnd && scope_counter.back().type != JT::Type::ObjectEnd));
+    if (scope_counter.size() && scope_counter.back().depth == 0)
+    {
+        return Error::ScopeHasEnded;
+    }
     if (parsed_data_vector) {
         next_token = (*parsed_data_vector)[cursor_index];
         cursor_index++;
@@ -775,7 +805,8 @@ inline Error Tokenizer::nextToken(Token &next_token)
     }
 
     continue_after_need_more_data = error == Error::NeedMoreData;
-
+    if (error == JT::Error::NoError && scope_counter.size())
+        scope_counter.back().handleType(next_token.value_type);
     return error;
 }
 
@@ -811,6 +842,27 @@ inline void Tokenizer::copyIncludingValue(const Token &, std::string &to_buffer)
     copy_buffers.erase(it);
 }
 
+inline void Tokenizer::pushScope(JT::Type type)
+{
+    scope_counter.push_back({type, 1});
+}
+
+inline void Tokenizer::popScope()
+{
+    assert(scope_counter.size() && scope_counter.back().depth == 0);
+    scope_counter.pop_back(); 
+}
+
+inline JT::Error Tokenizer::goToEndOfScope(JT::Token &token)
+{
+    JT::Error error = JT::Error::NoError;
+    while (scope_counter.back().depth && error == JT::Error::NoError)
+    {
+        error = nextToken(token);
+    }
+    return error;
+}
+
 inline std::string Tokenizer::makeErrorString() const
 {
     static const char *error_strings[] = {
@@ -836,6 +888,7 @@ inline std::string Tokenizer::makeErrorString() const
         "FailedToParseInt",
         "UnassignedRequiredMember",
         "NonContigiousMemory",
+        "ScopeHasEnded",
         "UnknownError",
     };
     static_assert(sizeof(error_strings) / sizeof*error_strings == size_t(Error::UserDefinedErrors) , "Please add missing error message");
@@ -3113,6 +3166,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     auto functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
+        parse_context.tokenizer.pushScope(parse_context.token.value_type);
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
         error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
         if (error == Error::MissingPropertyMember)
@@ -3127,6 +3181,10 @@ inline Error CallFunctionContext::callFunctions(T &container)
         if (stop_execute_on_fail && error != Error::MissingPropertyMember && error != Error::NoError)
             return error;
 
+        error = parse_context.tokenizer.goToEndOfScope(parse_context.token);
+        if (error != JT::Error::NoError)
+            return error;
+        parse_context.tokenizer.popScope();
         error = parse_context.nextToken();
         if (error != JT::Error::NoError)
             return error;
