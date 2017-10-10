@@ -2659,6 +2659,7 @@ struct CallFunctionExecutionState
         , error(Error::NoError)
     {}
     std::string name;
+	SilentString context;
     Error error;
     SilentString error_string;
     SilentVector<std::string> missing_members;
@@ -2666,6 +2667,7 @@ struct CallFunctionExecutionState
     SilentVector<CallFunctionExecutionState> child_states;
 	JT_STRUCT(
 		JT_MEMBER(name),
+		JT_MEMBER(context),
 		JT_MEMBER(error),
 		JT_MEMBER(error_string),
 		JT_MEMBER(missing_members),
@@ -2706,6 +2708,7 @@ struct CallFunctionContext
     Serializer &return_serializer;
     CallFunctionErrorContext error_context;
     std::vector<CallFunctionExecutionState> execution_list;
+	std::string user_context;
     bool allow_missing = false;
     bool stop_execute_on_fail = false;
     void *user_handle = nullptr;
@@ -3225,6 +3228,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     {
         parse_context.tokenizer.pushScope(parse_context.token.value_type);
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
+		execution_list.back().context.data = user_context;
         error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
         if (error == Error::MissingFunction)
             error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, false);
