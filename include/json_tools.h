@@ -595,6 +595,7 @@ private:
     Internal::IntermediateToken intermediate_token;
     std::vector<DataRef> data_list;
     std::vector<Internal::ScopeCounter> scope_counter;
+    std::vector<Type> container_stack;
     Internal::CallbackContainer<void(const char *)> release_callbacks;
     Internal::CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
     std::vector<std::pair<size_t, std::string *>> copy_buffers;
@@ -808,8 +809,23 @@ inline Error Tokenizer::nextToken(Token &next_token)
     }
 
     continue_after_need_more_data = error == Error::NeedMoreData;
-    if (error == JT::Error::NoError && scope_counter.size())
-        scope_counter.back().handleType(next_token.value_type);
+    if (error == JT::Error::NoError)
+    {
+        if (next_token.value_type == Type::ArrayStart || next_token.value_type == Type::ObjectStart)
+            container_stack.push_back(next_token.value_type);
+        if (next_token.value_type == Type::ArrayEnd)
+        {
+            assert(container_stack.size() && container_stack.back() == JT::Type::ArrayStart);
+            container_stack.pop_back();
+        }
+        if (next_token.value_type == Type::ObjectEnd)
+        {
+            assert(container_stack.size() && container_stack.back() == JT::Type::ObjectStart);
+            container_stack.pop_back();
+        }
+        if (scope_counter.size())
+            scope_counter.back().handleType(next_token.value_type);
+    }
     return error;
 }
 
@@ -1111,14 +1127,20 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
     for (size_t end = cursor_index; end < json_data.size; end++) {
         const char c = json_data.data[end];
         if (c == ':') {
+            if (container_stack.back() != Type::ObjectStart)
+                return Error::ExpectedDelimiter;
             token_state = InTokenState::FindingData;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
         } else if (c == ',') {
+            if (container_stack.back() != Type::ArrayStart)
+                return Error::ExpectedDelimiter;
             token_state = InTokenState::FindingName;
             *chars_ahead = end + 1 - cursor_index;
             return Error::NoError;
         } else if (c == ']') {
+            if (container_stack.back() != Type::ArrayStart)
+                return Error::ExpectedDelimiter;
             token_state = InTokenState::FindingName;
             *chars_ahead = end - cursor_index;
             return Error::NoError;

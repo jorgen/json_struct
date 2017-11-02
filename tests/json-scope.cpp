@@ -13,7 +13,7 @@ const char json[] = R"json({
     },
     "func3" : {
         "first" :  {
-            "advanced" : true"
+            "advanced" : true
         },
         "second" : false
     }
