@@ -713,7 +713,9 @@ inline Tokenizer::Tokenizer()
     , line_range_context(256)
     , range_context(38)
     , parsed_data_vector(nullptr)
-{}
+{
+    container_stack.reserve(16);
+}
 
 inline void Tokenizer::allowAsciiType(bool allow)
 {
