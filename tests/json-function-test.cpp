@@ -382,8 +382,10 @@ void call_error_check()
 	CallErrorCheck errorCheck;
     std::string json_out;
     JT::DefaultCallFunctionContext context(call_error_check_json, json_out);
-    context.callFunctions(errorCheck);
+	context.stop_execute_on_fail = false;
+    JT::Error error = context.callFunctions(errorCheck);
 
+	JT_ASSERT(error == JT::Error::NoError);
 	fprintf(stderr, "json out %s\n", json_out.c_str());
 	JT_ASSERT(errorCheck.executed1);
 	JT_ASSERT(errorCheck.executed2);

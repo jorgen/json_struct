@@ -848,6 +848,8 @@ inline void Tokenizer::copyIncludingValue(const Token &, std::string &to_buffer)
 inline void Tokenizer::pushScope(JT::Type type)
 {
     scope_counter.push_back({type, 1});
+	if (type != Type::ArrayStart && type != Type::ObjectStart)
+		scope_counter.back().depth--;
 }
 
 inline void Tokenizer::popScope()
@@ -3151,14 +3153,12 @@ namespace Internal {
 
     static inline void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
     {
-        if (executionState.error == Error::NoError) {
-            executionState.error = context.error;
-            if (context.error != Error::NoError) { 
-				if (context.tokenizer.errorContext().custom_message.empty())
-					context.tokenizer.updateErrorContext(context.error);
-                executionState.error_string.data = context.tokenizer.makeErrorString();
-            }
-        }
+		executionState.error = context.error;
+		if (context.error != Error::NoError) {
+			if (context.tokenizer.errorContext().custom_message.empty())
+				context.tokenizer.updateErrorContext(context.error);
+			executionState.error_string.data = context.tokenizer.makeErrorString();
+		}
         if (context.missing_members.size())
             std::swap(executionState.missing_members.data, context.missing_members);
         if (context.unassigned_required_members.size())
@@ -3239,13 +3239,11 @@ inline Error CallFunctionContext::callFunctions(T &container)
         Internal::add_error(execution_list.back(), parse_context);
 		parse_context.tokenizer.goToEndOfScope(parse_context.token);
 		parse_context.tokenizer.popScope();
-        if (error == Error::MissingFunction && !allow_missing)
-            return error;
-        if (stop_execute_on_fail && error != Error::MissingFunction && error != Error::NoError)
+		if (error == Error::MissingFunction && allow_missing)
+			error = Error::NoError;
+        if (stop_execute_on_fail && error != Error::NoError)
             return error;
 
-        if (error != JT::Error::NoError)
-            return error;
         error = parse_context.nextToken();
         if (error != JT::Error::NoError)
             return error;
