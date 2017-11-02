@@ -328,7 +328,7 @@ enum class Error : unsigned char
     EncounteredIlligalChar,
     NodeNotFound,
     MissingPropertyMember,
-	MissingFunction,
+    MissingFunction,
     FailedToParseBoolen,
     FailedToParseDouble,
     FailedToParseFloat,
@@ -776,8 +776,8 @@ inline Error Tokenizer::nextToken(Token &next_token)
             cursor_index = 0;
             parsed_data_vector = nullptr;
         }
-		if (scope_counter.size())
-			scope_counter.back().handleType(next_token.value_type);
+        if (scope_counter.size())
+            scope_counter.back().handleType(next_token.value_type);
         return Error::NoError;
     }
     if (data_list.empty()) {
@@ -848,8 +848,8 @@ inline void Tokenizer::copyIncludingValue(const Token &, std::string &to_buffer)
 inline void Tokenizer::pushScope(JT::Type type)
 {
     scope_counter.push_back({type, 1});
-	if (type != Type::ArrayStart && type != Type::ObjectStart)
-		scope_counter.back().depth--;
+    if (type != Type::ArrayStart && type != Type::ObjectStart)
+        scope_counter.back().depth--;
 }
 
 inline void Tokenizer::popScope()
@@ -887,7 +887,7 @@ namespace Internal
         "EncounteredIlligalChar",
         "NodeNotFound",
         "MissingPropertyMember",
-		"MissingFunction",
+        "MissingFunction",
         "FailedToParseBoolen",
         "FailedToParseDouble",
         "FailedToParseFloat",
@@ -2641,16 +2641,16 @@ struct TypeHandler<Error>
 
     static inline void serializeToken(const Error &from_type, Token &token, Serializer &serializer)
     {
-		token.value_type = JT::Type::String;
-		if (from_type < JT::Error::UserDefinedErrors)
-		{
-			token.value = DataRef(Internal::error_strings[(int)from_type]);
-		}
-		else
-		{
-			token.value = DataRef("UserDefinedError");
-		}
-		serializer.write(token);
+        token.value_type = JT::Type::String;
+        if (from_type < JT::Error::UserDefinedErrors)
+        {
+            token.value = DataRef(Internal::error_strings[(int)from_type]);
+        }
+        else
+        {
+            token.value = DataRef("UserDefinedError");
+        }
+        serializer.write(token);
     }
 };
 
@@ -2661,21 +2661,21 @@ struct CallFunctionExecutionState
         , error(Error::NoError)
     {}
     std::string name;
-	SilentString context;
+    SilentString context;
     Error error;
     SilentString error_string;
     SilentVector<std::string> missing_members;
     SilentVector<std::string> unassigned_required_members;
     SilentVector<CallFunctionExecutionState> child_states;
-	JT_STRUCT(
-		JT_MEMBER(name),
-		JT_MEMBER(context),
-		JT_MEMBER(error),
-		JT_MEMBER(error_string),
-		JT_MEMBER(missing_members),
-		JT_MEMBER(unassigned_required_members),
-		JT_MEMBER(child_states)
-	);
+    JT_STRUCT(
+            JT_MEMBER(name),
+            JT_MEMBER(context),
+            JT_MEMBER(error),
+            JT_MEMBER(error_string),
+            JT_MEMBER(missing_members),
+            JT_MEMBER(unassigned_required_members),
+            JT_MEMBER(child_states)
+            );
 };
 
 struct CallFunctionContext;
@@ -2710,7 +2710,7 @@ struct CallFunctionContext
     Serializer &return_serializer;
     CallFunctionErrorContext error_context;
     std::vector<CallFunctionExecutionState> execution_list;
-	std::string user_context;
+    std::string user_context;
     bool allow_missing = false;
     bool stop_execute_on_fail = false;
     void *user_handle = nullptr;
@@ -3153,12 +3153,12 @@ namespace Internal {
 
     static inline void add_error(CallFunctionExecutionState &executionState, ParseContext &context)
     {
-		executionState.error = context.error;
-		if (context.error != Error::NoError) {
-			if (context.tokenizer.errorContext().custom_message.empty())
-				context.tokenizer.updateErrorContext(context.error);
-			executionState.error_string.data = context.tokenizer.makeErrorString();
-		}
+        executionState.error = context.error;
+        if (context.error != Error::NoError) {
+            if (context.tokenizer.errorContext().custom_message.empty())
+                context.tokenizer.updateErrorContext(context.error);
+            executionState.error_string.data = context.tokenizer.makeErrorString();
+        }
         if (context.missing_members.size())
             std::swap(executionState.missing_members.data, context.missing_members);
         if (context.unassigned_required_members.size())
@@ -3228,7 +3228,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     {
         parse_context.tokenizer.pushScope(parse_context.token.value_type);
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
-		execution_list.back().context.data = user_context;
+        execution_list.back().context.data = user_context;
         error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, true);
         if (error == Error::MissingFunction)
             error = Internal::FunctionObjectTraverser<T, decltype(functions), decltype(functions)::size - 1>::call(container, *this,  functions, false);
@@ -3237,10 +3237,10 @@ inline Error CallFunctionContext::callFunctions(T &container)
             parse_context.error = error;
         }
         Internal::add_error(execution_list.back(), parse_context);
-		parse_context.tokenizer.goToEndOfScope(parse_context.token);
-		parse_context.tokenizer.popScope();
-		if (error == Error::MissingFunction && allow_missing)
-			error = Error::NoError;
+        parse_context.tokenizer.goToEndOfScope(parse_context.token);
+        parse_context.tokenizer.popScope();
+        if (error == Error::MissingFunction && allow_missing)
+            error = Error::NoError;
         if (stop_execute_on_fail && error != Error::NoError)
             return error;
 
@@ -4479,38 +4479,38 @@ template<typename T, size_t N>
 class TypeHandler<T[N]>
 {
 public:
-	static inline Error unpackToken(T (&to_type)[N], ParseContext &context)
-	{
-		if (context.token.value_type != Type::ArrayStart)
-			return JT::Error::ExpectedArrayStart;
+    static inline Error unpackToken(T (&to_type)[N], ParseContext &context)
+    {
+        if (context.token.value_type != Type::ArrayStart)
+            return JT::Error::ExpectedArrayStart;
 
-		Error error = context.nextToken();
-		if (error != JT::Error::NoError)
-			return error;
-		for (size_t i = 0; i < N; i++)
-		{
-			context.error = TypeHandler<T>::unpackToken(to_type[i], context);
-			if (error != JT::Error::NoError)
-				return error;
+        Error error = context.nextToken();
+        if (error != JT::Error::NoError)
+            return error;
+        for (size_t i = 0; i < N; i++)
+        {
+            context.error = TypeHandler<T>::unpackToken(to_type[i], context);
+            if (error != JT::Error::NoError)
+                return error;
 
-			Error error = context.nextToken();
-		}
+            Error error = context.nextToken();
+        }
 
-		if (context.token.value_type != Type::ArrayEnd)
-			return JT::Error::ExpectedArrayEnd;
-		return context.error;
-	}
-	static void serializeToken(const T (&from)[N], Token &token, Serializer &serializer)
+        if (context.token.value_type != Type::ArrayEnd)
+            return JT::Error::ExpectedArrayEnd;
+        return context.error;
+    }
+    static void serializeToken(const T (&from)[N], Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef("[");
         serializer.write(token);
 
         token.name = DataRef("");
-		for (size_t i = 0; i < N; i++)
+        for (size_t i = 0; i < N; i++)
             TypeHandler<T>::serializeToken(from[i], token, serializer);
         
-		token.name = DataRef("");
+        token.name = DataRef("");
         token.value_type = Type::ArrayEnd;
         token.value = DataRef("]");
         serializer.write(token);
