@@ -2105,6 +2105,9 @@ struct ParseContext
     {
         tokenizer.addData(data, size);
     }
+    ParseContext(const std::string &json)
+        : ParseContext(json.c_str(), json.size())
+    {}
     template<size_t SIZE>
     ParseContext(const char (&data)[SIZE])
     {
