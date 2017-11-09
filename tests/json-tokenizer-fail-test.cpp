@@ -48,7 +48,7 @@ static int check_fail_json_with_ascii_property()
 
     error = tokenizer.nextToken(token);
     fprintf(stderr, "Error %s\n", tokenizer.makeErrorString().c_str());
-    JT_ASSERT(error == JT::Error::IlligalPropertyName);
+    JT_ASSERT(error == JT::Error::IllegalPropertyName);
 
     return 0;
 }
@@ -75,7 +75,7 @@ static int check_fail_json_with_ascii_data()
     JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::IlligalDataValue);
+    JT_ASSERT(error == JT::Error::IllegalDataValue);
 
     return 0;
 }
@@ -138,17 +138,17 @@ static int check_fail_json_with_comma_before_obj_end()
     return 0;
 }
 
-const char json_with_illigal_chars[] =
+const char json_with_illegal_chars[] =
 "{"
 "   \"foo\": \"bar\","
 " ,  \"color\" : \"red\","
 "}";
 
-static int check_fail_json_with_illigal_chars()
+static int check_fail_json_with_illegal_chars()
 {
     JT::Error error;
     JT::Tokenizer tokenizer;
-    tokenizer.addData(json_with_illigal_chars, sizeof(json_with_illigal_chars));
+    tokenizer.addData(json_with_illegal_chars, sizeof(json_with_illegal_chars));
 
     JT::Token token;
     error = tokenizer.nextToken(token);
@@ -160,12 +160,12 @@ static int check_fail_json_with_illigal_chars()
     JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::EncounteredIlligalChar);
+    JT_ASSERT(error == JT::Error::EncounteredIllegalChar);
 
     return 0;
 }
 
-const char json_with_illigal_comma_in_array[] =
+const char json_with_illegal_comma_in_array[] =
 "{"
 "    \"foo\": [,4,5,6]"
 "}";
@@ -173,7 +173,7 @@ static int check_fail_json_with_empty_array()
 {
 	JT::Error error;
 	JT::Tokenizer tokenizer;
-	tokenizer.addData(json_with_illigal_comma_in_array);
+	tokenizer.addData(json_with_illegal_comma_in_array);
 
 	JT::Token token;
 	error = tokenizer.nextToken(token);
@@ -185,7 +185,7 @@ static int check_fail_json_with_empty_array()
 	JT_ASSERT(token.value_type == JT::Type::ArrayStart);
 
 	error = tokenizer.nextToken(token);
-	JT_ASSERT(error == JT::Error::EncounteredIlligalChar);
+	JT_ASSERT(error == JT::Error::EncounteredIllegalChar);
 
 	return 0;
 }
@@ -197,7 +197,7 @@ int main(int, char **)
     check_fail_json_with_ascii_data();
     check_fail_json_with_new_line_seperator();
     check_fail_json_with_comma_before_obj_end();
-    check_fail_json_with_illigal_chars();
+    check_fail_json_with_illegal_chars();
 	check_fail_json_with_empty_array();
     return 0;
 }

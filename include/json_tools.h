@@ -322,10 +322,10 @@ enum class Error : unsigned char
     ExpectedObjectEnd,
     ExpectedArrayStart,
     ExpectedArrayEnd,
-    IlligalPropertyName,
-    IlligalPropertyType,
-    IlligalDataValue,
-    EncounteredIlligalChar,
+    IllegalPropertyName,
+    IllegalPropertyType,
+    IllegalDataValue,
+    EncounteredIllegalChar,
     NodeNotFound,
     MissingPropertyMember,
     MissingFunction,
@@ -899,10 +899,10 @@ namespace Internal
         "ExpectedObjectEnd",
         "ExpectedArrayStart",
         "ExpectedArrayEnd",
-        "IlligalPropertyName",
-        "IlligalPropertyType",
-        "IlligalDataValue",
-        "EncounteredIlligalChar",
+        "IllegalPropertyName",
+        "IllegalPropertyType",
+        "IllegalDataValue",
+        "EncounteredIllegalChar",
         "NodeNotFound",
         "MissingPropertyMember",
         "MissingFunction",
@@ -1118,7 +1118,7 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
                 return Error::NoError;
         } else if (lc == 0) {
             *chars_ahead = current_pos - cursor_index;
-            return Error::EncounteredIlligalChar;
+            return Error::EncounteredIllegalChar;
         }
     }
     return Error::NeedMoreData;
@@ -1382,7 +1382,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
             } else {
                 if (tmp_token.name_type != Type::String) {
                     if (!allow_ascii_properties || tmp_token.name_type != Type::Ascii) {
-                        return Error::IlligalPropertyName;
+                        return Error::IllegalPropertyName;
                     }
                 }
             }
@@ -1426,7 +1426,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
             tmp_token.value_type = Internal::getType(type, tmp_token.value.data, tmp_token.value.size);
 
             if (tmp_token.value_type  == Type::Ascii && !allow_ascii_properties)
-                return Error::IlligalDataValue;
+                return Error::IllegalDataValue;
 
             if (type == Type::ObjectStart || type == Type::ArrayStart) {
                 token_state = InTokenState::FindingName;
@@ -3517,7 +3517,7 @@ namespace Internal {
                     }
                 }
             }
-            return Error::IlligalDataValue;
+            return Error::IllegalDataValue;
         }
 
         static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
