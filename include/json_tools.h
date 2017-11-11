@@ -2548,7 +2548,10 @@ namespace Internal {
             return;
         }
 
-        while (context.error == Error::NoError && context.token.value_type != end_type) {
+        bool nested_object_or_array = false;
+        while ((context.error == Error::NoError && context.token.value_type != end_type)
+               || nested_object_or_array) {
+            nested_object_or_array = false;
             context.nextToken();
             if (context.error != Error::NoError)
                 return;
@@ -2557,6 +2560,9 @@ namespace Internal {
                 skipArrayOrObject(context);
                 if (context.error != Error::NoError)
                     return;
+                if (end_type == context.token.value_type) {
+                    nested_object_or_array = true;
+                }
             }
         }
     }

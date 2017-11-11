@@ -621,6 +621,124 @@ void check_json_array_test()
     JT_ASSERT(context.error == JT::Error::NoError);
 }
 
+struct SkipTestBase
+{
+    std::string name;
+    int id;
+
+    JT_STRUCT(JT_MEMBER(name),
+              JT_MEMBER(id));
+};
+
+struct SkipTestInternalContainer
+{
+    std::vector<float> items;
+
+    JT_STRUCT(JT_MEMBER(items));
+};
+
+struct SkipTestNameContainer
+{
+    std::string name;
+    int id;
+    SkipTestInternalContainer container;
+
+    JT_STRUCT(JT_MEMBER(name),
+              JT_MEMBER(id),
+              JT_MEMBER(container));
+};
+
+struct SkipTestSubClass : public SkipTestBase
+{
+    float value;
+    std::vector<SkipTestNameContainer> skip_test_list_01;
+    std::vector<SkipTestNameContainer> skip_test_list_02;
+
+    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SkipTestBase)),
+                         JT_MEMBER(value),
+                         JT_MEMBER(skip_test_list_01),
+                         JT_MEMBER(skip_test_list_02));
+};
+
+const char jsonSkipTest[] = R"json(
+{
+    "skip_test_list_01": [
+        {
+            "id" : 1,
+            "container" : {
+                "items" : []
+            },
+            "skip_me" : [],
+            "name": "list01"
+        },
+        {
+            "name": "list02",
+            "skip_me" : [],
+            "container" : {
+                "items" : [1.1, 2.2, 3.3]
+            },
+            "id" : 2
+        },
+        {
+            "skip_me" : [],
+            "name": "list03",
+            "id" : 3,
+            "container" : {
+                "items" : [0, 1, 2]
+            }
+        }
+    ],
+    "skip_test_list_02": [
+        {
+            "name": "list01",
+            "id" : 1,
+            "container" : {
+                "items" : []
+            },
+            "skip_me" : []
+        },
+        {
+            "name": "list02",
+            "skip_me" : [],
+            "container" : {
+                "items" : []
+            },
+            "id" : 2
+        },
+        {
+            "container" : {
+                "items" : []
+            },
+            "skip_me" : [],
+            "name": "list03",
+            "id" : 3
+        }
+    ],
+    "value" : 3.14,
+    "name" : "base_name",
+    "id" : 444
+}
+)json";
+
+void check_json_skip_test()
+{
+    JT::ParseContext base_context(jsonSkipTest);
+    SkipTestBase base;
+    base_context.parseTo(base);
+    JT_ASSERT(base_context.error == JT::Error::NoError);
+    JT_ASSERT(base.name == "base_name");
+    JT_ASSERT(base.id == 444);
+
+    JT::ParseContext sub_context(jsonSkipTest);
+    SkipTestSubClass sub;
+    sub_context.parseTo(sub);
+    JT_ASSERT(sub_context.error == JT::Error::NoError);
+    JT_ASSERT(sub.skip_test_list_01[2].name == "list03");
+    JT_ASSERT(sub.skip_test_list_02[1].name == "list02");
+    JT_ASSERT(sub.name == "base_name");
+    JT_ASSERT(sub.id == 444);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -640,5 +758,6 @@ int main(int, char **)
     check_json_map();
     check_json_type_handler_types();
 	check_json_array_test();
+    check_json_skip_test();
     return 0;
 }
