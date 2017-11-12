@@ -329,7 +329,7 @@ enum class Error : unsigned char
     NodeNotFound,
     MissingPropertyMember,
     MissingFunction,
-    FailedToParseBoolen,
+    FailedToParseBoolean,
     FailedToParseDouble,
     FailedToParseFloat,
     FailedToParseInt,
@@ -906,7 +906,7 @@ namespace Internal
         "NodeNotFound",
         "MissingPropertyMember",
         "MissingFunction",
-        "FailedToParseBoolen",
+        "FailedToParseBoolean",
         "FailedToParseDouble",
         "FailedToParseFloat",
         "FailedToParseInt",
@@ -3909,7 +3909,7 @@ struct TypeHandler<bool>
         else if (context.token.value.size == sizeof("false") - 1 && memcmp("false", context.token.value.data, sizeof("false") - 1) == 0)
             to_type = false;
         else
-            return Error::FailedToParseBoolen;
+            return Error::FailedToParseBoolean;
 
         return Error::NoError;
     }
