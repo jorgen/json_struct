@@ -2534,7 +2534,7 @@ namespace Internal {
         }
     };
 
-    static void skipArrayOrObject(ParseContext &context)
+    static bool skipArrayOrObject(ParseContext &context)
     {
         assert(context.error == Error::NoError);
         Type end_type;
@@ -2545,26 +2545,24 @@ namespace Internal {
             end_type = Type::ArrayEnd;
         }
         else {
-            return;
+            return false;
         }
 
-        bool nested_object_or_array = false;
-        while ((context.error == Error::NoError && context.token.value_type != end_type)
-               || nested_object_or_array) {
-            nested_object_or_array = false;
+        while ((context.error == Error::NoError && context.token.value_type != end_type))
+        {
             context.nextToken();
             if (context.error != Error::NoError)
-                return;
+                return false;
             if (context.token.value_type == Type::ObjectStart
                 || context.token.value_type == Type::ArrayStart) {
-                skipArrayOrObject(context);
+                if (skipArrayOrObject(context))
+                    context.nextToken();
                 if (context.error != Error::NoError)
-                    return;
-                if (end_type == context.token.value_type) {
-                    nested_object_or_array = true;
-                }
+                    return false;
             }
         }
+
+        return true;
     }
 }
 
