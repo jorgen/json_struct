@@ -534,6 +534,7 @@ public:
     NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
     ReleaseCBRef registerReleaseCallback(std::function<void(const char *)> &callback);
     Error nextToken(Token &next_token);
+    const char *currentPosition() const;
 
     void copyFromValue(const Token &token, std::string &to_buffer);
     void copyIncludingValue(const Token &token, std::string &to_buffer);
@@ -831,6 +832,17 @@ inline Error Tokenizer::nextToken(Token &next_token)
     return error;
 }
 
+inline const char *Tokenizer::currentPosition() const
+{
+    if (parsed_data_vector)
+        return reinterpret_cast<const char *>(cursor_index);
+
+    if (data_list.empty())
+        return nullptr;
+
+    return data_list.front().data + cursor_index;
+}
+
 static bool isValueInIntermediateToken(const Token &token, const Internal::IntermediateToken &intermediate)
 {
     if (intermediate.data.size())
@@ -1126,6 +1138,8 @@ inline Error Tokenizer::findStartOfNextValue(Type *type,
 
 inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ahead)
 {
+    if (container_stack.empty())
+        return Error::IllegalPropertyType;
     for (size_t end = cursor_index; end < json_data.size; end++) {
         const char c = json_data.data[end];
         if (c == ':') {
@@ -1155,6 +1169,8 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
+    if (container_stack.empty())
+        return Error::NoError;
     for (size_t end = cursor_index; end < json_data.size; end++) {
         const char c = json_data.data[end];
         if (c == ',') {

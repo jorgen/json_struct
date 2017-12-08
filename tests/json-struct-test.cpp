@@ -739,6 +739,28 @@ void check_json_skip_test()
     JT_ASSERT(sub.id == 444);
 }
 
+const char multi_top_level_json[] = R"json({ a: 1}{a: 2}{a:3})json";
+struct MultiTopLevel
+{
+    int a;
+    JT_STRUCT(JT_MEMBER(a));
+};
+
+void check_multi_top_level_json()
+{
+    JT::ParseContext pc(multi_top_level_json);
+    pc.tokenizer.allowAsciiType(true);
+    MultiTopLevel t;
+    int a = 1;
+    for (int i = 0; i < 3; i++)
+    {
+        JT_ASSERT(pc.tokenizer.currentPosition() < multi_top_level_json + sizeof(multi_top_level_json)-1);
+        pc.parseTo(t);
+        JT_ASSERT(t.a == i+1);
+    }
+    JT_ASSERT(pc.tokenizer.currentPosition() == multi_top_level_json + sizeof(multi_top_level_json)-1);
+}
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -759,5 +781,6 @@ int main(int, char **)
     check_json_type_handler_types();
 	check_json_array_test();
     check_json_skip_test();
+    check_multi_top_level_json();
     return 0;
 }

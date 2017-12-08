@@ -190,6 +190,17 @@ static int check_fail_json_with_empty_array()
 	return 0;
 }
 
+const char json_broken_stream[] = R"json("r::load","line":640,"level":0,"type":"Io","io":{"id":928,"action":0,"state":0,"uri":"http://datamons")json";
+static int check_fail_broken_json_stream()
+{
+    JT::Error error;
+    JT::Tokenizer tokenizer;
+    tokenizer.addData(json_broken_stream);
+
+    JT::Token token;
+    error = tokenizer.nextToken(token);
+    JT_ASSERT(error != JT::Error::NoError);
+}
 
 int main(int, char **)
 {
@@ -198,7 +209,8 @@ int main(int, char **)
     check_fail_json_with_new_line_seperator();
     check_fail_json_with_comma_before_obj_end();
     check_fail_json_with_illegal_chars();
-	check_fail_json_with_empty_array();
+    check_fail_json_with_empty_array();
+    check_fail_broken_json_stream();
     return 0;
 }
 
