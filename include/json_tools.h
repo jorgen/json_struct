@@ -1953,18 +1953,21 @@ struct OptionalChecked
 struct SilentString
 {
     std::string data;
+    typedef bool IsOptionalType;
 };
 
 template<typename T, typename A = std::allocator<T>>
 struct SilentVector
 {
     std::vector<T, A> data;
+    typedef bool IsOptionalType;
 };
 
 template<typename T, typename Deleter = std::default_delete<T>>
 struct SilentUniquePtr
 {
     std::unique_ptr<T, Deleter> data;
+    typedef bool IsOptionalType;
 };
 
 struct JsonObjectRef
