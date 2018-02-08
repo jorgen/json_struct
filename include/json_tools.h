@@ -4229,9 +4229,19 @@ struct TypeHandler<JsonArray>
 
     static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
-        serializer.write(token);
+
+        if (from_type.data.empty())
+        {
+            std::string emptyArray("[]");
+            token.value = DataRef(emptyArray);
+            serializer.write(token);
+        }
+        else
+        {
+            token.value = DataRef(from_type.data);
+            serializer.write(token);
+        }
     }
 };
 
@@ -4303,9 +4313,19 @@ struct TypeHandler<JsonObject>
 
     static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
-        serializer.write(token);
+
+        if (from_type.data.empty())
+        {
+            std::string emptyObject("{}");
+            token.value = DataRef(emptyObject);
+            serializer.write(token);
+        }
+        else
+        {
+            token.value = DataRef(from_type.data);
+            serializer.write(token);
+        }
     }
 };
 
@@ -4404,9 +4424,19 @@ struct TypeHandler<JsonObjectOrArray>
 
     static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value = DataRef(from_type.data);
         token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
-        serializer.write(token);
+
+        if (from_type.data.empty())
+        {
+            std::string emptyObjectOrArray("{}"); // Use object as default
+            token.value = DataRef(emptyObjectOrArray);
+            serializer.write(token);
+        }
+        else
+        {
+            token.value = DataRef(from_type.data);
+            serializer.write(token);
+        }
     }
 };
 
