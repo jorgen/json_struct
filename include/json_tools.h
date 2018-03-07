@@ -1743,6 +1743,9 @@ inline bool Serializer::write(Type type, const DataRef &data)
             else
                 written = write(data.data,data.size);
             break;
+        case Type::Null:
+            written = write("null", 4);
+            break;
         default:
             written = write(data.data,data.size);
             break;
