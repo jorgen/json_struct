@@ -858,7 +858,7 @@ inline void Tokenizer::copyFromValue(const Token &token, std::string &to_buffer)
         auto pair = std::make_pair(cursor_index, &to_buffer);
         copy_buffers.push_back(pair);
     } else {
-        assert(token.value.data > data_list.front().data && token.value.data < data_list.front().data + data_list.front().size);
+        assert(token.value.data >= data_list.front().data && token.value.data < data_list.front().data + data_list.front().size);
         long index = token.value.data - data_list.front().data;
         auto pair = std::make_pair(index, &to_buffer);
         copy_buffers.push_back(pair);
