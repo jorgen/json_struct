@@ -216,7 +216,8 @@ enum class Type : unsigned char
     ArrayStart,
     ArrayEnd,
     Bool,
-    Null
+    Null,
+    Verbatim
 };
 
 struct Token
@@ -1718,7 +1719,23 @@ inline bool Serializer::writeAsString(const DataRef &data)
             return false;
     }
 
-    written = write(data.data,data.size);
+	const char *start = data.data;
+	for (int i = 0; i < data.size; i++)
+	{
+		if (data.data[i] == '\\' || data.data[i] == '"')
+		{
+			auto diff = &data.data[i] - start;
+			if (diff)
+			{
+				write(start, diff);
+			}
+			write("\\", 1);
+			start = &data.data[i];
+		}
+	}
+
+	auto diff = &data.data[data.size] - start;
+    written = write(start, diff);
     if (!written)
         return false;
 
@@ -3556,13 +3573,38 @@ namespace Internal {
     };
 }
 
+namespace Internal
+{
+	static void remove_escapes(const DataRef &ref, std::string &to_type)
+	{
+		to_type.reserve(ref.size);
+		const char *start = ref.data;
+		bool escaped = false;
+		for (int i = 0; i < ref.size; i++)
+		{
+			if (ref.data[i] == '\\' && !escaped)
+			{
+				auto diff = &ref.data[i] - start;
+				to_type += std::string(start, diff);
+				start = &ref.data[i + 1];
+				escaped = true;
+			}
+			else
+			{
+				escaped = false;
+			}
+		}
+		auto diff = &ref.data[ref.size - 1] - start;
+		to_type += std::string(start, diff + 1);
+	}
+}
 /// \private
 template<>
 struct TypeHandler<std::string>
 {
     static inline Error unpackToken(std::string &to_type, ParseContext &context)
     {
-        to_type = std::string(context.token.value.data, context.token.value.size);
+		Internal::remove_escapes(context.token.value, to_type);
         return Error::NoError;
     }
 
@@ -4198,7 +4240,7 @@ struct TypeHandler<JsonArrayRef>
     static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
-        token.value_type = Type::Null;
+        token.value_type = Type::Verbatim;
         serializer.write(token);
     }
 };
@@ -4232,7 +4274,7 @@ struct TypeHandler<JsonArray>
 
     static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {
@@ -4283,7 +4325,7 @@ struct TypeHandler<JsonObjectRef> {
     static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
-        token.value_type = Type::Null;
+        token.value_type = Type::Verbatim;
         serializer.write(token);
     }
 };
@@ -4316,7 +4358,7 @@ struct TypeHandler<JsonObject>
 
     static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {
@@ -4327,7 +4369,7 @@ struct TypeHandler<JsonObject>
         else
         {
             token.value = DataRef(from_type.data);
-            serializer.write(token);
+			serializer.write(token);
         }
     }
 };
@@ -4380,7 +4422,7 @@ struct TypeHandler<JsonObjectOrArrayRef> {
     static inline void serializeToken(const JsonObjectOrArrayRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
-        token.value_type = Type::Null;
+        token.value_type = Type::Verbatim;
         serializer.write(token);
     }
 };
@@ -4427,7 +4469,7 @@ struct TypeHandler<JsonObjectOrArray>
 
     static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Null; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {

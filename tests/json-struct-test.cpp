@@ -761,6 +761,49 @@ void check_multi_top_level_json()
     JT_ASSERT(pc.tokenizer.currentPosition() == multi_top_level_json + sizeof(multi_top_level_json)-1);
 }
 
+const char escapedJson[] = R"json({
+    "some_text" : "more\"_te\\xt",
+    "sub_object" : {
+        "more_data" : "so\\me \"text",
+        "a_float" : 1.2,
+        "boolean_member" : false
+    }
+})json";
+
+template<typename T>
+struct EscapedOuterStruct
+{
+    std::string some_text;
+    T sub_object;
+
+    JT_STRUCT(JT_MEMBER(some_text),
+              JT_MEMBER(sub_object));
+};
+
+struct EscapedSubObject
+{
+    std::string more_data;
+    float a_float;
+    bool boolean_member;
+
+    JT_STRUCT(JT_MEMBER(more_data),
+              JT_MEMBER(a_float),
+              JT_MEMBER(boolean_member));
+};
+
+static int check_json_escaped()
+{
+    JT::ParseContext context(escapedJson);
+    EscapedOuterStruct<EscapedSubObject> data;
+    context.parseTo(data);
+	JT_ASSERT(context.error == JT::Error::NoError);
+	std::string equals("more\"_te\\xt");
+    JT_ASSERT(data.some_text == equals);
+    std::string json = JT::serializeStruct(data);
+    fprintf(stderr, "%s\n", json.c_str());
+    return 0;
+};
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -782,5 +825,6 @@ int main(int, char **)
 	check_json_array_test();
     check_json_skip_test();
     check_multi_top_level_json();
+	check_json_escaped();
     return 0;
 }
