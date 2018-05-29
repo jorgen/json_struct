@@ -2087,7 +2087,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
             }
         }
     }
-    assert(!parent.size());
+    assert(!parent.size()); // This assert may be triggered when JSON is invalid (e.g. when creating a DiffContext).
     return meta;
 }
 
