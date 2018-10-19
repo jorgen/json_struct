@@ -2681,6 +2681,18 @@ std::string serializeStruct(const T &from_type)
     return ret_string;
 }
 
+template<typename T>
+std::string serializeStruct(const T &from_type, const SerializerOptions &options)
+{
+    std::string ret_string;
+    SerializerContext serializeContext(ret_string);
+       serializeContext.serializer.setOptions(options);
+    Token token;
+    TypeHandler<T>::serializeToken(from_type, token, serializeContext.serializer);
+    serializeContext.flush();
+    return ret_string;
+}
+
 template<>
 struct TypeHandler<Error>
 {
