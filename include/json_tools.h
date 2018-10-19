@@ -3909,6 +3909,36 @@ public:
 
 };
 
+template<>
+struct TypeHandler<uint8_t>
+{
+public:
+    static inline Error unpackToken(uint8_t &to_type, ParseContext &context)
+    {
+        char *pointer;
+        unsigned long value = strtoul(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return boundsAssigner(value, to_type);
+    }
+
+    static inline void serializeToken(const uint8_t &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[24];
+        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size_t(size);
+        serializer.write(token);
+    }
+
+};
+
 /// \private
 template<typename T>
 struct TypeHandler<Optional<T>>
