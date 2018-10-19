@@ -14,7 +14,7 @@ struct BenchmarkRun
     virtual std::string name() const = 0;
     virtual void run(const std::string &json) = 0;
 
-    int max_size;
+    size_t max_size;
     std::string second_name;
 };
 

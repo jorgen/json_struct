@@ -32,7 +32,7 @@ static int assert_token(const JT::Token &token, JT::Type name_type, std::string 
     }
 
     if (token.name.size != property.size()) {
-        fprintf(stderr, "token.name_length is: %lu, expected: %lu\n", token.name.size, property.size());
+        fprintf(stderr, "token.name_length is: %zu, expected: %zu\n", token.name.size, property.size());
         return -1;
     }
     std::string token_property(token.name.data, token.name.size);
@@ -55,7 +55,7 @@ static int assert_token(const JT::Token &token, JT::Type name_type, std::string 
     }
 
     if (token.value.size != value.size()) {
-        fprintf(stderr, "token.value_length is: %lu, expected: %lu\n", token.value.size, value.size());
+        fprintf(stderr, "token.value_length is: %zu, expected: %zu\n", token.value.size, value.size());
         return -1;
     }
 return 0;

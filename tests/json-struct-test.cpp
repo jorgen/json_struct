@@ -751,7 +751,6 @@ void check_multi_top_level_json()
     JT::ParseContext pc(multi_top_level_json);
     pc.tokenizer.allowAsciiType(true);
     MultiTopLevel t;
-    int a = 1;
     for (int i = 0; i < 3; i++)
     {
         JT_ASSERT(pc.tokenizer.currentPosition() < multi_top_level_json + sizeof(multi_top_level_json)-1);

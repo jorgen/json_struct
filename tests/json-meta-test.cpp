@@ -18,7 +18,7 @@ void remove_empty_siblings_test()
 	pc.parseTo(tokens);
 	JT_ASSERT(pc.error == JT::Error::NoError);
 	std::vector<JT::JsonMeta> meta = JT::metaForTokens(tokens);
-	int first_child = JT::Internal::findFirstChildWithData(meta, 0);
+	size_t first_child = JT::Internal::findFirstChildWithData(meta, 0);
 	fprintf(stderr, "%d\n", first_child);
 }
 int main()

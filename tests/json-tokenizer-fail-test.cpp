@@ -200,6 +200,7 @@ static int check_fail_broken_json_stream()
     JT::Token token;
     error = tokenizer.nextToken(token);
     JT_ASSERT(error != JT::Error::NoError);
+	return 0;
 }
 
 int main(int, char **)

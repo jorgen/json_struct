@@ -860,7 +860,7 @@ inline void Tokenizer::copyFromValue(const Token &token, std::string &to_buffer)
         copy_buffers.push_back(pair);
     } else {
         assert(token.value.data >= data_list.front().data && token.value.data < data_list.front().data + data_list.front().size);
-        long index = token.value.data - data_list.front().data;
+        ptrdiff_t index = token.value.data - data_list.front().data;
         auto pair = std::make_pair(index, &to_buffer);
         copy_buffers.push_back(pair);
     }
@@ -1047,7 +1047,6 @@ inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahe
             *chars_ahead = end - cursor_index;
             return Error::NoError;
         }
-        end++;
     }
     return Error::NeedMoreData;
 }
@@ -1086,7 +1085,6 @@ inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ah
             *chars_ahead = end - cursor_index;
             return Error::NoError;
         }
-        end++;
     }
     return Error::NeedMoreData;
 }
@@ -2093,18 +2091,18 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 
 namespace Internal
 {
-    static int findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+    static size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
     {
         const JsonMeta &meta = meta_vec[start_index];
         if (!meta.has_data)
-            return -1;
+            return size_t(-1);
 
         size_t skip_size = 0;
         size_t child_index = 0;
-        for (int i = 0; i < meta.complex_children; i++)
+        for (unsigned int i = 0; i < meta.complex_children; i++)
         {
             size_t current_child = start_index + 1 + skip_size;
-            int child = findFirstChildWithData(meta_vec, current_child);
+            size_t child = findFirstChildWithData(meta_vec, current_child);
             if (child >= 0 && child_index > 0)
                 return 0;
             if (child >= 0)
@@ -2688,6 +2686,8 @@ struct TypeHandler<Error>
 {
     static inline Error unpackToken(Error &to_type, ParseContext &context)
     {
+		(void)to_type;
+		(void)context;
 //		if (context.token.value_type == JT::Type::Number) {
 //			int x;
 //			Error error = TypeHandler<int>::unpackToken(x, context);
@@ -4609,16 +4609,16 @@ public:
         if (context.token.value_type != Type::ArrayStart)
             return JT::Error::ExpectedArrayStart;
 
-        Error error = context.nextToken();
-        if (error != JT::Error::NoError)
-            return error;
+		context.nextToken();
         for (size_t i = 0; i < N; i++)
         {
+			if (context.error != JT::Error::NoError)
+				return context.error;
             context.error = TypeHandler<T>::unpackToken(to_type[i], context);
-            if (error != JT::Error::NoError)
-                return error;
+            if (context.error != JT::Error::NoError)
+                return context.error;
 
-            Error error = context.nextToken();
+			context.nextToken();
         }
 
         if (context.token.value_type != Type::ArrayEnd)
