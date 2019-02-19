@@ -795,13 +795,39 @@ static int check_json_escaped()
     JT::ParseContext context(escapedJson);
     EscapedOuterStruct<EscapedSubObject> data;
     context.parseTo(data);
-	JT_ASSERT(context.error == JT::Error::NoError);
-	std::string equals("more\"_te\\xt");
+    JT_ASSERT(context.error == JT::Error::NoError);
+    std::string equals("more\"_te\\xt");
     JT_ASSERT(data.some_text == equals);
     std::string json = JT::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 };
+
+struct OutsideMeta
+{
+    std::string data;
+    float a;
+};
+
+JT_STRUCT_EXTERNAL(OutsideMeta,
+    JT_MEMBER(data),
+    JT_MEMBER(a)
+);
+
+const char outside_json[] = R"json({
+    "data" : "this is some text",
+    "a" : 44.5
+})json";
+
+void check_json_meta_outside()
+{
+    JT::ParseContext context(outside_json);
+    OutsideMeta data;
+    context.parseTo(data);
+    JT_ASSERT(context.error == JT::Error::NoError);
+    JT_ASSERT(data.data == "this is some text");
+    JT_ASSERT(data.a == 44.5);
+}
 
 int main(int, char **)
 {
@@ -821,9 +847,10 @@ int main(int, char **)
     check_json_object_or_array_array_ref();
     check_json_map();
     check_json_type_handler_types();
-	check_json_array_test();
+    	check_json_array_test();
     check_json_skip_test();
     check_multi_top_level_json();
-	check_json_escaped();
+    check_json_escaped();
+    check_json_meta_outside();
     return 0;
 }
