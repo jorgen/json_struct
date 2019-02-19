@@ -448,6 +448,64 @@ void call_json_alias()
     JT_ASSERT(context.parse_context.error == JT::Error::NoError);
 }
 
+const char json_wrong_arg_type[] = R"json(
+{
+    "execute_one" : { "some_function_object": 1 },
+    "execute_two" : { "more_members": false },
+    "execute_three": { "last_member" : 44.50 } 
+}
+)json";
+
+struct JsonWrongArgTypeExecThree
+{
+	double last_member;
+	JT_STRUCT(JT_MEMBER(last_member));
+};
+
+struct JsonWrongArgType
+{
+    bool executeOne = false;
+    bool executeTwo = false;
+    bool executeThree = false;
+
+    void execute_one(const std::string &foo)
+    {
+        executeOne = true;
+    }
+
+    void execute_two(const std::string &bar)
+    {
+        executeTwo = true;
+    }
+
+    void execute_three(const JsonWrongArgTypeExecThree &arg)
+    {
+		JT_ASSERT(arg.last_member == 44.50);
+        executeThree = true;
+    }
+
+    JT_FUNCTION_CONTAINER(
+        JT_FUNCTION(execute_one),
+        JT_FUNCTION(execute_two),
+        JT_FUNCTION(execute_three));
+};
+
+void call_json_wrong_arg_type()
+{
+    JsonWrongArgType cont;
+    std::string json_out;
+    JT::DefaultCallFunctionContext context(json_wrong_arg_type, sizeof(json_wrong_arg_type), json_out);
+    context.callFunctions(cont);
+
+    JT_ASSERT(cont.executeOne);
+    JT_ASSERT(cont.executeTwo);
+    JT_ASSERT(cont.executeThree);
+
+    if (context.parse_context.error != JT::Error::NoError)
+        fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
+    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+}
+
 int main()
 {
     simpleTest();
@@ -457,5 +515,6 @@ int main()
     call_void_test();
 	call_error_check();
     call_json_alias();
+	call_json_wrong_arg_type();
 }
 
