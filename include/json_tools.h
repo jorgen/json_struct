@@ -3537,7 +3537,8 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
     Error error = context.tokenizer.nextToken(context.token);
     if (error != JT::Error::NoError)
         return error;
-    auto members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
+    auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
+    using MembersType = std::remove_reference<decltype(members)>::type;
 #if JT_HAVE_CONSTEXPR
     bool assigned_members[Internal::memberCount<T, 0>()];
     memset(assigned_members, 0, sizeof(assigned_members));
@@ -3547,9 +3548,9 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
     while(context.token.value_type != JT::Type::ObjectEnd)
     {
         std::string token_name(context.token.name.data, context.token.name.size);
-        error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
+        error = Internal::MemberChecker<T, MembersType, 0 ,MembersType::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
         if (error == Error::MissingPropertyMember)
-            error = Internal::MemberChecker<T, decltype(members), 0 ,decltype(members)::size - 1>::unpackMembers(to_type, members, context, false, assigned_members);
+            error = Internal::MemberChecker<T, MembersType, 0 ,MembersType::size - 1>::unpackMembers(to_type, members, context, false, assigned_members);
         if (error == Error::MissingPropertyMember) {
 
             context.missing_members.push_back(token_name);
@@ -3570,7 +3571,7 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
 
     }
     std::vector<std::string> unassigned_required_members;
-    error = Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
+    error = Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
     if (error == Error::UnassignedRequiredMember) {
         context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
         if (context.allow_unnasigned_required__members)
@@ -3588,8 +3589,9 @@ void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer
     token.value_type = Type::ObjectStart;
     token.value = DataRef(objectStart);
     serializer.write(token);
-    auto members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
-    Internal::MemberChecker<T, decltype(members), 0, decltype(members)::size - 1>::serializeMembers(from_type, members, token, serializer, "");
+    auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
+    using MembersType = std::remove_reference<decltype(members)>::type;
+    Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::serializeMembers(from_type, members, token, serializer, "");
     token.name.size = 0;
     token.name.data = "";
     token.name_type = Type::String;
