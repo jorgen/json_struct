@@ -117,19 +117,19 @@ int main()
     BenchmarkRun *run = new JsonTokenizerRun();
     runBenchmark(std::string(generatedJson), *run);
     delete run;
-    //run = new JsonToolsStructRun();
-    //runBenchmark(std::string(generatedJson), *run);
-    //delete run;
-    //run = new RapidJsonRun();
-    //runBenchmark(std::string(generatedJson), *run);
-    //delete run;
-    //run = new OldJsonCpp();
-    //runBenchmark(std::string(generatedJson), *run);
-    //delete run;
+    run = new JsonToolsStructRun();
+    runBenchmark(std::string(generatedJson), *run);
+    delete run;
+    run = new RapidJsonRun();
+    runBenchmark(std::string(generatedJson), *run);
+    delete run;
+    run = new OldJsonCpp();
+    runBenchmark(std::string(generatedJson), *run);
+    delete run;
 #ifndef WIN32
-    //run = new SaJsonRun();
-    //runBenchmark(std::string(generatedJson), *run);
-    //delete run;
+    run = new SaJsonRun();
+    runBenchmark(std::string(generatedJson), *run);
+    /delete run;
 #endif
 
 
