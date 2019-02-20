@@ -3698,8 +3698,11 @@ struct TypeHandler<double>
     {
         //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
         char buf[1 + (308 + 1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
+		int size;
+		if (d < 0.01 || d > 10000.0)
+			size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%e", d);
+		else
+			size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", d);
 
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
@@ -3731,7 +3734,11 @@ struct TypeHandler<float>
     {
         //char buf[1/*'-'*/ + (FLT_MAX_10_EXP+1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
         char buf[1/*'-'*/ + (38 + 1)/*38+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", f);
+		int size;
+		if (f < 0.01f || f > 10000.0f)
+			size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%e", f);
+		else
+			size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%f", f);
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
             return;
