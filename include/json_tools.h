@@ -2263,18 +2263,19 @@ struct JsonToolsBaseDummy
     };\
     }}
 
-//#define JT_STRUCT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
-//    namespace JT {\
-//    template<> \
-//    struct JsonToolsBase<Type> \
-//    { \
-//       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
-//       static const TT &jt_static_meta_data_info() \
-//       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
-//        static const decltype(super_list) &jt_static_meta_super_info() \
-//        { static auto ret = super_list; return ret; } \
-//    };\
-//    }
+#define JT_STRUCT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
+    namespace JT {\
+    namespace Internal {\
+    template<typename JT_STRUCT_T> \
+    struct JsonToolsBaseDummy<Type, JT_STRUCT_T> \
+    { \
+        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        static const TT &jt_static_meta_data_info() \
+          { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+        static const decltype(super_list) &jt_static_meta_super_info() \
+        { static auto ret = super_list; return ret; } \
+    };\
+    }}
 
 /*!
  * \private
@@ -2589,7 +2590,7 @@ namespace Internal {
             using Meta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, Meta>::type::type;
             using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-            auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::jt_static_meta_data_info();
             return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
@@ -2597,7 +2598,7 @@ namespace Internal {
             using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-            auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::jt_static_meta_data_info();
             const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
@@ -3586,7 +3587,7 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
 template<typename T>
 void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer &serializer)
 {
-    static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
+    //static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
     static const char objectStart[] = "{";
     static const char objectEnd[] = "}";
     token.value_type = Type::ObjectStart;

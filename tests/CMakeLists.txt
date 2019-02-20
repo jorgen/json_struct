@@ -23,6 +23,8 @@ add_executable(json-internal-test json-internal-test.cpp)
 add_executable(json-tools-performance json-tools-performance.cpp
                 include/json/1.8.4/jsoncpp.cpp)
 add_executable(json-tools-diff json-tools-diff.cpp)
+add_executable(json-struct-external json-struct-external.cpp)
+
 target_include_directories(json-tools-performance PRIVATE include/json/1.8.4)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
 add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
@@ -46,6 +48,7 @@ add_test(NAME json-mias-mat-test COMMAND json-mias-mat-test)
 add_test(NAME json-internal-test COMMAND json-internal-test)
 #add_test(NAME json-tools-performance COMMAND json-tools-performance)
 add_test(NAME json-tools-diff COMMAND json-tools-diff)
+add_test(NAME json-struct-external COMMAND json-struct-external)
 
 if (ENABLE_EXTRACTOR)
     add_subdirectory(extractor)
