@@ -129,7 +129,7 @@ int main()
 #ifndef WIN32
     run = new SaJsonRun();
     runBenchmark(std::string(generatedJson), *run);
-    /delete run;
+    delete run;
 #endif
 
 

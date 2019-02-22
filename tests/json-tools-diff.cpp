@@ -225,7 +225,7 @@ static int check_diff_options()
     std::string jsonIdentical(basicDiffOptionsJsonIdentical);
     std::string jsonAlmostEqual(basicDiffOptionsJsonAlmostEqual);
 
-    JT::DiffOptions options = { JT::DiffFlags::None, 0 };
+    JT::DiffOptions options = { JT::DiffFlags::None, 0.0 };
 
     JT::DiffContext diffContext(jsonBase, options);
     assert(diffContext.error == JT::DiffError::NoError);

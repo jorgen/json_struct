@@ -3353,7 +3353,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     Internal::ArrayEndWriter endWriter(return_serializer, token);
     return_serializer.write(token);
     auto &functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
-	using FunctionsType = std::remove_reference<decltype(functions)>::type;
+    using FunctionsType	 = typename std::remove_reference<decltype(functions)>::type;
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
         parse_context.tokenizer.pushScope(parse_context.token.value_type);
@@ -3415,7 +3415,7 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         auto &functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-        using FunctionsType = std::remove_reference<decltype(functions)>::type;
+        using FunctionsType =typename std::remove_reference<decltype(functions)>::type;
         Error error = FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         if (error != Error::MissingFunction)
             return error;
@@ -3431,7 +3431,7 @@ namespace Internal {
             using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             auto &functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
-            using FunctionsType = std::remove_reference<decltype(functions)>::type;
+            using FunctionsType = typename std::remove_reference<decltype(functions)>::type;
             return FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         }
     };
@@ -3542,7 +3542,7 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
     if (error != JT::Error::NoError)
         return error;
     auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
-    using MembersType = std::remove_reference<decltype(members)>::type;
+    using MembersType = typename std::remove_reference<decltype(members)>::type;
 #if JT_HAVE_CONSTEXPR
     bool assigned_members[Internal::memberCount<T, 0>()];
     memset(assigned_members, 0, sizeof(assigned_members));
@@ -3594,7 +3594,7 @@ void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer
     token.value = DataRef(objectStart);
     serializer.write(token);
     auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
-    using MembersType = std::remove_reference<decltype(members)>::type;
+    using MembersType = typename std::remove_reference<decltype(members)>::type;
     Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::serializeMembers(from_type, members, token, serializer, "");
     token.name.size = 0;
     token.name.data = "";

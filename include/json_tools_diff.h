@@ -63,6 +63,12 @@ enum DiffError : unsigned char
 
 struct DiffOptions
 {
+    DiffOptions()
+    {}
+    DiffOptions(DiffFlags flags, double fuzzyEpsilon)
+        : flags(flags)
+        , fuzzyEpsilon(fuzzyEpsilon)
+    {}
     DiffFlags flags = DiffFlags::FuzzyFloatComparison;
     double fuzzyEpsilon = 1e-6; // Used if (flags | FuzzyFloatComparison == true)
 };
