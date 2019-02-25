@@ -1717,23 +1717,7 @@ inline bool Serializer::writeAsString(const DataRef &data)
             return false;
     }
 
-	const char *start = data.data;
-	for (int i = 0; i < data.size; i++)
-	{
-		if (data.data[i] == '\\' || data.data[i] == '"')
-		{
-			auto diff = &data.data[i] - start;
-			if (diff)
-			{
-				write(start, diff);
-			}
-			write("\\", 1);
-			start = &data.data[i];
-		}
-	}
-
-	auto diff = &data.data[data.size] - start;
-    written = write(start, diff);
+    written = write(data.data, data.size);
     if (!written)
         return false;
 
@@ -3639,28 +3623,114 @@ namespace Internal {
 
 namespace Internal
 {
-	static void remove_escapes(const DataRef &ref, std::string &to_type)
+	static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
 	{
+            static const char escaped_table[7][2] =
+            {
+                { 'b', '\b' },
+                { 'f', '\f' },
+                { 'n', '\n' },
+                { 'r', '\r' },
+                { 't', '\t' },
+                { '\"', '\"' },
+                { '\\', '\\'}
+            };
 		to_type.reserve(ref.size);
 		const char *start = ref.data;
 		bool escaped = false;
 		for (int i = 0; i < ref.size; i++)
 		{
-			if (ref.data[i] == '\\' && !escaped)
-			{
-				auto diff = &ref.data[i] - start;
-				to_type += std::string(start, diff);
-				start = &ref.data[i + 1];
-				escaped = true;
-			}
-			else
-			{
-				escaped = false;
-			}
+                    if (escaped)
+                    {
+                        escaped = false;
+                        bool found = false;
+                        const char current_char = ref.data[i];
+                        for (int n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
+                        {
+                            if (current_char == escaped_table[n][0])
+                            {
+                                to_type.push_back(escaped_table[n][1]);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {
+                            to_type.push_back('\\');
+                            to_type.push_back(current_char);
+                        }
+                    }
+                    else if (ref.data[i] == '\\')
+                    {
+                        auto diff = &ref.data[i] - start;
+                        to_type += std::string(start, diff);
+                        start = &ref.data[i + 2];
+                        escaped = true;
+                    }
 		}
 		auto diff = &ref.data[ref.size - 1] - start;
 		to_type += std::string(start, diff + 1);
 	}
+
+        static DataRef handle_json_escapes_out(const std::string &data, std::string &buffer)
+        {
+            int start_index = 0;
+            for (int i = 0; i < data.size(); i++)
+            {
+                const char cur = data[i];
+                if (static_cast<uint8_t>(cur) <= uint8_t('\r') || cur == '\"' || cur == '\\')
+                {
+                    if (buffer.empty())
+                    {
+                        buffer.reserve(data.size() + 10);
+                    }
+                    int diff = i - start_index;
+                    if (diff > 0)
+                    {
+                        buffer += std::string(data.data() + start_index, diff);
+                    }
+                    start_index = i + 1;
+
+                    switch (cur)
+                    {
+                    case '\b':
+                        buffer += std::string("\\b");
+                        break;
+                    case '\t':
+                        buffer += std::string("\\t");
+                        break;
+                    case '\n':
+                        buffer += std::string("\\n");
+                        break;
+                    case '\f':
+                        buffer += std::string("\\f");
+                        break;
+                    case '\r':
+                        buffer += std::string("\\r");
+                        break;
+                    case '\"':
+                        buffer += std::string("\\\"");
+                        break;
+                    case '\\':
+                        buffer += std::string("\\\\");
+                        break;
+                    default:
+                        buffer.push_back(cur);
+                        break;
+                    }
+                }
+            }
+            if (buffer.size())
+            {
+                int diff = data.size() - start_index;
+                if (diff > 0)
+                {
+                    buffer += std::string(data.data() + start_index, diff);
+                }
+                return DataRef(buffer.data(), buffer.size());
+            }
+            return DataRef(data.data(), data.size());
+        }
 }
 /// \private
 template<>
@@ -3668,15 +3738,17 @@ struct TypeHandler<std::string>
 {
     static inline Error unpackToken(std::string &to_type, ParseContext &context)
     {
-		Internal::remove_escapes(context.token.value, to_type);
+        Internal::handle_json_escapes_in(context.token.value, to_type);
         return Error::NoError;
     }
 
     static inline void serializeToken(const std::string &str, Token &token, Serializer &serializer)
     {
-        token.value_type = Type::Ascii;
-        token.value.data = &str[0];
-        token.value.size = str.size();
+        std::string buffer;
+        DataRef ref = Internal::handle_json_escapes_out(str, buffer);
+        token.value_type = Type::String;
+        token.value.data = ref.data;
+        token.value.size = ref.size;
         serializer.write(token);
     }
 };

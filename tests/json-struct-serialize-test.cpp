@@ -127,9 +127,28 @@ void test_serialize_deep()
     JT_ASSERT(output == expected2);
 }
 
+struct WithEscapedData
+{
+    std::string data;
+    JT_STRUCT(JT_MEMBER(data));
+};
+
+const char escaped_expected[] = R"json({
+    "data" : "escaped \n \" \t string"
+})json";
+
+void test_escaped_data()
+{
+    WithEscapedData escaped;
+    escaped.data = "escaped \n \" \t string";
+    std::string output = JT::serializeStruct(escaped);
+    fprintf(stderr, "%s\n%s\n", escaped_expected, output.c_str());
+    JT_ASSERT(output == escaped_expected);
+}
 int main()
 {
     test_serialize_simple();
     test_serialize_deep();
+    test_escaped_data();
     return 0;
 }
