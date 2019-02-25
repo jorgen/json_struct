@@ -145,10 +145,28 @@ void test_escaped_data()
     fprintf(stderr, "%s\n%s\n", escaped_expected, output.c_str());
     JT_ASSERT(output == escaped_expected);
 }
+
+const char expected3[]=R"json({"h":7,"g":"OutputString","f":6,"e":5.5000000000000000e+00,"d":5,"b":4.50000000e+00,"a":4})json";
+void test_compact()
+{
+    Subclass subclass;
+    subclass.a = 4;
+    subclass.b = 4.5;
+    subclass.d = 5;
+    subclass.e = 5.5;
+    subclass.f = 6;
+    subclass.g = "OutputString";
+    subclass.h = 7;
+
+    std::string output = JT::serializeStruct(subclass, JT::SerializerOptions(JT::SerializerOptions::Compact));
+    JT_ASSERT(output == expected3);
+}
+
 int main()
 {
     test_serialize_simple();
     test_serialize_deep();
     test_escaped_data();
+    test_compact();
     return 0;
 }
