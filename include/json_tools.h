@@ -2508,7 +2508,7 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
         using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
@@ -2525,7 +2525,7 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
 #if JT_HAVE_CONSTEXPR
@@ -2556,7 +2556,7 @@ namespace Internal {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Super::template JsonToolsBase<Super>::jt_static_meta_data_info();
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
 #if JT_HAVE_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
@@ -2949,6 +2949,37 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
     return{ {DataRef(name), DataRef(aliases)...}, function };
 }
 
+namespace Internal {
+template <typename T>
+struct HasJsonToolsFunctionContainer {
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename C>
+        static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsFunctionContainer<C>*);
+
+    template <typename>
+        static JT_CONSTEXPR no& test_in_base(...);
+};
+
+template<typename JT_BASE_CONTAINER_STRUCT_T, typename JT_CONTAINER_STRUCT_T>
+struct JsonToolsFunctionContainerDummy
+{
+    using TT = typename std::remove_reference<decltype(JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_functions_info())>::type;
+    using ST = typename std::remove_reference<decltype(JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_super_info())>::type;
+    static const TT &jt_static_meta_functions_info()
+    {
+        return JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_functions_info();
+    }
+
+    static const ST &jt_static_meta_super_info()
+    {
+        return JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_super_info();
+    }
+};
+
+}
+
 #define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
 #define JT_FUNCTION_ALIASES(name, ...) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name, __VA_ARGS__)
 #define JT_FUNCTION_WITH_NAME(member, name) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
@@ -2974,6 +3005,34 @@ JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionI
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     }
+
+#define JT_FUNCTION_CONTAINER_EXTERNAL(Type, ...) \
+    namespace JT { \
+    namespace Internal { \
+    template<typename JT_CONTAINER_STRUCT_T> \
+    struct JsonToolsFunctionContainerDummy<Type, JT_CONTAINER_STRUCT_T> \
+    { \
+        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        static const TT &jt_static_meta_functions_info() \
+        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JT::makeTuple(); return ret; } \
+    }; \
+    }}
+
+#define JT_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(Type, super_list, ...) \
+    namespace JT { \
+    namespace Internal { \
+    template<typename JT_CONTAINER_STRUCT_T> \
+    struct JsonToolsFunctionContainerDummy<Type, JT_CONTAINER_STRUCT_T> \
+    { \
+        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        static const TT &jt_static_meta_functions_info() \
+        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+        static const decltype(super_list) &jt_static_meta_super_info() \
+        { static auto ret = super_list; return ret; } \
+    }; \
+    }}
 
 namespace Internal {
     template<typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
@@ -3258,7 +3317,17 @@ namespace Internal {
                 return Error::NoError;
             if (error != Error::MissingFunction)
                 return error;
-            using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
+            return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
+        }
+    };
+
+    template<typename T, typename Functions>
+    struct FunctionObjectTraverser<T, Functions, size_t(-1)>
+    {
+        static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
+        {
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
             return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
         }
     };
@@ -3335,7 +3404,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     token.value = DataRef("[");
     Internal::ArrayEndWriter endWriter(return_serializer, token);
     return_serializer.write(token);
-    auto &functions = T::template JsonToolsFunctionContainer<T>::jt_static_meta_functions_info();
+    auto &functions = Internal::JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_functions_info();
     using FunctionsType	 = typename std::remove_reference<decltype(functions)>::type;
     while (parse_context.token.value_type != JT::Type::ObjectEnd)
     {
@@ -3395,9 +3464,9 @@ namespace Internal {
     template<typename T, size_t INDEX>
     Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context, bool primary)
     {
-        using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-        auto &functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
+        auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::jt_static_meta_functions_info();
         using FunctionsType =typename std::remove_reference<decltype(functions)>::type;
         Error error = FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         if (error != Error::MissingFunction)
@@ -3411,9 +3480,9 @@ namespace Internal {
     {
         static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
-            using SuperMeta = typename std::remove_reference<decltype(T::template JsonToolsFunctionContainer<T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
-            auto &functions = Super::template JsonToolsFunctionContainer<Super>::jt_static_meta_functions_info();
+            auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::jt_static_meta_functions_info();
             using FunctionsType = typename std::remove_reference<decltype(functions)>::type;
             return FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         }

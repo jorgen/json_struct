@@ -25,7 +25,7 @@ void runBenchmark(const std::string &json, BenchmarkRun &benchmark)
         benchmark.run(json);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> ms = end - start;
-    fprintf(stderr, "Execution of %s: size is %d and it took %f. Name is %s\n", benchmark.name().c_str(), benchmark.max_size, ms.count(), benchmark.second_name.c_str());
+    fprintf(stderr, "Execution of %s: size is %zu and it took %f. Name is %s\n", benchmark.name().c_str(), benchmark.max_size, ms.count(), benchmark.second_name.c_str());
 }
 
 struct JsonTokenizerRun : public BenchmarkRun
