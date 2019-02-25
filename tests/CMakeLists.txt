@@ -23,6 +23,7 @@ add_executable(json-tools-performance json-tools-performance.cpp
                 include/json/0.6/jsoncpp.cpp)
 add_executable(json-tools-diff json-tools-diff.cpp)
 add_executable(json-struct-external json-struct-external.cpp)
+add_executable(json-struct-fail json-struct-fail.cpp)
 
 target_include_directories(json-tools-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)

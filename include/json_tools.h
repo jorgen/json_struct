@@ -2185,19 +2185,32 @@ struct ParseContext
 
 namespace Internal
 {
+template <typename T>
+struct HasJsonToolsBase {
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename C>
+        static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
+
+    template <typename>
+        static JT_CONSTEXPR no& test_in_base(...);
+};
+
 template<typename JT_BASE_STRUCT_T, typename JT_STRUCT_T>
 struct JsonToolsBaseDummy
 {
+    static_assert(sizeof(HasJsonToolsBase<JT_STRUCT_T>::template test_in_base<JT_STRUCT_T>(nullptr)) == sizeof(typename HasJsonToolsBase<JT_STRUCT_T>::yes), "Missing JT_STRUCT JT_STRUCT_EXTERNAL or TypeHandler specialisation\n");
     using TT = typename std::remove_reference<decltype(JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_data_info())>::type;
     using ST = typename std::remove_reference<decltype(JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_super_info())>::type;
     static const TT &jt_static_meta_data_info()
     {
-        	return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_data_info();
+        return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_data_info();
     }
-    
+
     static const ST &jt_static_meta_super_info()
     {
-        	return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_super_info();
+        return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_super_info();
     }
 };
 }
@@ -2273,20 +2286,6 @@ struct MI
 };
 
 namespace Internal {
-    template <typename T>
-    struct HasJsonToolsBase {
-        typedef char yes[1];
-        typedef char no[2];
-
-        template <typename C>
-            static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
-
-        template <typename>
-            static JT_CONSTEXPR no& test_in_base(...);
-
-        static JT_CONSTEXPR const bool value = sizeof(test_in_base<T>(0)) == sizeof(yes);
-    };
-
     template<typename T, typename U, size_t NAME_COUNT>
     using MemberInfo = MI <T, U, NAME_COUNT>;
 
@@ -3519,7 +3518,6 @@ namespace JT
 template <typename T>
 inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
 {
-    //static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
     if (context.token.value_type != JT::Type::ObjectStart)
         return Error::ExpectedObjectStart;
     Error error = context.tokenizer.nextToken(context.token);
@@ -3571,7 +3569,6 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
 template<typename T>
 void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer &serializer)
 {
-    //static_assert(Internal::HasJsonToolsBase<T>::value, "Missing TypeHandler specialisation\n");
     static const char objectStart[] = "{";
     static const char objectEnd[] = "}";
     token.value_type = Type::ObjectStart;
