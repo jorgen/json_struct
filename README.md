@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jorgen/json_tools.svg?branch=master)](https://travis-ci.org/jorgen/json_tools)
+
 json_tools is a single header only library meant to tokenize, parse and
 validate json.
 
