@@ -3884,19 +3884,19 @@ struct TypeHandler<float>
 
 /// \private
 template<>
-struct TypeHandler<int>
+struct TypeHandler<int32_t>
 {
-    static inline Error unpackToken(int &to_type, ParseContext &context)
+    static inline Error unpackToken(int32_t &to_type, ParseContext &context)
     {
         char *pointer;
         long value = strtol(context.token.value.data, &pointer, 10);
-        to_type = int(value);
+        to_type = int32_t(value);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
         return Error::NoError;
     }
 
-    static inline void serializeToken(const int&d, Token &token, Serializer &serializer)
+    static inline void serializeToken(const int32_t &d, Token &token, Serializer &serializer)
     {
         char buf[11];
         int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
@@ -3914,20 +3914,20 @@ struct TypeHandler<int>
 
 /// \private
 template<>
-struct TypeHandler<unsigned int>
+struct TypeHandler<uint32_t>
 {
 public:
-    static inline Error unpackToken(unsigned int &to_type, ParseContext &context)
+    static inline Error unpackToken(uint32_t &to_type, ParseContext &context)
     {
         char *pointer;
         unsigned long value = strtoul(context.token.value.data, &pointer, 10);
-        to_type = static_cast<unsigned int>(value);
+        to_type = static_cast<uint32_t>(value);
         if (context.token.value.data == pointer)
             return Error::FailedToParseInt;
         return Error::NoError;
     }
 
-    static void serializeToken(const unsigned int &from_type, Token &token, Serializer &serializer)
+    static void serializeToken(const uint32_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[12];
         int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
