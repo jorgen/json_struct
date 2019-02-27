@@ -1791,7 +1791,7 @@ static JT::Error reformat(const char *data, size_t size, std::string &out, const
                                           last_pos = end;
                                           });
     if (out.empty())
-        out.resize(512);
+        out.resize(4096);
     serializer.appendBuffer(&out[0], out.size());
 
     while (true)
@@ -2704,7 +2704,7 @@ struct SerializerContext
         , last_pos(0)
     {
         if (json_out.empty())
-            json_out.resize(512);
+            json_out.resize(4096);
         serializer.appendBuffer(&json_out[0], json_out.size());
     }
 
