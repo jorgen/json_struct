@@ -1,5 +1,14 @@
 include_directories(${JSON_TOOLS_INCLUDE_DIR})
 
+include(CMakeRC.cmake)
+
+cmrc_add_resource_library(
+    external_json_resources
+    ALIAS external_json::rc
+    NAMESPACE external_json
+    generated.json
+    )
+
 add_executable(json-tokenizer-fail-test json-tokenizer-fail-test.cpp)
 add_executable(json-tokenizer-partial-test json-tokenizer-partial-test.cpp)
 add_executable(json-tokenizer-test json-tokenizer-test.cpp)
@@ -11,6 +20,7 @@ add_executable(json-function-external-test json-function-external-test.cpp)
 add_executable(json-function-error-test json-function-error-test.cpp)
 add_executable(json-copy-test json-copy-test.cpp)
 add_executable(json-struct-serialize-test json-struct-serialize-test.cpp)
+target_link_libraries(json-struct-serialize-test PRIVATE external_json::rc)
 add_executable(members-size-test members-size-test.cpp)
 add_executable(compiler-test compiler-test.cpp)
 add_executable(meta-for-tokens meta-for-tokens.cpp)

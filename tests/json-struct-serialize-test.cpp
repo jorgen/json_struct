@@ -24,6 +24,10 @@
 
 #include "assert.h"
 
+#include <cmrc/cmrc.hpp>
+
+CMRC_DECLARE(external_json);
+
 struct Simple
 {
     std::string A;
@@ -162,11 +166,33 @@ void test_compact()
     JT_ASSERT(output == expected3);
 }
 
+void test_serialize_big()
+{
+    auto fs = cmrc::external_json::get_filesystem();
+    auto generated = fs.open("generated.json");
+
+    JT::JsonObjectOrArrayRef objOrArr;
+    {
+        JT::ParseContext pc(generated.begin(), generated.size());
+        pc.parseTo(objOrArr);
+        JT_ASSERT(pc.error == JT::Error::NoError);
+    }
+
+    std::string serialized_json = JT::serializeStruct(objOrArr);
+
+    {
+        JT::ParseContext pc(serialized_json.data(), serialized_json.size());
+        pc.parseTo(objOrArr);
+        JT_ASSERT(pc.error == JT::Error::NoError);
+    }
+}
+
 int main()
 {
     test_serialize_simple();
     test_serialize_deep();
     test_escaped_data();
     test_compact();
+    test_serialize_big();
     return 0;
 }
