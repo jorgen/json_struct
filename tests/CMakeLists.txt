@@ -35,6 +35,8 @@ add_executable(json-tools-performance json-tools-performance.cpp
 add_executable(json-tools-diff json-tools-diff.cpp)
 add_executable(json-struct-external json-struct-external.cpp)
 add_executable(json-struct-fail json-struct-fail.cpp)
+add_executable(json-reformat json-reformat.cpp)
+target_link_libraries(json-reformat PRIVATE external_json::rc)
 
 target_include_directories(json-tools-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
@@ -60,6 +62,7 @@ add_test(NAME json-mias-mat-test COMMAND json-mias-mat-test)
 #add_test(NAME json-tools-performance COMMAND json-tools-performance)
 add_test(NAME json-tools-diff COMMAND json-tools-diff)
 add_test(NAME json-struct-external COMMAND json-struct-external)
+add_test(NAME json-reformat COMMAND json-reformat)
 
 if (ENABLE_EXTRACTOR)
     add_subdirectory(extractor)

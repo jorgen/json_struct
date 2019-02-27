@@ -1773,6 +1773,41 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
+static JT::Error reformat(const char *data, size_t size, std::string &out, const SerializerOptions &options = SerializerOptions())
+{
+    Token token;
+    Tokenizer tokenizer;
+    tokenizer.addData(data,size);
+    Error error = Error::NoError;
+
+    Serializer serializer;
+    serializer.setOptions(options);
+    size_t last_pos = 0;
+    auto cbref = serializer.addRequestBufferCallback([&out, &last_pos](Serializer &serializer_p)
+                                          {
+                                          size_t end = out.size();
+                                          out.resize(end * 2);
+                                          serializer_p.appendBuffer(&out[0] + end, end);
+                                          last_pos = end;
+                                          });
+    if (out.empty())
+        out.resize(512);
+    serializer.appendBuffer(&out[0], out.size());
+
+    while (true)
+    {
+        error = tokenizer.nextToken(token);
+        if (error != Error::NoError)
+            break;
+        serializer.write(token);
+    }
+    out.resize(last_pos + serializer.buffers().back().used);
+    if (error == Error::NeedMoreData)
+        return Error::NoError;
+
+    return error;
+}
+
 //Tuple start
 namespace Internal
 {
