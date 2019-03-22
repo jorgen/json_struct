@@ -637,8 +637,8 @@ public:
 private:
     unsigned char m_shift_size;
     unsigned char m_depth;
-    Style m_style : 1;
-    bool m_convert_ascii_to_string : 1;
+    Style m_style;
+    bool m_convert_ascii_to_string;
 
     std::string m_prefix;
     std::string m_token_delimiter;
@@ -3739,7 +3739,7 @@ namespace Internal
 		to_type.reserve(ref.size);
 		const char *start = ref.data;
 		bool escaped = false;
-		for (int i = 0; i < ref.size; i++)
+		for (size_t i = 0; i < ref.size; i++)
 		{
                     if (escaped)
                     {
@@ -3776,7 +3776,7 @@ namespace Internal
         static DataRef handle_json_escapes_out(const std::string &data, std::string &buffer)
         {
             int start_index = 0;
-            for (int i = 0; i < data.size(); i++)
+            for (size_t i = 0; i < data.size(); i++)
             {
                 const char cur = data[i];
                 if (static_cast<uint8_t>(cur) <= uint8_t('\r') || cur == '\"' || cur == '\\')
@@ -3785,7 +3785,7 @@ namespace Internal
                     {
                         buffer.reserve(data.size() + 10);
                     }
-                    int diff = i - start_index;
+                    size_t diff = i - start_index;
                     if (diff > 0)
                     {
                         buffer += std::string(data.data() + start_index, diff);
@@ -3823,7 +3823,7 @@ namespace Internal
             }
             if (buffer.size())
             {
-                int diff = data.size() - start_index;
+                size_t diff = data.size() - start_index;
                 if (diff > 0)
                 {
                     buffer += std::string(data.data() + start_index, diff);
