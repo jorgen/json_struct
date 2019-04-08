@@ -3839,6 +3839,7 @@ struct TypeHandler<std::string>
 {
     static inline Error unpackToken(std::string &to_type, ParseContext &context)
     {
+        to_type.clear();
         Internal::handle_json_escapes_in(context.token.value, to_type);
         return Error::NoError;
     }
