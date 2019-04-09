@@ -2117,18 +2117,14 @@ namespace Internal
             return size_t(-1);
 
         size_t skip_size = 0;
-        size_t child_index = 0;
         for (unsigned int i = 0; i < meta.complex_children; i++)
         {
-            size_t current_child = start_index + 1 + skip_size;
-            size_t child = findFirstChildWithData(meta_vec, current_child);
-            if (child >= 0 && child_index > 0)
-                return 0;
-            if (child >= 0)
-                child_index = skip_size + 1 + child;
-            skip_size += meta_vec[current_child].skip;
+            auto &current_child = meta_vec[start_index + skip_size + 1];
+            skip_size += current_child.skip;
+            if (current_child.has_data)
+                return i;
         }
-        return child_index;
+        return -1;
     }
 }
 
