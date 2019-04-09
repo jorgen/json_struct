@@ -4267,6 +4267,7 @@ public:
         Error error = context.nextToken();
         if (error != JT::Error::NoError)
             return error;
+        to_type.clear();
         to_type.reserve(10);
         while(context.token.value_type != JT::Type::ArrayEnd)
         {
@@ -4315,6 +4316,7 @@ public:
             Error error = context.nextToken();
             if (error != JT::Error::NoError)
                 return error;
+            to_type.clear();
             to_type.reserve(10);
             while(context.token.value_type != JT::Type::ArrayEnd)
             {
@@ -4418,6 +4420,7 @@ public:
             to_type.push_back(context.token);
             return context.error;
         }
+        to_type.clear();
         to_type.push_back(context.token);
         bool buffer_change = false;
         auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
