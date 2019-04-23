@@ -25,6 +25,10 @@
 #include "assert.h"
 #include <unordered_map>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 const char json_data1[] = "{\n"
     "\"StringNode\" : \"Some test data\",\n"
     "\"NumberNode\" : 4676.4,\n"
