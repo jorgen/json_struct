@@ -3,6 +3,10 @@
 json_tools is a single header only library meant to tokenize, parse and
 validate json.
 
+It is intented to be used by copyinh the json_tools.h file from the include
+folder into the include path for the project. It is only the json_tools.h file
+that is needed to serialize and deserialize json from structures.
+
 It is dependent on some C++11 features and is tested on newer versions of gcc
 and clang. It is also tested on VS 2013 and VS 2015.
 

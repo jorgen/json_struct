@@ -141,8 +141,10 @@
 #define JT_HAVE_CONSTEXPR 1
 #endif
 
-#ifdef min
-#undef min
+#if defined(min) || defined(max)
+
+#error min or max macro is defined. Make sure these are not defined before including json_tools.h.\
+ Use "#define NOMINMAX 1" before including Windows.h
 #endif
 
 #define JT_UNUSED(x) (void)(x)
