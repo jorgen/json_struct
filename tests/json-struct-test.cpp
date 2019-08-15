@@ -58,14 +58,14 @@ struct SubStruct
     std::string SubString;
     int SubNumber;
     std::vector<double> Array;
-    JT::OptionalChecked<float> optional_float;
-    JT::OptionalChecked<double> optional_double;
-    JT::Optional<double> optional_with_value = 4.5;
-    JT_STRUCT(JT_MEMBER(SubString),
-              JT_MEMBER(SubNumber),
-              JT_MEMBER(Array),
-              JT_MEMBER(optional_float),
-              JT_MEMBER(optional_with_value));
+    JS::OptionalChecked<float> optional_float;
+    JS::OptionalChecked<double> optional_double;
+    JS::Optional<double> optional_with_value = 4.5;
+    JS_OBJECT(JS_MEMBER(SubString),
+              JS_MEMBER(SubNumber),
+              JS_MEMBER(Array),
+              JS_MEMBER(optional_float),
+              JS_MEMBER(optional_with_value));
 };
 
 const char sub_struct3_data [] = "{\n"
@@ -78,19 +78,19 @@ struct SubStruct2
 {
     float Field1;
     bool Field2;
-    JT_STRUCT(JT_MEMBER(Field1),
-              JT_MEMBER_ALIASES(Field2, "hello", "Foobar"));
+    JS_OBJECT(JS_MEMBER(Field1),
+              JS_MEMBER_ALIASES(Field2, "hello", "Foobar"));
 };
 
 struct SubStruct3 : public SubStruct2
 {
     std::string Field3;
     int Field4;
-    JT::Optional<std::string> Field5;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SubStruct2)),
-                         JT_MEMBER(Field3),
-                         JT_MEMBER(Field4),
-                         JT_MEMBER(Field5));
+    JS::Optional<std::string> Field5;
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(SubStruct2)),
+                         JS_MEMBER(Field3),
+                         JS_MEMBER(Field4),
+                         JS_MEMBER(Field5));
 };
 
 struct JsonData1
@@ -107,33 +107,33 @@ struct JsonData1
      *}
     **/
     bool BooleanFalse;
-    JT::Optional<int> OptionalInt;
+    JS::Optional<int> OptionalInt;
     /// Test structur comment
     SubStruct TestStruct;
-    JT::Optional<std::vector<double>> OptionalButWithData;
+    JS::Optional<std::vector<double>> OptionalButWithData;
     float unassigned_value;
     std::unique_ptr<SubStruct2> subStruct2;
 
     int Field3 = 243;
     std::string NodeWithLiteral = "SOME STRING LITERAL!!!";
     
-    JT_STRUCT(JT_MEMBER(StringNode),
-              JT_MEMBER(NumberNode),
-              JT_MEMBER(BooleanTrue),
-              JT_MEMBER(BooleanFalse),
-              JT_MEMBER(OptionalInt),
-              JT_MEMBER(TestStruct),
-              JT_MEMBER(OptionalButWithData),
-              JT_MEMBER(unassigned_value),
-              JT_MEMBER(subStruct2),
-              JT_MEMBER(Field3),
-              JT_MEMBER(NodeWithLiteral));
+    JS_OBJECT(JS_MEMBER(StringNode),
+              JS_MEMBER(NumberNode),
+              JS_MEMBER(BooleanTrue),
+              JS_MEMBER(BooleanFalse),
+              JS_MEMBER(OptionalInt),
+              JS_MEMBER(TestStruct),
+              JS_MEMBER(OptionalButWithData),
+              JS_MEMBER(unassigned_value),
+              JS_MEMBER(subStruct2),
+              JS_MEMBER(Field3),
+              JS_MEMBER(NodeWithLiteral));
 
 };
 
 static int check_json_tree_nodes()
 {
-    JT::ParseContext context(json_data1);
+    JS::ParseContext context(json_data1);
     JsonData1 data;
     context.parseTo(data);
 
@@ -143,12 +143,12 @@ static int check_json_tree_nodes()
     fprintf(stderr, "optional with default value %f\n", data.TestStruct.optional_with_value());
     data.TestStruct.optional_with_value = 5;
     fprintf(stderr, "optional with default value second %f\n", data.TestStruct.optional_with_value());
-    JT_ASSERT(data.StringNode == "Some test data");
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(data.StringNode == "Some test data");
+    JS_ASSERT(context.error == JS::Error::NoError);
     
-    JT_ASSERT(data.Field3 == 243);
+    JS_ASSERT(data.Field3 == 243);
 
-    std::string json = JT::serializeStruct(data);
+    std::string json = JS::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 }
@@ -168,8 +168,8 @@ struct OuterStruct
     int some_int;
     T sub_object;
 
-    JT_STRUCT(JT_MEMBER(some_int),
-              JT_MEMBER(sub_object));
+    JS_OBJECT(JS_MEMBER(some_int),
+              JS_MEMBER(sub_object));
 };
 
 struct SubObject
@@ -178,29 +178,29 @@ struct SubObject
     float a_float;
     bool boolean_member;
 
-    JT_STRUCT(JT_MEMBER(more_data),
-              JT_MEMBER(a_float),
-              JT_MEMBER(boolean_member));
+    JS_OBJECT(JS_MEMBER(more_data),
+              JS_MEMBER(a_float),
+              JS_MEMBER(boolean_member));
 };
 
 
 static int check_json_tree_template()
 {
-    JT::ParseContext context(json_data2);
+    JS::ParseContext context(json_data2);
     OuterStruct<SubObject> data;
     context.parseTo(data);
-    JT_ASSERT(data.sub_object.more_data == "some text");
-    std::string json = JT::serializeStruct(data);
+    JS_ASSERT(data.sub_object.more_data == "some text");
+    std::string json = JS::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 };
 
 static int check_json_tree_subclass()
 {
-    JT::ParseContext context(sub_struct3_data);
+    JS::ParseContext context(sub_struct3_data);
     SubStruct3 substruct3;
     context.parseTo(substruct3);
-    JT_ASSERT(substruct3.Field3 == std::string("432"));
+    JS_ASSERT(substruct3.Field3 == std::string("432"));
     return 0;
 }
 
@@ -212,33 +212,33 @@ const char json_data3[] = "{\n"
 
 struct SuperSuperClass {
     int SuperSuper;
-    JT_STRUCT(JT_MEMBER(SuperSuper));
+    JS_OBJECT(JS_MEMBER(SuperSuper));
 };
 
 struct SuperClass : public SuperSuperClass
 {
     std::string Super;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(SuperSuperClass)),
-                         JT_MEMBER(Super));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(SuperSuperClass)),
+                         JS_MEMBER(Super));
 };
 
 struct RegularClass : public SuperClass
 {
     int Regular;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(SuperClass)),
-                         JT_MEMBER(Regular));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(SuperClass)),
+                         JS_MEMBER(Regular));
 };
 
 void check_json_tree_deep_tree()
 {
-    JT::ParseContext context(json_data3);
+    JS::ParseContext context(json_data3);
     RegularClass regular;
     context.parseTo(regular);
-    JT_ASSERT(regular.SuperSuper == 5);
-    JT_ASSERT(regular.Super == "This is in the Superclass");
-    JT_ASSERT(regular.Regular == 42);
+    JS_ASSERT(regular.SuperSuper == 5);
+    JS_ASSERT(regular.Super == "This is in the Superclass");
+    JS_ASSERT(regular.Regular == 42);
 }
 
 const char missing_object_def[] = R"json(
@@ -256,19 +256,19 @@ struct MissingObjectDef
     std::string second;
     int fourth;
 
-    JT_STRUCT(JT_MEMBER(first),
-        JT_MEMBER(second),
-        JT_MEMBER(fourth));
+    JS_OBJECT(JS_MEMBER(first),
+        JS_MEMBER(second),
+        JS_MEMBER(fourth));
 };
 
 void check_json_missing_object()
 {
-    JT::ParseContext context(missing_object_def);
+    JS::ParseContext context(missing_object_def);
     MissingObjectDef missing;
     context.parseTo(missing);
 
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(missing.fourth == 33);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(missing.fourth == 33);
 }
 
 const char error_in_sub[] = R"json(
@@ -286,7 +286,7 @@ const char error_in_sub[] = R"json(
 struct ErrorInSubChild
 {
     int ffirst;
-    JT_STRUCT(JT_MEMBER(ffirst));
+    JS_OBJECT(JS_MEMBER(ffirst));
 };
 
 struct ErrorInSub
@@ -294,65 +294,65 @@ struct ErrorInSub
     ErrorInSubChild first;
     std::string second;
     int third;
-    JT::Optional<int> not_assigned = 999;
-    JT_STRUCT(JT_MEMBER(first),
-        JT_MEMBER(second),
-        JT_MEMBER(third));
+    JS::Optional<int> not_assigned = 999;
+    JS_OBJECT(JS_MEMBER(first),
+        JS_MEMBER(second),
+        JS_MEMBER(third));
 };
 
 void check_json_error_in_sub()
 {
-    JT::ParseContext context(error_in_sub);
+    JS::ParseContext context(error_in_sub);
     ErrorInSub sub;
     context.parseTo(sub);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(sub.second == "hello world");
-    JT_ASSERT(sub.third == 33);
-    JT_ASSERT(sub.not_assigned.data == 999);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(sub.second == "hello world");
+    JS_ASSERT(sub.third == 33);
+    JS_ASSERT(sub.not_assigned.data == 999);
 }
 
 struct JsonObjectTester
 {
     std::string field;
-    JT::JsonObject obj;
+    JS::JsonObject obj;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(field),
-              JT_MEMBER(obj),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(field),
+              JS_MEMBER(obj),
+              JS_MEMBER(number));
 };
 
 struct JsonObjectOrArrayObjectTester
 {
     std::string field;
-    JT::JsonObjectOrArray obj;
+    JS::JsonObjectOrArray obj;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(field),
-              JT_MEMBER(obj),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(field),
+              JS_MEMBER(obj),
+              JS_MEMBER(number));
 };
 
 struct JsonObjectRefTester
 {
     std::string field;
-    JT::JsonObjectRef obj;
+    JS::JsonObjectRef obj;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(field),
-              JT_MEMBER(obj),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(field),
+              JS_MEMBER(obj),
+              JS_MEMBER(number));
 };
 
 struct JsonObjectOrArrayObjectRefTester
 {
     std::string field;
-    JT::JsonObjectOrArrayRef obj;
+    JS::JsonObjectOrArrayRef obj;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(field),
-              JT_MEMBER(obj),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(field),
+              JS_MEMBER(obj),
+              JS_MEMBER(number));
 };
 
 const char jsonObjectTest[] = R"json({
@@ -367,102 +367,102 @@ const char jsonObjectTest[] = R"json({
 
 void check_json_object()
 {
-    JT::ParseContext context(jsonObjectTest);
+    JS::ParseContext context(jsonObjectTest);
     JsonObjectTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.data.size() > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.field == "hello");
+    JS_ASSERT(obj.obj.data.size() > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonObjectTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonObjectTest);
 }
 
 void check_json_object_or_array_object()
 {
-    JT::ParseContext context(jsonObjectTest);
+    JS::ParseContext context(jsonObjectTest);
     JsonObjectOrArrayObjectTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.data.size() > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.field == "hello");
+    JS_ASSERT(obj.obj.data.size() > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonObjectTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonObjectTest);
 }
 
 void check_json_object_ref()
 {
-    JT::ParseContext context(jsonObjectTest);
+    JS::ParseContext context(jsonObjectTest);
     JsonObjectRefTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.ref.size > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.field == "hello");
+    JS_ASSERT(obj.obj.ref.size > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonObjectTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonObjectTest);
 }
 
 void check_json_object_or_array_object_ref()
 {
-    JT::ParseContext context(jsonObjectTest);
+    JS::ParseContext context(jsonObjectTest);
     JsonObjectOrArrayObjectRefTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.field == "hello");
-    JT_ASSERT(obj.obj.ref.size > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.field == "hello");
+    JS_ASSERT(obj.obj.ref.size > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonObjectTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonObjectTest);
 }
 
 struct JsonArrayTester
 {
     std::string string;
-    JT::JsonArray array;
+    JS::JsonArray array;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(string),
-              JT_MEMBER(array),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(string),
+              JS_MEMBER(array),
+              JS_MEMBER(number));
 };
 
 struct JsonObjectOrArrayArrayTester
 {
     std::string string;
-    JT::JsonObjectOrArray array;
+    JS::JsonObjectOrArray array;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(string),
-              JT_MEMBER(array),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(string),
+              JS_MEMBER(array),
+              JS_MEMBER(number));
 };
 
 struct JsonArrayRefTester
 {
     std::string string;
-    JT::JsonArrayRef array;
+    JS::JsonArrayRef array;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(string),
-              JT_MEMBER(array),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(string),
+              JS_MEMBER(array),
+              JS_MEMBER(number));
 };
 
 struct JsonObjectOrArrayArrayRefTester
 {
     std::string string;
-    JT::JsonObjectOrArrayRef array;
+    JS::JsonObjectOrArrayRef array;
     int number = 0;
 
-    JT_STRUCT(JT_MEMBER(string),
-              JT_MEMBER(array),
-              JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(string),
+              JS_MEMBER(array),
+              JS_MEMBER(number));
 };
 
 const char jsonArrayTest[] = R"json({
@@ -479,65 +479,65 @@ const char jsonArrayTest[] = R"json({
 
 void check_json_array()
 {
-    JT::ParseContext context(jsonArrayTest);
+    JS::ParseContext context(jsonArrayTest);
     JsonArrayTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.data.size() > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.string == "foo");
+    JS_ASSERT(obj.array.data.size() > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonArrayTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonArrayTest);
 }
 
 void check_json_object_or_array_array()
 {
-    JT::ParseContext context(jsonArrayTest);
+    JS::ParseContext context(jsonArrayTest);
     JsonObjectOrArrayArrayTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.data.size() > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.string == "foo");
+    JS_ASSERT(obj.array.data.size() > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonArrayTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonArrayTest);
 }
 
 void check_json_array_ref()
 {
-    JT::ParseContext context(jsonArrayTest);
+    JS::ParseContext context(jsonArrayTest);
     JsonArrayRefTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.ref.size > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.string == "foo");
+    JS_ASSERT(obj.array.ref.size > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonArrayTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonArrayTest);
 }
 
 void check_json_object_or_array_array_ref()
 {
-    JT::ParseContext context(jsonArrayTest);
+    JS::ParseContext context(jsonArrayTest);
     JsonObjectOrArrayArrayRefTester obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(obj.string == "foo");
-    JT_ASSERT(obj.array.ref.size > 0);
-    JT_ASSERT(obj.number == 43);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(obj.string == "foo");
+    JS_ASSERT(obj.array.ref.size > 0);
+    JS_ASSERT(obj.number == 43);
 
-    std::string out = JT::serializeStruct(obj);
-    JT_ASSERT(out == jsonArrayTest);
+    std::string out = JS::serializeStruct(obj);
+    JS_ASSERT(out == jsonArrayTest);
 }
 
 struct JsonMapTest
 {
-	std::unordered_map<std::string, JT::JsonTokens> map;
+	std::unordered_map<std::string, JS::JsonTokens> map;
 
-	JT_STRUCT(JT_MEMBER(map));
+	JS_OBJECT(JS_MEMBER(map));
 };
 
 const char jsonMapTest[] = R"json({
@@ -549,11 +549,11 @@ const char jsonMapTest[] = R"json({
 
 void check_json_map()
 {
-#ifdef JT_UNORDERED_MAP_HANDLER
-    JT::ParseContext context(jsonMapTest);
+#ifdef JS_UNORDERED_MAP_HANDLER
+    JS::ParseContext context(jsonMapTest);
     JsonMapTest obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(context.error == JS::Error::NoError);
 #endif
 }
 
@@ -570,15 +570,15 @@ struct TypeHandlerTypes
     bool boolN;
 
 
-    JT_STRUCT(JT_MEMBER(doubleN),
-              JT_MEMBER(floatN),
-              JT_MEMBER(intN),
-              JT_MEMBER(uintN),
-              JT_MEMBER(int64N),
-              JT_MEMBER(uint64N),
-              JT_MEMBER(int16N),
-              JT_MEMBER(uint16N),
-              JT_MEMBER(boolN)
+    JS_OBJECT(JS_MEMBER(doubleN),
+              JS_MEMBER(floatN),
+              JS_MEMBER(intN),
+              JS_MEMBER(uintN),
+              JS_MEMBER(int64N),
+              JS_MEMBER(uint64N),
+              JS_MEMBER(int16N),
+              JS_MEMBER(uint16N),
+              JS_MEMBER(boolN)
               );
 };
 
@@ -596,17 +596,17 @@ const char jsonTypeHandlerTypes[] = R"json({
 
 void check_json_type_handler_types()
 {
-    JT::ParseContext context(jsonTypeHandlerTypes);
+    JS::ParseContext context(jsonTypeHandlerTypes);
     TypeHandlerTypes obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(context.error == JS::Error::NoError);
 }
 
 struct ArrayTest 
 {
     double data[3];
 
-	JT_STRUCT(JT_MEMBER(data)
+	JS_OBJECT(JS_MEMBER(data)
 	);
 };
 
@@ -616,10 +616,10 @@ const char arrayTestJson[] = R"json({
 
 void check_json_array_test()
 {
-    JT::ParseContext context(arrayTestJson);
+    JS::ParseContext context(arrayTestJson);
     ArrayTest obj;
     context.parseTo(obj);
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(context.error == JS::Error::NoError);
 }
 
 struct SkipTestBase
@@ -627,15 +627,15 @@ struct SkipTestBase
     std::string name;
     int id;
 
-    JT_STRUCT(JT_MEMBER(name),
-              JT_MEMBER(id));
+    JS_OBJECT(JS_MEMBER(name),
+              JS_MEMBER(id));
 };
 
 struct SkipTestInternalContainer
 {
     std::vector<float> items;
 
-    JT_STRUCT(JT_MEMBER(items));
+    JS_OBJECT(JS_MEMBER(items));
 };
 
 struct SkipTestNameContainer
@@ -644,9 +644,9 @@ struct SkipTestNameContainer
     int id;
     SkipTestInternalContainer container;
 
-    JT_STRUCT(JT_MEMBER(name),
-              JT_MEMBER(id),
-              JT_MEMBER(container));
+    JS_OBJECT(JS_MEMBER(name),
+              JS_MEMBER(id),
+              JS_MEMBER(container));
 };
 
 struct SkipTestSubClass : public SkipTestBase
@@ -655,10 +655,10 @@ struct SkipTestSubClass : public SkipTestBase
     std::vector<SkipTestNameContainer> skip_test_list_01;
     std::vector<SkipTestNameContainer> skip_test_list_02;
 
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SkipTestBase)),
-                         JT_MEMBER(value),
-                         JT_MEMBER(skip_test_list_01),
-                         JT_MEMBER(skip_test_list_02));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(SkipTestBase)),
+                         JS_MEMBER(value),
+                         JS_MEMBER(skip_test_list_01),
+                         JS_MEMBER(skip_test_list_02));
 };
 
 const char jsonSkipTest[] = R"json(
@@ -723,42 +723,42 @@ const char jsonSkipTest[] = R"json(
 
 void check_json_skip_test()
 {
-    JT::ParseContext base_context(jsonSkipTest);
+    JS::ParseContext base_context(jsonSkipTest);
     SkipTestBase base;
     base_context.parseTo(base);
-    JT_ASSERT(base_context.error == JT::Error::NoError);
-    JT_ASSERT(base.name == "base_name");
-    JT_ASSERT(base.id == 444);
+    JS_ASSERT(base_context.error == JS::Error::NoError);
+    JS_ASSERT(base.name == "base_name");
+    JS_ASSERT(base.id == 444);
 
-    JT::ParseContext sub_context(jsonSkipTest);
+    JS::ParseContext sub_context(jsonSkipTest);
     SkipTestSubClass sub;
     sub_context.parseTo(sub);
-    JT_ASSERT(sub_context.error == JT::Error::NoError);
-    JT_ASSERT(sub.skip_test_list_01[2].name == "list03");
-    JT_ASSERT(sub.skip_test_list_02[1].name == "list02");
-    JT_ASSERT(sub.name == "base_name");
-    JT_ASSERT(sub.id == 444);
+    JS_ASSERT(sub_context.error == JS::Error::NoError);
+    JS_ASSERT(sub.skip_test_list_01[2].name == "list03");
+    JS_ASSERT(sub.skip_test_list_02[1].name == "list02");
+    JS_ASSERT(sub.name == "base_name");
+    JS_ASSERT(sub.id == 444);
 }
 
 const char multi_top_level_json[] = R"json({ a: 1}{a: 2}{a:3})json";
 struct MultiTopLevel
 {
     int a;
-    JT_STRUCT(JT_MEMBER(a));
+    JS_OBJECT(JS_MEMBER(a));
 };
 
 void check_multi_top_level_json()
 {
-    JT::ParseContext pc(multi_top_level_json);
+    JS::ParseContext pc(multi_top_level_json);
     pc.tokenizer.allowAsciiType(true);
     MultiTopLevel t;
     for (int i = 0; i < 3; i++)
     {
-        JT_ASSERT(pc.tokenizer.currentPosition() < multi_top_level_json + sizeof(multi_top_level_json)-1);
+        JS_ASSERT(pc.tokenizer.currentPosition() < multi_top_level_json + sizeof(multi_top_level_json)-1);
         pc.parseTo(t);
-        JT_ASSERT(t.a == i+1);
+        JS_ASSERT(t.a == i+1);
     }
-    JT_ASSERT(pc.tokenizer.currentPosition() == multi_top_level_json + sizeof(multi_top_level_json)-1);
+    JS_ASSERT(pc.tokenizer.currentPosition() == multi_top_level_json + sizeof(multi_top_level_json)-1);
 }
 
 const char escapedJson[] = R"json({
@@ -776,8 +776,8 @@ struct EscapedOuterStruct
     std::string some_text;
     T sub_object;
 
-    JT_STRUCT(JT_MEMBER(some_text),
-              JT_MEMBER(sub_object));
+    JS_OBJECT(JS_MEMBER(some_text),
+              JS_MEMBER(sub_object));
 };
 
 struct EscapedSubObject
@@ -786,20 +786,20 @@ struct EscapedSubObject
     float a_float;
     bool boolean_member;
 
-    JT_STRUCT(JT_MEMBER(more_data),
-              JT_MEMBER(a_float),
-              JT_MEMBER(boolean_member));
+    JS_OBJECT(JS_MEMBER(more_data),
+              JS_MEMBER(a_float),
+              JS_MEMBER(boolean_member));
 };
 
 static int check_json_escaped()
 {
-    JT::ParseContext context(escapedJson);
+    JS::ParseContext context(escapedJson);
     EscapedOuterStruct<EscapedSubObject> data;
     context.parseTo(data);
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(context.error == JS::Error::NoError);
     std::string equals("more\"_te\\xt");
-    JT_ASSERT(data.some_text == equals);
-    std::string json = JT::serializeStruct(data);
+    JS_ASSERT(data.some_text == equals);
+    std::string json = JS::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 };
@@ -810,9 +810,9 @@ struct OutsideMeta
     float a;
 };
 
-JT_STRUCT_EXTERNAL(OutsideMeta,
-    JT_MEMBER(data),
-    JT_MEMBER(a)
+JS_OBJECT_EXTERNAL(OutsideMeta,
+    JS_MEMBER(data),
+    JS_MEMBER(a)
 );
 
 const char outside_json[] = R"json({
@@ -822,12 +822,12 @@ const char outside_json[] = R"json({
 
 void check_json_meta_outside()
 {
-    JT::ParseContext context(outside_json);
+    JS::ParseContext context(outside_json);
     OutsideMeta data;
     context.parseTo(data);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(data.data == "this is some text");
-    JT_ASSERT(data.a == 44.5);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(data.data == "this is some text");
+    JS_ASSERT(data.a == 44.5);
 }
 
 int main(int, char **)

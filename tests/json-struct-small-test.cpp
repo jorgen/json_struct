@@ -6,9 +6,9 @@ struct SmallStruct
 	int a;
 	float b;
 
-	JT_STRUCT(
-		JT_MEMBER(a),
-		JT_MEMBER(b)
+	JS_OBJECT(
+		JS_MEMBER(a),
+		JS_MEMBER(b)
 	);
 };
 
@@ -21,10 +21,10 @@ const char json[] = R"json(
 
 int main()
 {
-	JT::ParseContext context(json);
+	JS::ParseContext context(json);
     SmallStruct data;
     context.parseTo(data);
-	JT_ASSERT(data.a == 1);
-	JT_ASSERT(data.b > 2.199 && data.b < 2.201);
+	JS_ASSERT(data.a == 1);
+	JS_ASSERT(data.b > 2.199 && data.b < 2.201);
 	return 0;
 }

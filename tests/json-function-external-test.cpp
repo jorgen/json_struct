@@ -43,8 +43,8 @@ struct SimpleData
     float number;
     bool valid;
 
-    JT_STRUCT(JT_MEMBER(number),
-              JT_MEMBER(valid));
+    JS_OBJECT(JS_MEMBER(number),
+              JS_MEMBER(valid));
 };
 struct CallFunction
 {
@@ -54,14 +54,14 @@ struct CallFunction
         called_one = true;
     }
 
-    int execute_two(const double &data, JT::CallFunctionContext &context)
+    int execute_two(const double &data, JS::CallFunctionContext &context)
     {
         fprintf(stderr, "execute two executed %f\n", data);
         called_two = true;
         return 2;
     }
 
-    void execute_three(const std::vector<double> &data, JT::CallFunctionContext &context)
+    void execute_three(const std::vector<double> &data, JS::CallFunctionContext &context)
     {
         fprintf(stderr, "execute three\n");
         for (auto x : data)
@@ -72,26 +72,26 @@ struct CallFunction
     bool called_two = false;
     bool called_three = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(CallFunction,
-                               JT_FUNCTION(execute_one),
-                               JT_FUNCTION(execute_two),
-                               JT_FUNCTION(execute_three));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallFunction,
+                               JS_FUNCTION(execute_one),
+                               JS_FUNCTION(execute_two),
+                               JS_FUNCTION(execute_three));
 
 
 void simpleTest()
 {
     CallFunction cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json, sizeof(json), json_out);
+    JS::DefaultCallFunctionContext context(json, sizeof(json), json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.called_one);
-    JT_ASSERT(cont.called_two);
-    JT_ASSERT(cont.called_three);
+    JS_ASSERT(cont.called_one);
+    JS_ASSERT(cont.called_two);
+    JS_ASSERT(cont.called_three);
 
-    if (context.parse_context.error != JT::Error::NoError)
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 struct CallFunctionSuperSuper
@@ -105,8 +105,8 @@ struct CallFunctionSuperSuper
     bool called_one = false;
 
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuperSuper,
-                               JT_FUNCTION(execute_one));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuperSuper,
+                               JS_FUNCTION(execute_one));
 
 struct CallFunctionSuper
 {
@@ -118,17 +118,17 @@ struct CallFunctionSuper
 
     bool called_two = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuper,
-                               JT_FUNCTION(execute_two));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuper,
+                               JS_FUNCTION(execute_two));
 
 struct ExecuteThreeReturn
 {
     bool valid = true;
     int error_code = 0;
     std::string data = "hello world";
-    JT_STRUCT(JT_MEMBER(valid),
-              JT_MEMBER(error_code),
-              JT_MEMBER(data));
+    JS_OBJECT(JS_MEMBER(valid),
+              JS_MEMBER(error_code),
+              JS_MEMBER(data));
 };
 struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 {
@@ -143,24 +143,24 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 
     bool called_three = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(CallFunctionSub,
-                                          JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunctionSuperSuper),
-                                                           JT_SUPER_CLASS(CallFunctionSuper)),
-                                          JT_FUNCTION(execute_three));
+JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(CallFunctionSub,
+                                          JS_SUPER_CLASSES(JS_SUPER_CLASS(CallFunctionSuperSuper),
+                                                           JS_SUPER_CLASS(CallFunctionSuper)),
+                                          JS_FUNCTION(execute_three));
 void inheritanceTest()
 {
     CallFunctionSub cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json, json_out);
+    JS::DefaultCallFunctionContext context(json, json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.called_one);
-    JT_ASSERT(cont.called_two);
-    JT_ASSERT(cont.called_three);
+    JS_ASSERT(cont.called_one);
+    JS_ASSERT(cont.called_two);
+    JS_ASSERT(cont.called_three);
 
-    if (context.parse_context.error != JT::Error::NoError)
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 struct CallFunctionVirtualOverload : public CallFunction
@@ -171,26 +171,26 @@ struct CallFunctionVirtualOverload : public CallFunction
     }
     bool override_called = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(CallFunctionVirtualOverload,
-                                          JT_SUPER_CLASSES(JT_SUPER_CLASS(CallFunction)));
+JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(CallFunctionVirtualOverload,
+                                          JS_SUPER_CLASSES(JS_SUPER_CLASS(CallFunction)));
 
 void virtualFunctionTest()
 {
     std::string json_out;
     json_out.reserve(512);
     CallFunctionVirtualOverload cont;
-    JT::DefaultCallFunctionContext context(json,json_out);
+    JS::DefaultCallFunctionContext context(json,json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.override_called);
-    JT_ASSERT(!cont.called_one);
-    JT_ASSERT(cont.called_two);
-    JT_ASSERT(cont.called_three);
+    JS_ASSERT(cont.override_called);
+    JS_ASSERT(!cont.called_one);
+    JS_ASSERT(cont.called_two);
+    JS_ASSERT(cont.called_three);
 
     fprintf(stderr, "return string\n%s\n", json_out.c_str());
-    if (context.parse_context.error != JT::Error::NoError)
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 const char json_two[] = R"json(
@@ -207,26 +207,26 @@ const char json_two[] = R"json(
 struct SuperParamOne
 {
     int number;
-    JT_STRUCT(JT_MEMBER(number));
+    JS_OBJECT(JS_MEMBER(number));
 };
 
 struct SuperParamTwo
 {
     bool valid;
-    JT_STRUCT(JT_MEMBER(valid));
+    JS_OBJECT(JS_MEMBER(valid));
 };
 
 struct SuperParamTwoOne : public SuperParamTwo
 {
     std::string more_data;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SuperParamTwo)), JT_MEMBER(more_data));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(SuperParamTwo)), JS_MEMBER(more_data));
 };
 struct Param : public SuperParamOne, public SuperParamTwoOne
 {
     std::string super_data;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(JT_SUPER_CLASS(SuperParamOne),
-                                          JT_SUPER_CLASS(SuperParamTwoOne)),
-                         JT_MEMBER(super_data));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(SuperParamOne),
+                                          JS_SUPER_CLASS(SuperParamTwoOne)),
+                         JS_MEMBER(super_data));
 };
 
 struct SuperParamCallable
@@ -238,20 +238,20 @@ struct SuperParamCallable
     bool execute_one_executed = false;
 
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(SuperParamCallable,
-                               JT_FUNCTION(execute_one));
+JS_FUNCTION_CONTAINER_EXTERNAL(SuperParamCallable,
+                               JS_FUNCTION(execute_one));
 
 void super_class_param_test()
 {
     SuperParamCallable cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json_two, json_out);
+    JS::DefaultCallFunctionContext context(json_two, json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.execute_one_executed);
-    if (context.parse_context.error != JT::Error::NoError)
+    JS_ASSERT(cont.execute_one_executed);
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 const char call_void_json[] = R"json(
@@ -272,7 +272,7 @@ struct CallVoidStruct
         executed_1 = true;
     }
 
-    void call_void_context(JT::CallFunctionContext &context)
+    void call_void_context(JS::CallFunctionContext &context)
     {
         executed_2 = true;
     }
@@ -282,13 +282,13 @@ struct CallVoidStruct
         return 3;
     }
 
-    int call_int_void_context(JT::CallFunctionContext &context)
+    int call_int_void_context(JS::CallFunctionContext &context)
     {
         executed_4 = true;
         return 7;
     }
 
-    void call_void_error(JT::CallFunctionErrorContext &error)
+    void call_void_error(JS::CallFunctionErrorContext &error)
     {
         executed_6 = true;
     }
@@ -305,31 +305,31 @@ struct CallVoidStruct
     bool executed_5 = false;
     bool executed_6 = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL( CallVoidStruct,
-                                JT_FUNCTION(call_void),
-                                JT_FUNCTION(call_void_context),
-                                JT_FUNCTION(call_int_void),
-                                JT_FUNCTION(call_int_void_context),
-                                JT_FUNCTION(call_void_with_value),
-                                JT_FUNCTION(call_void_error));
+JS_FUNCTION_CONTAINER_EXTERNAL( CallVoidStruct,
+                                JS_FUNCTION(call_void),
+                                JS_FUNCTION(call_void_context),
+                                JS_FUNCTION(call_int_void),
+                                JS_FUNCTION(call_int_void_context),
+                                JS_FUNCTION(call_void_with_value),
+                                JS_FUNCTION(call_void_error));
 
 void call_void_test()
 {
     CallVoidStruct voidStruct;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(call_void_json, json_out);
+    JS::DefaultCallFunctionContext context(call_void_json, json_out);
     context.callFunctions(voidStruct);
 
-    if (context.error_context.getLatestError() != JT::Error::NoError)
+    if (context.error_context.getLatestError() != JS::Error::NoError)
         fprintf(stderr, "error %s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.error_context.getLatestError() == JT::Error::NoError);
-    JT_ASSERT(voidStruct.executed_1);
-    JT_ASSERT(voidStruct.executed_2);
-    JT_ASSERT(voidStruct.executed_3);
-    JT_ASSERT(voidStruct.executed_4);
-    JT_ASSERT(voidStruct.executed_5);
-    JT_ASSERT(voidStruct.executed_6);
-    JT_ASSERT(context.execution_list.size() == 6);
+    JS_ASSERT(context.error_context.getLatestError() == JS::Error::NoError);
+    JS_ASSERT(voidStruct.executed_1);
+    JS_ASSERT(voidStruct.executed_2);
+    JS_ASSERT(voidStruct.executed_3);
+    JS_ASSERT(voidStruct.executed_4);
+    JS_ASSERT(voidStruct.executed_5);
+    JS_ASSERT(voidStruct.executed_6);
+    JS_ASSERT(context.execution_list.size() == 6);
 }
 
 const char call_error_check_json[] = R"json(
@@ -344,7 +344,7 @@ const char call_error_check_json[] = R"json(
 struct CallErrorCheckArg
 {
 	int x;
-	JT_STRUCT(JT_MEMBER(x));
+	JS_OBJECT(JS_MEMBER(x));
 };
 struct CallErrorCheck
 {
@@ -353,10 +353,10 @@ struct CallErrorCheck
 		executed1 = true;
 	}
 
-	void call_with_int(int x, JT::CallFunctionErrorContext &context)
+	void call_with_int(int x, JS::CallFunctionErrorContext &context)
 	{
 		executed2 = true;
-		context.setError(JT::Error::UserDefinedErrors, "CallWithIntCustomError problem with number");
+		context.setError(JS::Error::UserDefinedErrors, "CallWithIntCustomError problem with number");
 	}
 
 	void call_another_void()
@@ -364,10 +364,10 @@ struct CallErrorCheck
 		executed3 = true;
 	}
 
-	std::string call_with_object(const CallErrorCheckArg &arg, JT::CallFunctionErrorContext &context)
+	std::string call_with_object(const CallErrorCheckArg &arg, JS::CallFunctionErrorContext &context)
 	{
 		executed4 = true;
-		context.setError(JT::Error::UserDefinedErrors, "This functions should not serialize the string");
+		context.setError(JS::Error::UserDefinedErrors, "This functions should not serialize the string");
 		return std::string("THIS SHOULD NOT BE SERIALIZED");
 	}
 
@@ -376,28 +376,28 @@ struct CallErrorCheck
 	bool executed3 = false;
 	bool executed4 = false;
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(CallErrorCheck,
-                               JT_FUNCTION(call_void),
-                               JT_FUNCTION(call_with_int),
-                               JT_FUNCTION(call_another_void),
-                               JT_FUNCTION(call_with_object));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallErrorCheck,
+                               JS_FUNCTION(call_void),
+                               JS_FUNCTION(call_with_int),
+                               JS_FUNCTION(call_another_void),
+                               JS_FUNCTION(call_with_object));
 
 
 void call_error_check()
 {
 	CallErrorCheck errorCheck;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(call_error_check_json, json_out);
+    JS::DefaultCallFunctionContext context(call_error_check_json, json_out);
 	context.stop_execute_on_fail = false;
-    JT::Error error = context.callFunctions(errorCheck);
+    JS::Error error = context.callFunctions(errorCheck);
 
-	JT_ASSERT(error == JT::Error::NoError);
+	JS_ASSERT(error == JS::Error::NoError);
 	fprintf(stderr, "json out %s\n", json_out.c_str());
-	JT_ASSERT(errorCheck.executed1);
-	JT_ASSERT(errorCheck.executed2);
-	JT_ASSERT(errorCheck.executed3);
-	JT_ASSERT(errorCheck.executed4);
-	JT_ASSERT(json_out.size() == 3);
+	JS_ASSERT(errorCheck.executed1);
+	JS_ASSERT(errorCheck.executed2);
+	JS_ASSERT(errorCheck.executed3);
+	JS_ASSERT(errorCheck.executed4);
+	JS_ASSERT(json_out.size() == 3);
 }
 
 const char json_alias[] = R"json(
@@ -416,41 +416,41 @@ struct JsonAlias
 
     void execute_one(int x)
     {
-        JT_ASSERT(x == 4);
+        JS_ASSERT(x == 4);
         executeOne = true;
     }
 
     void execute_two_primary(int x)
     {
-        JT_ASSERT(x == 5);
+        JS_ASSERT(x == 5);
         executeTwo = true;
     }
 
     void execute_three(int x)
     {
-        JT_ASSERT(x == 6);
+        JS_ASSERT(x == 6);
         executeThree = true;
     }
 
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(JsonAlias,
-                               JT_FUNCTION(execute_one),
-                               JT_FUNCTION_ALIASES(execute_two_primary, "execute_two"),
-                               JT_FUNCTION(execute_three));
+JS_FUNCTION_CONTAINER_EXTERNAL(JsonAlias,
+                               JS_FUNCTION(execute_one),
+                               JS_FUNCTION_ALIASES(execute_two_primary, "execute_two"),
+                               JS_FUNCTION(execute_three));
 void call_json_alias()
 {
     JsonAlias cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json_alias, sizeof(json_alias), json_out);
+    JS::DefaultCallFunctionContext context(json_alias, sizeof(json_alias), json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.executeOne);
-    JT_ASSERT(cont.executeTwo);
-    JT_ASSERT(cont.executeThree);
+    JS_ASSERT(cont.executeOne);
+    JS_ASSERT(cont.executeTwo);
+    JS_ASSERT(cont.executeThree);
 
-    if (context.parse_context.error != JT::Error::NoError)
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 const char json_wrong_arg_type[] = R"json(
@@ -464,7 +464,7 @@ const char json_wrong_arg_type[] = R"json(
 struct JsonWrongArgTypeExecThree
 {
 	double last_member;
-	JT_STRUCT(JT_MEMBER(last_member));
+	JS_OBJECT(JS_MEMBER(last_member));
 };
 
 struct JsonWrongArgType
@@ -485,29 +485,29 @@ struct JsonWrongArgType
 
     void execute_three(const JsonWrongArgTypeExecThree &arg)
     {
-		JT_ASSERT(arg.last_member == 44.50);
+		JS_ASSERT(arg.last_member == 44.50);
         executeThree = true;
     }
 };
-JT_FUNCTION_CONTAINER_EXTERNAL(JsonWrongArgType,
-                               JT_FUNCTION(execute_one),
-                               JT_FUNCTION(execute_two),
-                               JT_FUNCTION(execute_three));
+JS_FUNCTION_CONTAINER_EXTERNAL(JsonWrongArgType,
+                               JS_FUNCTION(execute_one),
+                               JS_FUNCTION(execute_two),
+                               JS_FUNCTION(execute_three));
 
 void call_json_wrong_arg_type()
 {
     JsonWrongArgType cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json_wrong_arg_type, sizeof(json_wrong_arg_type), json_out);
+    JS::DefaultCallFunctionContext context(json_wrong_arg_type, sizeof(json_wrong_arg_type), json_out);
     context.callFunctions(cont);
 
-    JT_ASSERT(cont.executeOne);
-    JT_ASSERT(cont.executeTwo);
-    JT_ASSERT(cont.executeThree);
+    JS_ASSERT(cont.executeOne);
+    JS_ASSERT(cont.executeTwo);
+    JS_ASSERT(cont.executeThree);
 
-    if (context.parse_context.error != JT::Error::NoError)
+    if (context.parse_context.error != JS::Error::NoError)
         fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
-    JT_ASSERT(context.parse_context.error == JT::Error::NoError);
+    JS_ASSERT(context.parse_context.error == JS::Error::NoError);
 }
 
 int main()

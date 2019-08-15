@@ -33,9 +33,9 @@ struct Simple
     std::string A;
     bool b;
     int some_longer_name;
-    JT_STRUCT(JT_MEMBER(A),
-              JT_MEMBER(b),
-              JT_MEMBER(some_longer_name));
+    JS_OBJECT(JS_MEMBER(A),
+              JS_MEMBER(b),
+              JS_MEMBER(some_longer_name));
 };
 
 const char expected1[] = R"json({
@@ -51,59 +51,59 @@ void test_serialize_simple()
     simple.b = false;
     simple.some_longer_name = 456;
 
-    std::string output = JT::serializeStruct(simple);
-    JT_ASSERT(output == expected1);
+    std::string output = JS::serializeStruct(simple);
+    JS_ASSERT(output == expected1);
 }
 
 struct A
 {
     int a;
-    JT_STRUCT(JT_MEMBER(a));
+    JS_OBJECT(JS_MEMBER(a));
 };
 
 struct B : public A
 {
     float b;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                                          JT_SUPER_CLASS(A)),
-                         JT_MEMBER(b));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                                          JS_SUPER_CLASS(A)),
+                         JS_MEMBER(b));
 };
 
 struct D
 {
     int d;
-    JT_STRUCT(JT_MEMBER(d));
+    JS_OBJECT(JS_MEMBER(d));
 };
 
 struct E : public D
 {
     double e;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                                          JT_SUPER_CLASS(D)),
-                         JT_MEMBER(e));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                                          JS_SUPER_CLASS(D)),
+                         JS_MEMBER(e));
 };
 
 struct F : public E
 {
     int f;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                                          JT_SUPER_CLASS(E)),
-                         JT_MEMBER(f));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                                          JS_SUPER_CLASS(E)),
+                         JS_MEMBER(f));
 };
 struct G
 {
     std::string g;
-    JT_STRUCT(JT_MEMBER(g));
+    JS_OBJECT(JS_MEMBER(g));
 };
 
 struct Subclass : public B, public F, public G
 {
     int h;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                                          JT_SUPER_CLASS(B),
-                                          JT_SUPER_CLASS(F),
-                                          JT_SUPER_CLASS(G)),
-                         JT_MEMBER(h));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                                          JS_SUPER_CLASS(B),
+                                          JS_SUPER_CLASS(F),
+                                          JS_SUPER_CLASS(G)),
+                         JS_MEMBER(h));
 };
 
 const char expected2[] = R"json({
@@ -127,14 +127,14 @@ void test_serialize_deep()
     subclass.g = "OutputString";
     subclass.h = 7;
 
-    std::string output = JT::serializeStruct(subclass);
-    JT_ASSERT(output == expected2);
+    std::string output = JS::serializeStruct(subclass);
+    JS_ASSERT(output == expected2);
 }
 
 struct WithEscapedData
 {
     std::string data;
-    JT_STRUCT(JT_MEMBER(data));
+    JS_OBJECT(JS_MEMBER(data));
 };
 
 const char escaped_expected[] = R"json({
@@ -145,9 +145,9 @@ void test_escaped_data()
 {
     WithEscapedData escaped;
     escaped.data = "escaped \n \" \t string";
-    std::string output = JT::serializeStruct(escaped);
+    std::string output = JS::serializeStruct(escaped);
     fprintf(stderr, "%s\n%s\n", escaped_expected, output.c_str());
-    JT_ASSERT(output == escaped_expected);
+    JS_ASSERT(output == escaped_expected);
 }
 
 const char expected3[]=R"json({"h":7,"g":"OutputString","f":6,"e":5.5000000000000000e+00,"d":5,"b":4.50000000e+00,"a":4})json";
@@ -162,8 +162,8 @@ void test_compact()
     subclass.g = "OutputString";
     subclass.h = 7;
 
-    std::string output = JT::serializeStruct(subclass, JT::SerializerOptions(JT::SerializerOptions::Compact));
-    JT_ASSERT(output == expected3);
+    std::string output = JS::serializeStruct(subclass, JS::SerializerOptions(JS::SerializerOptions::Compact));
+    JS_ASSERT(output == expected3);
 }
 
 void test_serialize_big()
@@ -171,19 +171,19 @@ void test_serialize_big()
     auto fs = cmrc::external_json::get_filesystem();
     auto generated = fs.open("generated.json");
 
-    JT::JsonObjectOrArrayRef objOrArr;
+    JS::JsonObjectOrArrayRef objOrArr;
     {
-        JT::ParseContext pc(generated.begin(), generated.size());
+        JS::ParseContext pc(generated.begin(), generated.size());
         pc.parseTo(objOrArr);
-        JT_ASSERT(pc.error == JT::Error::NoError);
+        JS_ASSERT(pc.error == JS::Error::NoError);
     }
 
-    std::string serialized_json = JT::serializeStruct(objOrArr);
+    std::string serialized_json = JS::serializeStruct(objOrArr);
 
     {
-        JT::ParseContext pc(serialized_json.data(), serialized_json.size());
+        JS::ParseContext pc(serialized_json.data(), serialized_json.size());
         pc.parseTo(objOrArr);
-        JT_ASSERT(pc.error == JT::Error::NoError);
+        JS_ASSERT(pc.error == JS::Error::NoError);
     }
 }
 

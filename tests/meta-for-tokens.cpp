@@ -28,21 +28,21 @@ const char json_string[] = R"json(
 
 void testMetaForTokens()
 {
-    JT::ParseContext context(json_string);
-    JT::JsonTokens tokens;
+    JS::ParseContext context(json_string);
+    JS::JsonTokens tokens;
     context.parseTo(tokens);
-    JT_ASSERT(context.error == JT::Error::NoError);
+    JS_ASSERT(context.error == JS::Error::NoError);
 
-    std::vector<JT::JsonMeta> metaInfo = JT::metaForTokens(tokens);
-    JT_ASSERT(metaInfo.size());
-    JT_ASSERT(!metaInfo[3].is_array);
-    JT::Token token = tokens.data.at(metaInfo.at(3).position);
-    JT_ASSERT(std::string("member_three") == std::string(token.name.data, token.name.size));
+    std::vector<JS::JsonMeta> metaInfo = JS::metaForTokens(tokens);
+    JS_ASSERT(metaInfo.size());
+    JS_ASSERT(!metaInfo[3].is_array);
+    JS::Token token = tokens.data.at(metaInfo.at(3).position);
+    JS_ASSERT(std::string("member_three") == std::string(token.name.data, token.name.size));
     token = tokens.data.at(metaInfo.at(3).position + metaInfo.at(3).size);
-    JT_ASSERT(std::string("member_four") == std::string(token.name.data, token.name.size));
+    JS_ASSERT(std::string("member_four") == std::string(token.name.data, token.name.size));
     token = tokens.data.at(metaInfo.at(6).position);
-    JT_ASSERT(std::string("fourth_member") == std::string(token.name.data, token.name.size));
-    JT_ASSERT((1 + metaInfo.at(1).skip + metaInfo.at(1 + metaInfo.at(1).skip).skip) == 7);
+    JS_ASSERT(std::string("fourth_member") == std::string(token.name.data, token.name.size));
+    JS_ASSERT((1 + metaInfo.at(1).skip + metaInfo.at(1 + metaInfo.at(1).skip).skip) == 7);
 }
 
 int main()

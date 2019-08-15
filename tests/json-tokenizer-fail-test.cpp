@@ -33,22 +33,22 @@ const char json_with_ascii_property[] =
 
 static int check_fail_json_with_ascii_property()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_with_ascii_property);
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
     fprintf(stderr, "Error %s\n", tokenizer.makeErrorString().c_str());
-    JT_ASSERT(error == JT::Error::IllegalPropertyName);
+    JS_ASSERT(error == JS::Error::IllegalPropertyName);
 
     return 0;
 }
@@ -61,21 +61,21 @@ const char json_with_ascii_data[] =
 
 static int check_fail_json_with_ascii_data()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_with_ascii_data);
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::IllegalDataValue);
+    JS_ASSERT(error == JS::Error::IllegalDataValue);
 
     return 0;
 }
@@ -88,21 +88,21 @@ const char json_with_new_line_seperator[] =
 
 static int check_fail_json_with_new_line_seperator()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_with_new_line_seperator);
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::InvalidToken);
+    JS_ASSERT(error == JS::Error::InvalidToken);
 
     return 0;
 }
@@ -115,25 +115,25 @@ const char json_with_comma_before_obj_end[] =
 
 static int check_fail_json_with_comma_before_obj_end()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_with_comma_before_obj_end, sizeof(json_with_comma_before_obj_end));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"color", JT::Type::String, "red") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"color", JS::Type::String, "red") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::ExpectedDataToken);
+    JS_ASSERT(error == JS::Error::ExpectedDataToken);
 
     return 0;
 }
@@ -146,21 +146,21 @@ const char json_with_illegal_chars[] =
 
 static int check_fail_json_with_illegal_chars()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_with_illegal_chars, sizeof(json_with_illegal_chars));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::EncounteredIllegalChar);
+    JS_ASSERT(error == JS::Error::EncounteredIllegalChar);
 
     return 0;
 }
@@ -171,21 +171,21 @@ const char json_with_illegal_comma_in_array[] =
 "}";
 static int check_fail_json_with_empty_array()
 {
-	JT::Error error;
-	JT::Tokenizer tokenizer;
+	JS::Error error;
+	JS::Tokenizer tokenizer;
 	tokenizer.addData(json_with_illegal_comma_in_array);
 
-	JT::Token token;
+	JS::Token token;
 	error = tokenizer.nextToken(token);
-	JT_ASSERT(error == JT::Error::NoError);
-	JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+	JS_ASSERT(error == JS::Error::NoError);
+	JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
 	error = tokenizer.nextToken(token);
-	JT_ASSERT(error == JT::Error::NoError);
-	JT_ASSERT(token.value_type == JT::Type::ArrayStart);
+	JS_ASSERT(error == JS::Error::NoError);
+	JS_ASSERT(token.value_type == JS::Type::ArrayStart);
 
 	error = tokenizer.nextToken(token);
-	JT_ASSERT(error == JT::Error::EncounteredIllegalChar);
+	JS_ASSERT(error == JS::Error::EncounteredIllegalChar);
 
 	return 0;
 }
@@ -193,13 +193,13 @@ static int check_fail_json_with_empty_array()
 const char json_broken_stream[] = R"json("r::load","line":640,"level":0,"type":"Io","io":{"id":928,"action":0,"state":0,"uri":"http://datamons")json";
 static int check_fail_broken_json_stream()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json_broken_stream);
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error != JT::Error::NoError);
+    JS_ASSERT(error != JS::Error::NoError);
 	return 0;
 }
 

@@ -5,8 +5,8 @@
 
 struct Foo
 {
-    JT::Tuple<int, std::string, float> data;
-    JT_STRUCT(JT_MEMBER(data));
+    JS::Tuple<int, std::string, float> data;
+    JS_OBJECT(JS_MEMBER(data));
 };
 
 const char json[] = R"json(
@@ -26,17 +26,17 @@ int main()
     out.data.get<0>() = 12345;
     out.data.get<1>() = "Hello world";
     out.data.get<2>() = 44.50;
-    std::string bar = JT::serializeStruct(out);
+    std::string bar = JS::serializeStruct(out);
 
     fprintf(stderr, "Out is:\n%s\n", bar.c_str());
 
     Foo in;
-    JT::ParseContext context(json);
+    JS::ParseContext context(json);
     context.parseTo(in);
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(in.data.get<0>() == 9876);
-    JT_ASSERT(std::string("Tuples are cool") == in.data.get<1>());
-    JT_ASSERT(in.data.get<2>() > 3.14);
-    JT_ASSERT(in.data.get<2>() < 3.15);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(in.data.get<0>() == 9876);
+    JS_ASSERT(std::string("Tuples are cool") == in.data.get<1>());
+    JS_ASSERT(in.data.get<2>() > 3.14);
+    JS_ASSERT(in.data.get<2>() < 3.15);
     return 0;
 }

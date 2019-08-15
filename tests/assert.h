@@ -1,2 +1,2 @@
 #pragma once
-#define JT_ASSERT(x) if (x); else abort();
+#define JS_ASSERT(x) if (x); else abort();

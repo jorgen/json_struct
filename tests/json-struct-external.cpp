@@ -47,17 +47,17 @@ struct TestStructT
     std::string SubString;
     int SubNumber;
 };
-JT_STRUCT_EXTERNAL(TestStructT,
-	JT_MEMBER(SubString),
-	JT_MEMBER(SubNumber));
+JS_OBJECT_EXTERNAL(TestStructT,
+	JS_MEMBER(SubString),
+	JS_MEMBER(SubNumber));
 
 struct TestStructSub : public TestStructT
 {
     std::vector<int> Array;
 };
-JT_STRUCT_EXTERNAL_WITH_SUPER(TestStructSub,
-        JT_SUPER_CLASSES(JT_SUPER_CLASS(TestStructT)),
-        JT_MEMBER(Array));
+JS_OBJECT_EXTERNAL_WITH_SUPER(TestStructSub,
+        JS_SUPER_CLASSES(JS_SUPER_CLASS(TestStructT)),
+        JS_MEMBER(Array));
 
 struct JsonData1
 {
@@ -67,27 +67,27 @@ struct JsonData1
     bool BooleanFalse;
     TestStructSub TestStruct;
 };
-JT_STRUCT_EXTERNAL(JsonData1,
-        JT_MEMBER(StringNode),
-        JT_MEMBER(NumberNode),
-        JT_MEMBER(BooleanTrue),
-        JT_MEMBER(BooleanFalse),
-        JT_MEMBER(TestStruct));
+JS_OBJECT_EXTERNAL(JsonData1,
+        JS_MEMBER(StringNode),
+        JS_MEMBER(NumberNode),
+        JS_MEMBER(BooleanTrue),
+        JS_MEMBER(BooleanFalse),
+        JS_MEMBER(TestStruct));
 
 static int check_json_tree_nodes()
 {
-    JT::ParseContext context(json_data1);
+    JS::ParseContext context(json_data1);
     JsonData1 data;
     context.parseTo(data);
 
-	JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(data.StringNode == "Some test data");
-	JT_ASSERT(data.TestStruct.SubNumber == 500);
-	JT_ASSERT(data.TestStruct.Array.size() == 4);
-	JT_ASSERT(data.TestStruct.Array[2] == 3);
-    JT_ASSERT(context.error == JT::Error::NoError);
+	JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(data.StringNode == "Some test data");
+	JS_ASSERT(data.TestStruct.SubNumber == 500);
+	JS_ASSERT(data.TestStruct.Array.size() == 4);
+	JS_ASSERT(data.TestStruct.Array[2] == 3);
+    JS_ASSERT(context.error == JS::Error::NoError);
 
-    std::string json = JT::serializeStruct(data);
+    std::string json = JS::serializeStruct(data);
     fprintf(stderr, "%s\n", json.c_str());
     return 0;
 }

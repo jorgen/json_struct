@@ -33,28 +33,28 @@ struct JsonTokenizerRun : public BenchmarkRun
     std::string name() const override { return "JsonTools tokenizer"; }
     void run(const std::string &json) override
     {
-        JT::Tokenizer tokenizer;
+        JS::Tokenizer tokenizer;
         tokenizer.addData(json.c_str(), json.size());
 
-        JT::Token token;
-        JT::Error error = JT::Error::NoError;
+        JS::Token token;
+        JS::Error error = JS::Error::NoError;
         int array_size = 0;
         max_size = 0;
         do
         {
             error = tokenizer.nextToken(token);
-            if (token.value_type == JT::Type::ArrayStart) {
+            if (token.value_type == JS::Type::ArrayStart) {
                 array_size++;
             }
-            else if (token.value_type == JT::Type::ArrayEnd) {
+            else if (token.value_type == JS::Type::ArrayEnd) {
                 array_size--;
-            } else if (token.value_type == JT::Type::ObjectStart && array_size == 1)
+            } else if (token.value_type == JS::Type::ObjectStart && array_size == 1)
                 max_size++;
         }
-        while(array_size > 0 && error == JT::Error::NoError);
+        while(array_size > 0 && error == JS::Error::NoError);
 
 
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             fprintf(stderr, "Failed to parse document\n");
     }
 };
@@ -64,7 +64,7 @@ struct JsonToolsStructRun : public BenchmarkRun
     std::string name() const override { return "JsonTools struct"; }
     void run(const std::string &json) override
     {
-        JT::ParseContext context(json.c_str(), json.size());
+        JS::ParseContext context(json.c_str(), json.size());
         std::vector<JPerson> people;
         context.parseTo(people);
         max_size = people.size();

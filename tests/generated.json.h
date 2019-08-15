@@ -4,8 +4,8 @@ struct Friends
 {
     int id;
     std::string name;
-    JT_STRUCT(JT_MEMBER(id),
-              JT_MEMBER(name));
+    JS_OBJECT(JS_MEMBER(id),
+              JS_MEMBER(name));
 };
 
 struct JPerson
@@ -33,28 +33,28 @@ struct JPerson
     std::string greeting;
     std::string favoriteFruit;
 
-    JT_STRUCT( JT_MEMBER(_id),
-               JT_MEMBER(index),
-               JT_MEMBER(guid),
-               JT_MEMBER(isActive),
-               JT_MEMBER(balance),
-               JT_MEMBER(picture),
-               JT_MEMBER(age),
-               JT_MEMBER(eyeColor),
-               JT_MEMBER(name),
-               JT_MEMBER(gender),
-               JT_MEMBER(company),
-               JT_MEMBER(email),
-               JT_MEMBER(phone),
-               JT_MEMBER(address),
-               JT_MEMBER(about),
-               JT_MEMBER(registered),
-               JT_MEMBER(latitude),
-               JT_MEMBER(longitude),
-               JT_MEMBER(tags),
-               JT_MEMBER(friends),
-               JT_MEMBER(greeting),
-               JT_MEMBER(favoriteFruit));
+    JS_OBJECT( JS_MEMBER(_id),
+               JS_MEMBER(index),
+               JS_MEMBER(guid),
+               JS_MEMBER(isActive),
+               JS_MEMBER(balance),
+               JS_MEMBER(picture),
+               JS_MEMBER(age),
+               JS_MEMBER(eyeColor),
+               JS_MEMBER(name),
+               JS_MEMBER(gender),
+               JS_MEMBER(company),
+               JS_MEMBER(email),
+               JS_MEMBER(phone),
+               JS_MEMBER(address),
+               JS_MEMBER(about),
+               JS_MEMBER(registered),
+               JS_MEMBER(latitude),
+               JS_MEMBER(longitude),
+               JS_MEMBER(tags),
+               JS_MEMBER(friends),
+               JS_MEMBER(greeting),
+               JS_MEMBER(favoriteFruit));
 };
 
 const char generatedJson[] = R"gen_test_json(

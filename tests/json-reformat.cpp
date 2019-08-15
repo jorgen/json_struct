@@ -33,13 +33,13 @@ int main(int argc, char **argv)
     auto fs = cmrc::external_json::get_filesystem();
     auto generated = fs.open("generated.json");
     std::string pretty;
-    JT::Error error = JT::reformat(generated.begin(), generated.size(), pretty);
-    JT_ASSERT(error == JT::Error::NoError);
+    JS::Error error = JS::reformat(generated.begin(), generated.size(), pretty);
+    JS_ASSERT(error == JS::Error::NoError);
     fprintf(stderr, "PRETTY:\n%s\n", pretty.c_str());
 
     std::string compact;
-    error = JT::reformat(generated.begin(), generated.size(), compact, JT::SerializerOptions(JT::SerializerOptions::Compact));
-    JT_ASSERT(error == JT::Error::NoError);
+    error = JS::reformat(generated.begin(), generated.size(), compact, JS::SerializerOptions(JS::SerializerOptions::Compact));
+    JS_ASSERT(error == JS::Error::NoError);
     fprintf(stderr, "COMPACT:\n%s\n", compact.c_str());
 
     return 0;

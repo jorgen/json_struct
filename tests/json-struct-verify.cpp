@@ -33,26 +33,26 @@ struct ContainsStringNode
 {
     std::string StringNode;
 
-    JT_STRUCT(JT_MEMBER(StringNode));
+    JS_OBJECT(JS_MEMBER(StringNode));
 };
 
 struct SubStruct : public ContainsStringNode
 {
     int NumberNode;
 
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(ContainsStringNode)),
-                         JT_MEMBER(NumberNode));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(ContainsStringNode)),
+                         JS_MEMBER(NumberNode));
 };
 
 void testSimpleOneMember()
 {
-    JT::ParseContext context(json_data1);
+    JS::ParseContext context(json_data1);
     SubStruct substruct;
     context.parseTo(substruct);
 
-    JT_ASSERT(substruct.StringNode == "Some test data");
-    JT_ASSERT(substruct.NumberNode == 4676);
+    JS_ASSERT(substruct.StringNode == "Some test data");
+    JS_ASSERT(substruct.NumberNode == 4676);
 }
 
 const char json_data2[] = "{\n"
@@ -62,13 +62,13 @@ const char json_data2[] = "{\n"
 
 void testSimpleVerifyMissingMemberInStruct()
 {
-    JT::ParseContext context(json_data2);
+    JS::ParseContext context(json_data2);
     ContainsStringNode containsString;
     context.parseTo(containsString);
 
-    JT_ASSERT(containsString.StringNode == "Some test data");
-    JT_ASSERT(context.missing_members.size() == 1);
-    JT_ASSERT(context.missing_members.front() == "ThisWillBeUnassigned");
+    JS_ASSERT(containsString.StringNode == "Some test data");
+    JS_ASSERT(context.missing_members.size() == 1);
+    JS_ASSERT(context.missing_members.front() == "ThisWillBeUnassigned");
 }
 
 const char json_data3[] = "{\n"
@@ -82,20 +82,20 @@ struct RequiredMemberStruct
     int Field2;
     int Field3;
 
-    JT_STRUCT(JT_MEMBER(Field1),
-              JT_MEMBER(Field2),
-              JT_MEMBER(Field3));
+    JS_OBJECT(JS_MEMBER(Field1),
+              JS_MEMBER(Field2),
+              JS_MEMBER(Field3));
 };
 
 void testSimpleVerifyMissingRequiredMemberInStruct()
 {
-    JT::ParseContext context(json_data3);
+    JS::ParseContext context(json_data3);
     RequiredMemberStruct requiredMemberStruct;
     context.parseTo(requiredMemberStruct);
 
-    JT_ASSERT(requiredMemberStruct.Field3 == 3);
-    JT_ASSERT(context.unassigned_required_members.size() == 1);
-    JT_ASSERT(context.unassigned_required_members.front() == "Field2");
+    JS_ASSERT(requiredMemberStruct.Field3 == 3);
+    JS_ASSERT(context.unassigned_required_members.size() == 1);
+    JS_ASSERT(context.unassigned_required_members.front() == "Field2");
 }
 
 const char json_data4[] = "{\n"
@@ -108,51 +108,51 @@ struct SuperClass
 {
     std::string StringNode;
     int NumberNode;
-    JT_STRUCT(JT_MEMBER(StringNode),
-              JT_MEMBER(NumberNode));
+    JS_OBJECT(JS_MEMBER(StringNode),
+              JS_MEMBER(NumberNode));
 };
 
 struct SubClass : public SuperClass
 {
     std::string SubNode;
     int SubNode2;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(SuperClass)),
-                         JT_MEMBER(SubNode),
-                         JT_MEMBER(SubNode2));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(SuperClass)),
+                         JS_MEMBER(SubNode),
+                         JS_MEMBER(SubNode2));
 };
 
 void testClassHirarchyVerifyMissingMemberInStruct()
 {
-    JT::ParseContext context(json_data4);
+    JS::ParseContext context(json_data4);
     SubClass subClass;
     context.parseTo(subClass);
 
-    JT_ASSERT(subClass.NumberNode == 342);
-    JT_ASSERT(subClass.SubNode == "This should be in subclass");
-    JT_ASSERT(context.unassigned_required_members.size() == 1);
-    JT_ASSERT(context.unassigned_required_members.front() == "SubNode2");
+    JS_ASSERT(subClass.NumberNode == 342);
+    JS_ASSERT(subClass.SubNode == "This should be in subclass");
+    JS_ASSERT(context.unassigned_required_members.size() == 1);
+    JS_ASSERT(context.unassigned_required_members.front() == "SubNode2");
 }
 
 struct SuperSuperClass {
     int SuperSuper;
-    JT_STRUCT(JT_MEMBER(SuperSuper));
+    JS_OBJECT(JS_MEMBER(SuperSuper));
 };
 
 struct SuperClass2 : public SuperSuperClass
 {
     std::string Super;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(SuperSuperClass)),
-                         JT_MEMBER(Super));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(SuperSuperClass)),
+                         JS_MEMBER(Super));
 };
 
 struct RegularClass : public SuperClass2
 {
     int Regular;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                            JT_SUPER_CLASS(SuperClass2)),
-                         JT_MEMBER(Regular));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                            JS_SUPER_CLASS(SuperClass2)),
+                         JS_MEMBER(Regular));
 };
 
 const char json_data5[] = "{\n"
@@ -162,12 +162,12 @@ const char json_data5[] = "{\n"
 
 void testClassHIrarchyVerifyMissingDataForStruct()
 {
-    JT::ParseContext context(json_data5);
+    JS::ParseContext context(json_data5);
     RegularClass regular;
     context.parseTo(regular);
 
-    JT_ASSERT(context.unassigned_required_members.size() == 1);
-    JT_ASSERT(context.unassigned_required_members.front() == "SuperClass2::Super");
+    JS_ASSERT(context.unassigned_required_members.size() == 1);
+    JS_ASSERT(context.unassigned_required_members.front() == "SuperClass2::Super");
 }
 
 const char json_data6[] = "{\n"
@@ -179,63 +179,63 @@ const char json_data6[] = "{\n"
 
 void testClassHirarchyVerifyMissingMemberInStruct2()
 {
-    JT::ParseContext context(json_data6);
+    JS::ParseContext context(json_data6);
     RegularClass regular;
     context.parseTo(regular);
 
-    JT_ASSERT(context.missing_members.size() == 1);
-    JT_ASSERT(context.missing_members.front() == "SuperSuperSuper");
+    JS_ASSERT(context.missing_members.size() == 1);
+    JS_ASSERT(context.missing_members.front() == "SuperSuperSuper");
 }
 
 struct A
 {
     int a;
-    JT_STRUCT(JT_MEMBER(a));
+    JS_OBJECT(JS_MEMBER(a));
 };
 
 struct B : public A
 {
     float b;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(A)),
-                         JT_MEMBER(b));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(A)),
+                         JS_MEMBER(b));
 };
 
 struct D
 {
     int d;
-    JT_STRUCT(JT_MEMBER(d));
+    JS_OBJECT(JS_MEMBER(d));
 };
 
 struct E : public D
 {
     double e;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(D)),
-                         JT_MEMBER(e));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(D)),
+                         JS_MEMBER(e));
 };
 
 struct F : public E
 {
     int f;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(E)),
-                         JT_MEMBER(f));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(E)),
+                         JS_MEMBER(f));
 };
 struct G
 {
     std::string g;
-    JT_STRUCT(JT_MEMBER(g));
+    JS_OBJECT(JS_MEMBER(g));
 };
 
 struct Subclass : public B, public F, public G
 {
     int h;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(B),
-                           JT_SUPER_CLASS(F),
-                           JT_SUPER_CLASS(G)),
-                         JT_MEMBER(h));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(B),
+                           JS_SUPER_CLASS(F),
+                           JS_SUPER_CLASS(G)),
+                         JS_MEMBER(h));
 };
 
 const char json_data7[] = "{\n"
@@ -249,19 +249,19 @@ const char json_data7[] = "{\n"
 
 void testClassHirarchyVerifyMissingDataForStructDeep()
 {
-    JT::ParseContext context(json_data7);
+    JS::ParseContext context(json_data7);
     Subclass subclass;
     context.parseTo(subclass);
 
-    JT_ASSERT(context.unassigned_required_members.size() == 1);
-    JT_ASSERT(context.unassigned_required_members.front() == "E::e");
+    JS_ASSERT(context.unassigned_required_members.size() == 1);
+    JS_ASSERT(context.unassigned_required_members.front() == "E::e");
 }
 
 int main()
 {
     testSimpleOneMember();
     testSimpleVerifyMissingMemberInStruct();
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
     testSimpleVerifyMissingRequiredMemberInStruct();
     testClassHIrarchyVerifyMissingDataForStruct();
     testClassHirarchyVerifyMissingDataForStructDeep();

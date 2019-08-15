@@ -60,26 +60,26 @@ static int check_basic_object_diff()
     std::string diffJsonEqual(basicDiffJsonEqual);
     std::string diffJsonDifferent(basicDiffJsonDifferent);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJsonEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& noDiff = diffContext.diffs[diffPos];
     assert(noDiff.diff_count == 0);
 
     diffPos = diffContext.diff(diffJsonDifferent);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &allDiff = diffContext.diffs[diffPos];
     assert(allDiff.diff_count == 5);
     assert(allDiff.diffs.size() == 7);
-    assert(allDiff.diffs[0] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[1] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[2] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[3] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[4] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[5] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[6] == JT::DiffType::NoDiff);
+    assert(allDiff.diffs[0] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[1] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[2] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[3] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[4] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[5] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[6] == JS::DiffType::NoDiff);
 
     return 0;
 }
@@ -97,62 +97,62 @@ static int check_empty_items()
 
 // -----
 
-    JT::DiffContext emptyDiffContext(empty);
-    assert(emptyDiffContext.error == JT::DiffError::EmptyString);
+    JS::DiffContext emptyDiffContext(empty);
+    assert(emptyDiffContext.error == JS::DiffError::EmptyString);
 
     diffPos = emptyDiffContext.diff(empty);
     assert(diffPos == -1);
-    assert(emptyDiffContext.error == JT::DiffError::EmptyString);
+    assert(emptyDiffContext.error == JS::DiffError::EmptyString);
 
     diffPos = emptyDiffContext.diff(emptyObject);
     assert(diffPos == 0);
-    assert(emptyDiffContext.error == JT::DiffError::NoError);
+    assert(emptyDiffContext.error == JS::DiffError::NoError);
 
     diffPos = emptyDiffContext.diff(emptyArray);
     assert(diffPos == 1);
-    assert(emptyDiffContext.error == JT::DiffError::NoError);
+    assert(emptyDiffContext.error == JS::DiffError::NoError);
 
 // -----
 
-    JT::DiffContext emptyObjectDiffContext(emptyObject);
-    assert(emptyObjectDiffContext.error == JT::DiffError::NoError);
+    JS::DiffContext emptyObjectDiffContext(emptyObject);
+    assert(emptyObjectDiffContext.error == JS::DiffError::NoError);
 
     diffPos = emptyObjectDiffContext.diff(empty);
     assert(diffPos == -1);
-    assert(emptyObjectDiffContext.error == JT::DiffError::EmptyString);
+    assert(emptyObjectDiffContext.error == JS::DiffError::EmptyString);
 
     diffPos = emptyObjectDiffContext.diff(emptyObject);
     assert(diffPos == 0);
-    assert(emptyObjectDiffContext.error == JT::DiffError::NoError);
-    assert(emptyObjectDiffContext.diffs[diffPos].diffs[0] == JT::DiffType::NoDiff);
-    assert(emptyObjectDiffContext.diffs[diffPos].diffs[1] == JT::DiffType::NoDiff);
+    assert(emptyObjectDiffContext.error == JS::DiffError::NoError);
+    assert(emptyObjectDiffContext.diffs[diffPos].diffs[0] == JS::DiffType::NoDiff);
+    assert(emptyObjectDiffContext.diffs[diffPos].diffs[1] == JS::DiffType::NoDiff);
 
     diffPos = emptyObjectDiffContext.diff(emptyArray);
     assert(diffPos == 1);
-    assert(emptyObjectDiffContext.error == JT::DiffError::NoError);
-    assert(emptyObjectDiffContext.diffs[diffPos].diffs[0] == JT::DiffType::RootItemDiff);
-    assert(emptyObjectDiffContext.diffs[diffPos].diffs[1] == JT::DiffType::RootItemDiff);
+    assert(emptyObjectDiffContext.error == JS::DiffError::NoError);
+    assert(emptyObjectDiffContext.diffs[diffPos].diffs[0] == JS::DiffType::RootItemDiff);
+    assert(emptyObjectDiffContext.diffs[diffPos].diffs[1] == JS::DiffType::RootItemDiff);
 
 // -----
 
-    JT::DiffContext emptyArrayDiffContext(emptyArray);
-    assert(emptyArrayDiffContext.error == JT::DiffError::NoError);
+    JS::DiffContext emptyArrayDiffContext(emptyArray);
+    assert(emptyArrayDiffContext.error == JS::DiffError::NoError);
 
     diffPos = emptyArrayDiffContext.diff(empty);
     assert(diffPos == -1);
-    assert(emptyArrayDiffContext.error == JT::DiffError::EmptyString);
+    assert(emptyArrayDiffContext.error == JS::DiffError::EmptyString);
 
     diffPos = emptyArrayDiffContext.diff(emptyObject);
     assert(diffPos == 0);
-    assert(emptyArrayDiffContext.error == JT::DiffError::NoError);
-    assert(emptyArrayDiffContext.diffs[diffPos].diffs[0] == JT::DiffType::RootItemDiff);
-    assert(emptyArrayDiffContext.diffs[diffPos].diffs[1] == JT::DiffType::RootItemDiff);
+    assert(emptyArrayDiffContext.error == JS::DiffError::NoError);
+    assert(emptyArrayDiffContext.diffs[diffPos].diffs[0] == JS::DiffType::RootItemDiff);
+    assert(emptyArrayDiffContext.diffs[diffPos].diffs[1] == JS::DiffType::RootItemDiff);
 
     diffPos = emptyArrayDiffContext.diff(emptyArray);
     assert(diffPos == 1);
-    assert(emptyArrayDiffContext.error == JT::DiffError::NoError);
-    assert(emptyArrayDiffContext.diffs[diffPos].diffs[0] == JT::DiffType::NoDiff);
-    assert(emptyArrayDiffContext.diffs[diffPos].diffs[1] == JT::DiffType::NoDiff);
+    assert(emptyArrayDiffContext.error == JS::DiffError::NoError);
+    assert(emptyArrayDiffContext.diffs[diffPos].diffs[0] == JS::DiffType::NoDiff);
+    assert(emptyArrayDiffContext.diffs[diffPos].diffs[1] == JS::DiffType::NoDiff);
 
 // -----
 
@@ -225,97 +225,97 @@ static int check_diff_options()
     std::string jsonIdentical(basicDiffOptionsJsonIdentical);
     std::string jsonAlmostEqual(basicDiffOptionsJsonAlmostEqual);
 
-    JT::DiffOptions options = { JT::DiffFlags::None, 0.0 };
+    JS::DiffOptions options = { JS::DiffFlags::None, 0.0 };
 
-    JT::DiffContext diffContext(jsonBase, options);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(jsonBase, options);
+    assert(diffContext.error == JS::DiffError::NoError);
     size_t diffPos;
 
-    // JT::DiffFlags::None
+    // JS::DiffFlags::None
     diffPos = diffContext.diff(jsonIdentical);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &noDiffNoFuzzy = diffContext.diffs[diffPos];
-    assert(noDiffNoFuzzy.error == JT::DiffError::NoError);
+    assert(noDiffNoFuzzy.error == JS::DiffError::NoError);
     assert(noDiffNoFuzzy.diff_count == 0);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 0.0
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 0.0 };
+    // JS::DiffFlags::FuzzyFloatComparison / 0.0
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 0.0 };
     diffPos = diffContext.diff(jsonIdentical);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &noDiffFuzzy = diffContext.diffs[diffPos];
-    assert(noDiffFuzzy.error == JT::DiffError::NoError);
+    assert(noDiffFuzzy.error == JS::DiffError::NoError);
     assert(noDiffFuzzy.diff_count == 0);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-9
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-9 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-9
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-9 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_9 = diffContext.diffs[diffPos];
-    assert(diff_9.error == JT::DiffError::NoError);
+    assert(diff_9.error == JS::DiffError::NoError);
     assert(diff_9.diff_count == 9);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-8
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-8 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-8
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-8 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_8 = diffContext.diffs[diffPos];
-    assert(diff_8.error == JT::DiffError::NoError);
+    assert(diff_8.error == JS::DiffError::NoError);
     assert(diff_8.diff_count == 8);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-7
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-7 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-7
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-7 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_7 = diffContext.diffs[diffPos];
-    assert(diff_7.error == JT::DiffError::NoError);
+    assert(diff_7.error == JS::DiffError::NoError);
     assert(diff_7.diff_count == 7);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-6
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-6 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-6
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-6 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_6 = diffContext.diffs[diffPos];
-    assert(diff_6.error == JT::DiffError::NoError);
+    assert(diff_6.error == JS::DiffError::NoError);
     assert(diff_6.diff_count == 6);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-5
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-5 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-5
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-5 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_5 = diffContext.diffs[diffPos];
-    assert(diff_5.error == JT::DiffError::NoError);
+    assert(diff_5.error == JS::DiffError::NoError);
     assert(diff_5.diff_count == 5);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-4
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-4 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-4
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-4 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_4 = diffContext.diffs[diffPos];
-    assert(diff_4.error == JT::DiffError::NoError);
+    assert(diff_4.error == JS::DiffError::NoError);
     assert(diff_4.diff_count == 4);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-3
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-3 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-3
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-3 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_3 = diffContext.diffs[diffPos];
-    assert(diff_3.error == JT::DiffError::NoError);
+    assert(diff_3.error == JS::DiffError::NoError);
     assert(diff_3.diff_count == 3);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-2
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-2 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-2
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-2 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_2 = diffContext.diffs[diffPos];
-    assert(diff_2.error == JT::DiffError::NoError);
+    assert(diff_2.error == JS::DiffError::NoError);
     assert(diff_2.diff_count == 2);
 
-    // JT::DiffFlags::FuzzyFloatComparison / 1e-1
-    diffContext.options = { JT::DiffFlags::FuzzyFloatComparison, 1e-1 };
+    // JS::DiffFlags::FuzzyFloatComparison / 1e-1
+    diffContext.options = { JS::DiffFlags::FuzzyFloatComparison, 1e-1 };
     diffPos = diffContext.diff(jsonAlmostEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff_1 = diffContext.diffs[diffPos];
-    assert(diff_1.error == JT::DiffError::NoError);
+    assert(diff_1.error == JS::DiffError::NoError);
     assert(diff_1.diff_count == 1);
 
     return 0;
@@ -378,52 +378,52 @@ static int check_nested_objects_diff()
     std::string diffJsonEqual(basicDiffJsonEqualWithSubObject);
     std::string diffJsonDifferent(basicDiffJsonDifferentWithSubObject);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJsonEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& noDiff = diffContext.diffs[diffPos];
     assert(noDiff.diff_count == 0);
 
     diffPos = diffContext.diff(diffJsonDifferent);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &allDiff = diffContext.diffs[diffPos];
     assert(allDiff.diff_count == 9);
     assert(allDiff.diffs.size() == 14);
-    assert(allDiff.diffs[0] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[1] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[2] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[3] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[4] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[5] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[6] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[7] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[8] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[9] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[10] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[11] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[12] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[13] == JT::DiffType::NoDiff);
+    assert(allDiff.diffs[0] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[1] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[2] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[3] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[4] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[5] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[6] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[7] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[8] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[9] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[10] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[11] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[12] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[13] == JS::DiffType::NoDiff);
 
     diffContext.changeBase(diffPos);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &allDiffNewBase = diffContext.diffs[diffPos];
     assert(allDiffNewBase.diff_count == 9);
-    assert(allDiff.diffs[0] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[1] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[2] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[3] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[4] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[5] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[6] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[7] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[8] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[9] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[10] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[11] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[12] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[13] == JT::DiffType::NoDiff);
+    assert(allDiff.diffs[0] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[1] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[2] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[3] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[4] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[5] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[6] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[7] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[8] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[9] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[10] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[11] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[12] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[13] == JS::DiffType::NoDiff);
 
     return 0;
 }
@@ -512,42 +512,42 @@ int check_basic_array_diff_ordered()
     std::string diffJsonEqual(basicArrayJsonEqual);
     std::string diffJsonDifferent(basicArrayJsonDifferent);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJsonEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& noDiff = diffContext.diffs[diffPos];
     assert(noDiff.diff_count == 0);
 
     diffPos = diffContext.diff(diffJsonDifferent);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &allDiff = diffContext.diffs[diffPos];
     assert(allDiff.diff_count == 13);
     assert(allDiff.size() == 23);
-    assert(allDiff.diffs[0] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[1] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[2] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[3] == JT::DiffType::TypeDiff);
-    assert(allDiff.diffs[4] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[5] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[6] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[7] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[8] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[9] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[10] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[11] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[12] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[13] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[14] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[15] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[16] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[17] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[18] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[19] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[20] == JT::DiffType::ValueDiff);
-    assert(allDiff.diffs[21] == JT::DiffType::NoDiff);
-    assert(allDiff.diffs[22] == JT::DiffType::NoDiff);
+    assert(allDiff.diffs[0] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[1] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[2] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[3] == JS::DiffType::TypeDiff);
+    assert(allDiff.diffs[4] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[5] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[6] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[7] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[8] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[9] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[10] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[11] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[12] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[13] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[14] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[15] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[16] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[17] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[18] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[19] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[20] == JS::DiffType::ValueDiff);
+    assert(allDiff.diffs[21] == JS::DiffType::NoDiff);
+    assert(allDiff.diffs[22] == JS::DiffType::NoDiff);
 
     return 0;
 }
@@ -672,45 +672,45 @@ int check_large_object_with_all_data_types()
     std::string diffJsonEqual(largeObjectWithAllDataTypesEqual);
     std::string diffJsonDifferent(largeObjectWithAllDataTypesDifferent);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJsonEqual);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& noDiff = diffContext.diffs[diffPos];
     assert(noDiff.diff_count == 0);
 
     diffPos = diffContext.diff(diffJsonDifferent);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diff = diffContext.diffs[diffPos];
     assert(diff.diff_count == 10);
     assert(diff.size() == 75);
-    assert(diff.diffs[51] == JT::DiffType::TypeDiff);
-    assert(diff.diffs[52] == JT::DiffType::ValueDiff);
-    assert(diff.diffs[53] == JT::DiffType::TypeDiff);
-    assert(diff.diffs[54] == JT::DiffType::ValueDiff);
-    assert(diff.diffs[55] == JT::DiffType::ValueDiff);
-    assert(diff.diffs[56] == JT::DiffType::TypeDiff);
-    assert(diff.diffs[57] == JT::DiffType::ValueDiff);
-    assert(diff.diffs[58] == JT::DiffType::ValueDiff);
-    assert(diff.diffs[59] == JT::DiffType::TypeDiff);
-    assert(diff.diffs[60] == JT::DiffType::NewArrayItem);
+    assert(diff.diffs[51] == JS::DiffType::TypeDiff);
+    assert(diff.diffs[52] == JS::DiffType::ValueDiff);
+    assert(diff.diffs[53] == JS::DiffType::TypeDiff);
+    assert(diff.diffs[54] == JS::DiffType::ValueDiff);
+    assert(diff.diffs[55] == JS::DiffType::ValueDiff);
+    assert(diff.diffs[56] == JS::DiffType::TypeDiff);
+    assert(diff.diffs[57] == JS::DiffType::ValueDiff);
+    assert(diff.diffs[58] == JS::DiffType::ValueDiff);
+    assert(diff.diffs[59] == JS::DiffType::TypeDiff);
+    assert(diff.diffs[60] == JS::DiffType::NewArrayItem);
 
     diffContext.changeBase(diffPos);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const &diffNewBase = diffContext.diffs[diffPos];
     assert(diffNewBase.diff_count == 10);
     assert(diffNewBase.size() == 74);
-    assert(diffNewBase.diffs[50] == JT::DiffType::MissingArrayItems);
-    assert(diffNewBase.diffs[51] == JT::DiffType::TypeDiff);
-    assert(diffNewBase.diffs[52] == JT::DiffType::ValueDiff);
-    assert(diffNewBase.diffs[53] == JT::DiffType::TypeDiff);
-    assert(diffNewBase.diffs[54] == JT::DiffType::ValueDiff);
-    assert(diffNewBase.diffs[55] == JT::DiffType::ValueDiff);
-    assert(diffNewBase.diffs[56] == JT::DiffType::TypeDiff);
-    assert(diffNewBase.diffs[57] == JT::DiffType::ValueDiff);
-    assert(diffNewBase.diffs[58] == JT::DiffType::ValueDiff);
-    assert(diffNewBase.diffs[59] == JT::DiffType::TypeDiff);
+    assert(diffNewBase.diffs[50] == JS::DiffType::MissingArrayItems);
+    assert(diffNewBase.diffs[51] == JS::DiffType::TypeDiff);
+    assert(diffNewBase.diffs[52] == JS::DiffType::ValueDiff);
+    assert(diffNewBase.diffs[53] == JS::DiffType::TypeDiff);
+    assert(diffNewBase.diffs[54] == JS::DiffType::ValueDiff);
+    assert(diffNewBase.diffs[55] == JS::DiffType::ValueDiff);
+    assert(diffNewBase.diffs[56] == JS::DiffType::TypeDiff);
+    assert(diffNewBase.diffs[57] == JS::DiffType::ValueDiff);
+    assert(diffNewBase.diffs[58] == JS::DiffType::ValueDiff);
+    assert(diffNewBase.diffs[59] == JS::DiffType::TypeDiff);
 
     return 0;
 }
@@ -827,67 +827,67 @@ int check_new_and_missing_members()
     std::string baseJson(jsonWithSubObjects);
     std::string diffJsonWithMissingAndNewMembers(jsonWithSubObjects_MissingAndNewMembers);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJsonWithMissingAndNewMembers);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& diff = diffContext.diffs[diffPos];
     assert(diff.diff_count == 27);
 
     // Assert missing members.
     assert(diff.missingMembers.size() == 3);
-    JT::Token token;
+    JS::Token token;
 
-    const JT::Token &missingMembers1 = diff.tokens.data[0];
-    const std::vector<JT::Token>* missing1 = diff.getMissingMembers(missingMembers1);
+    const JS::Token &missingMembers1 = diff.tokens.data[0];
+    const std::vector<JS::Token>* missing1 = diff.getMissingMembers(missingMembers1);
     assert(missing1->size() == 2);
     token = (*missing1)[0];
     assert(strncmp(token.name.data, "member2", token.name.size) == 0);
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     token = (*missing1)[1];
     assert(strncmp(token.name.data, "member3", token.name.size) == 0);
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
 
-    const JT::Token &missingMembers2 = diff.tokens.data[4];
-    const std::vector<JT::Token>* missing2 = diff.getMissingMembers(missingMembers2);
+    const JS::Token &missingMembers2 = diff.tokens.data[4];
+    const std::vector<JS::Token>* missing2 = diff.getMissingMembers(missingMembers2);
     assert(missing2->size() == 1);
     token = (*missing2)[0];
     assert(strncmp(token.name.data, "submember1", token.name.size) == 0);
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
 
-    const JT::Token &missingMembers3 = diff.tokens.data[15];
-    const std::vector<JT::Token>* missing3 = diff.getMissingMembers(missingMembers3);
+    const JS::Token &missingMembers3 = diff.tokens.data[15];
+    const std::vector<JS::Token>* missing3 = diff.getMissingMembers(missingMembers3);
     assert(missing3->size() == 1);
     token = (*missing3)[0];
     assert(strncmp(token.name.data, "item1", token.name.size) == 0);
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
 
-    const JT::Token &tokenWithoutMissingMembers = diff.tokens.data[1];
-    const std::vector<JT::Token>* missingNone = diff.getMissingMembers(tokenWithoutMissingMembers);
+    const JS::Token &tokenWithoutMissingMembers = diff.tokens.data[1];
+    const std::vector<JS::Token>* missingNone = diff.getMissingMembers(tokenWithoutMissingMembers);
     assert(missingNone == nullptr);
 
     // Assert missing array items.
     assert(diff.missingArrayItems.size() == 1);
 
-    const JT::Token &missingArrayItemsToken = diff.tokens.data[43];
-    const std::vector<JT::Token>* missingArrayItems = diff.getMissingArrayItems(missingArrayItemsToken);
+    const JS::Token &missingArrayItemsToken = diff.tokens.data[43];
+    const std::vector<JS::Token>* missingArrayItems = diff.getMissingArrayItems(missingArrayItemsToken);
     assert(missingArrayItems->size() == 5);
     token = (*missingArrayItems)[0];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.value.data, "7", token.value.size) == 0);
     token = (*missingArrayItems)[1];
-    assert(token.value_type == JT::Type::ObjectStart);
+    assert(token.value_type == JS::Type::ObjectStart);
     token = (*missingArrayItems)[2];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.name.data, "i", token.name.size) == 0);
     assert(strncmp(token.value.data, "am", token.value.size) == 0);
     token = (*missingArrayItems)[3];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.name.data, "a", token.name.size) == 0);
     assert(strncmp(token.value.data, "missing_object", token.value.size) == 0);
     token = (*missingArrayItems)[4];
-    assert(token.value_type == JT::Type::ObjectEnd);
+    assert(token.value_type == JS::Type::ObjectEnd);
 
     return 0;
 }
@@ -1033,98 +1033,98 @@ int check_new_and_missing_members_nested()
     std::string baseJson(jsonMissingMembersAndArrayItemsBase);
     std::string diffJson(jsonMissingMembersAndArrayItemsDiff);
 
-    JT::DiffContext diffContext(baseJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    JS::DiffContext diffContext(baseJson);
+    assert(diffContext.error == JS::DiffError::NoError);
 
     size_t diffPos = diffContext.diff(diffJson);
-    assert(diffContext.error == JT::DiffError::NoError);
+    assert(diffContext.error == JS::DiffError::NoError);
     auto const& diff = diffContext.diffs[diffPos];
     assert(diff.diff_count == 40);
 
     // Assert missing members.
     assert(diff.missingMembers.size() == 2);
-    JT::Token token;
+    JS::Token token;
 
-    const JT::Token& missingMembers1 = diff.tokens.data[8];
-    const std::vector<JT::Token>* members1 = diff.getMissingMembers(missingMembers1);
+    const JS::Token& missingMembers1 = diff.tokens.data[8];
+    const std::vector<JS::Token>* members1 = diff.getMissingMembers(missingMembers1);
     assert(members1->size() == 7);
     token = (*members1)[0];
-    assert(token.value_type == JT::Type::ObjectStart);
+    assert(token.value_type == JS::Type::ObjectStart);
     assert(strncmp(token.name.data, "miss111", token.name.size) == 0);
     token = (*members1)[1];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.name.data, "a", token.name.size) == 0);
     assert(strncmp(token.value.data, "b", token.value.size) == 0);
     token = (*members1)[2];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.name.data, "c", token.name.size) == 0);
     assert(strncmp(token.value.data, "3", token.value.size) == 0);
     token = (*members1)[3];
-    assert(token.value_type == JT::Type::Bool);
+    assert(token.value_type == JS::Type::Bool);
     assert(strncmp(token.name.data, "d", token.name.size) == 0);
     assert(strncmp(token.value.data, "false", token.value.size) == 0);
     token = (*members1)[4];
-    assert(token.value_type == JT::Type::Null);
+    assert(token.value_type == JS::Type::Null);
     assert(strncmp(token.name.data, "e", token.name.size) == 0);
     assert(strncmp(token.value.data, "null", token.value.size) == 0);
     token = (*members1)[5];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.name.data, "f", token.name.size) == 0);
     // Note actual float not compared.
     token = (*members1)[6];
-    assert(token.value_type == JT::Type::ObjectEnd);
+    assert(token.value_type == JS::Type::ObjectEnd);
 
-    const JT::Token& missingMembers2 = diff.tokens.data[38];
-    const std::vector<JT::Token>* members2 = diff.getMissingMembers(missingMembers2);
+    const JS::Token& missingMembers2 = diff.tokens.data[38];
+    const std::vector<JS::Token>* members2 = diff.getMissingMembers(missingMembers2);
     assert(members2->size() == 2);
     token = (*members2)[0];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.name.data, "mem1", token.name.size) == 0);
     assert(strncmp(token.value.data, "1", token.value.size) == 0);
     token = (*members2)[1];
-    assert(token.value_type == JT::Type::Bool);
+    assert(token.value_type == JS::Type::Bool);
     assert(strncmp(token.name.data, "mem2", token.name.size) == 0);
     assert(strncmp(token.value.data, "false", token.value.size) == 0);
 
     // Assert array items.
     assert(diff.missingArrayItems.size() == 3);
 
-    const JT::Token& missingArrayItems1 = diff.tokens.data[2];
-    const std::vector<JT::Token>* missing1 = diff.getMissingArrayItems(missingArrayItems1);
+    const JS::Token& missingArrayItems1 = diff.tokens.data[2];
+    const std::vector<JS::Token>* missing1 = diff.getMissingArrayItems(missingArrayItems1);
     assert(missing1->size() == 2);
     token = (*missing1)[0];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.value.data, "2", token.value.size) == 0);
     token = (*missing1)[1];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.value.data, "3", token.name.size) == 0);
 
-    const JT::Token& missingArrayItems2 = diff.tokens.data[4];
-    const std::vector<JT::Token>* missing2 = diff.getMissingArrayItems(missingArrayItems2);
+    const JS::Token& missingArrayItems2 = diff.tokens.data[4];
+    const std::vector<JS::Token>* missing2 = diff.getMissingArrayItems(missingArrayItems2);
     assert(missing2->size() == 4);
     token = (*missing2)[0];
-    assert(token.value_type == JT::Type::Number);
+    assert(token.value_type == JS::Type::Number);
     assert(strncmp(token.value.data, "3", token.name.size) == 0);
     token = (*missing2)[1];
-    assert(token.value_type == JT::Type::ObjectStart);
+    assert(token.value_type == JS::Type::ObjectStart);
     token = (*missing2)[2];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.name.data, "key", token.name.size) == 0);
     assert(strncmp(token.value.data, "val", token.value.size) == 0);
     token = (*missing2)[3];
-    assert(token.value_type == JT::Type::ObjectEnd);
+    assert(token.value_type == JS::Type::ObjectEnd);
 
-    const JT::Token& missingArrayItems3 = diff.tokens.data[56];
-    const std::vector<JT::Token>* missing3 = diff.getMissingArrayItems(missingArrayItems3);
+    const JS::Token& missingArrayItems3 = diff.tokens.data[56];
+    const std::vector<JS::Token>* missing3 = diff.getMissingArrayItems(missingArrayItems3);
     assert(missing3->size() == 3);
     token = (*missing3)[0];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.value.data, "b", token.value.size) == 0);
     token = (*missing3)[1];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.value.data, "c", token.value.size) == 0);
     token = (*missing3)[2];
-    assert(token.value_type == JT::Type::String);
+    assert(token.value_type == JS::Type::String);
     assert(strncmp(token.value.data, "d", token.value.size) == 0);
 
     return 0;

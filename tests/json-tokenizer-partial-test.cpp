@@ -34,32 +34,32 @@ const char json_data_partial_1_2[] =
 
 static int check_json_partial_1()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_1_1, sizeof(json_data_partial_1_1));
     tokenizer.addData(json_data_partial_1_2, sizeof(json_data_partial_1_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::String, "color", JT::Type::String, "red") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::String, "color", JS::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -73,33 +73,33 @@ const char json_data_partial_2_2[] =
 
 static int check_json_partial_2()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_2_1, sizeof(json_data_partial_2_1));
     tokenizer.addData(json_data_partial_2_2, sizeof(json_data_partial_2_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
+    JS_ASSERT(error == JS::Error::NoError);
     std::string foo(token.name.data, token.name.size);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::String, "color", JT::Type::String, "red") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::String, "color", JS::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -113,32 +113,32 @@ const char json_data_partial_3_2[] =
 
 static int check_json_partial_3()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_3_1, sizeof(json_data_partial_3_1));
     tokenizer.addData(json_data_partial_3_2, sizeof(json_data_partial_3_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::String, "color", JT::Type::String, "red") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::String, "color", JS::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -152,32 +152,32 @@ const char json_data_partial_4_2[] =
 
 static int check_json_partial_4()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_4_1, sizeof(json_data_partial_4_1));
     tokenizer.addData(json_data_partial_4_2, sizeof(json_data_partial_4_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::String, "color", JT::Type::String, "red") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::String, "color", JS::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -191,32 +191,32 @@ const char json_data_partial_5_2[] =
 
 static int check_json_partial_5()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_5_1, sizeof(json_data_partial_5_1));
     tokenizer.addData(json_data_partial_5_2, sizeof(json_data_partial_5_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "color", JT::Type::String, "red") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "color", JS::Type::String, "red") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -230,32 +230,32 @@ const char json_data_partial_6_2[] =
 
 static int check_json_partial_6()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_6_1, sizeof(json_data_partial_6_1));
     tokenizer.addData(json_data_partial_6_2, sizeof(json_data_partial_6_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "color", JT::Type::Bool, "true") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "color", JS::Type::Bool, "true") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -268,32 +268,32 @@ const char json_data_partial_7_2[] =
 
 static int check_json_partial_7()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_7_1, sizeof(json_data_partial_7_1));
     tokenizer.addData(json_data_partial_7_2, sizeof(json_data_partial_7_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "color", JT::Type::Bool, "true") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "color", JS::Type::Bool, "true") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
@@ -310,64 +310,64 @@ const char json_data_partial_8_2[] =
 
 static int check_json_partial_8()
 {
-    JT::Error error;
-    JT::Tokenizer tokenizer;
+    JS::Error error;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
     tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
 
-    JT::Token token;
+    JS::Token token;
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(assert_token(token,JT::Type::String,"foo", JT::Type::String, "bar") == 0);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(assert_token(token,JS::Type::String,"foo", JS::Type::String, "bar") == 0);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::String, "array", JT::Type::ArrayStart, "[") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::String, "array", JS::Type::ArrayStart, "[") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::String, "one") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "", JS::Type::String, "one") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::String, "two") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "", JS::Type::String, "two") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::String, "three") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "", JS::Type::String, "three") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT((assert_token(token, JT::Type::Ascii, "", JT::Type::ArrayEnd, "]") == 0));
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT((assert_token(token, JS::Type::Ascii, "", JS::Type::ArrayEnd, "]") == 0));
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
 
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NeedMoreData);
+    JS_ASSERT(error == JS::Error::NeedMoreData);
 
     return 0;
 }
 
 void check_remove_callback()
 {
-    JT::Error error = JT::Error::NoError;
-    JT::Tokenizer tokenizer;
+    JS::Error error = JS::Error::NoError;
+    JS::Tokenizer tokenizer;
     tokenizer.allowAsciiType(true);
     tokenizer.allowNewLineAsTokenDelimiter(true);
     tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
     tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
-    JT::Token token;
+    JS::Token token;
     bool has_been_called = false;
     {
-        auto ref = tokenizer.registerNeedMoreDataCallback([&has_been_called] (const JT::Tokenizer &)
+        auto ref = tokenizer.registerNeedMoreDataCallback([&has_been_called] (const JS::Tokenizer &)
                                                           {
                                                           fprintf(stderr, "hello\n");
                                                           has_been_called = true;
@@ -375,11 +375,11 @@ void check_remove_callback()
         error = tokenizer.nextToken(token);
     }
 
-    while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
+    while(error == JS::Error::NoError && token.value_type != JS::Type::ObjectEnd)
         error = tokenizer.nextToken(token);
 
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(has_been_called == false);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(has_been_called == false);
 
 }
 

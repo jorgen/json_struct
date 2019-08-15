@@ -20,23 +20,23 @@ struct ExecuteOneData
     int prop1;
     std::string prop2;
     std::string prop3;
-    JT_STRUCT(JT_MEMBER(prop1),
-              JT_MEMBER(prop2),
-              JT_MEMBER(prop3));
+    JS_OBJECT(JS_MEMBER(prop1),
+              JS_MEMBER(prop2),
+              JS_MEMBER(prop3));
 };
 struct ExecuteTwoData
 {
     std::string first_prop;
-    JT_STRUCT(JT_MEMBER(first_prop));
+    JS_OBJECT(JS_MEMBER(first_prop));
 };
 struct ExecuterTwoReturn
 {
     std::string string_data;
     int value;
     std::vector<int> values;
-    JT_STRUCT(JT_MEMBER(string_data),
-              JT_MEMBER(value),
-              JT_MEMBER(values));
+    JS_OBJECT(JS_MEMBER(string_data),
+              JS_MEMBER(value),
+              JS_MEMBER(values));
 };
 struct Executor
 {
@@ -56,28 +56,28 @@ struct Executor
     bool execute_one_called = false;
     bool execute_two_called = false;
 
-    JT_FUNCTION_CONTAINER(JT_FUNCTION(execute_one),
-                          JT_FUNCTION(execute_two));
+    JS_FUNCTION_CONTAINER(JS_FUNCTION(execute_one),
+                          JS_FUNCTION(execute_two));
 };
 void test_simple()
 {
     Executor executor;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json_data, json_out);
-    JT::Error called = context.callFunctions(executor);
+    JS::DefaultCallFunctionContext context(json_data, json_out);
+    JS::Error called = context.callFunctions(executor);
 
-    JT_ASSERT(context.execution_list.size() == 2);
-#if JT_HAVE_CONSTEXPR
-    JT_ASSERT(context.execution_list[0].unassigned_required_members.data.size() == 1);
-    JT_ASSERT(context.execution_list[0].unassigned_required_members.data[0] == "prop3");
+    JS_ASSERT(context.execution_list.size() == 2);
+#if JS_HAVE_CONSTEXPR
+    JS_ASSERT(context.execution_list[0].unassigned_required_members.data.size() == 1);
+    JS_ASSERT(context.execution_list[0].unassigned_required_members.data[0] == "prop3");
 #endif
-    JT_ASSERT(context.execution_list[0].missing_members.data.size() == 0);
+    JS_ASSERT(context.execution_list[0].missing_members.data.size() == 0);
 
-#if JT_HAVE_CONSTEXPR
-    JT_ASSERT(context.execution_list[1].missing_members.data.size() == 1);
-    JT_ASSERT(context.execution_list[1].missing_members.data[0] == "second_prop");
+#if JS_HAVE_CONSTEXPR
+    JS_ASSERT(context.execution_list[1].missing_members.data.size() == 1);
+    JS_ASSERT(context.execution_list[1].missing_members.data[0] == "second_prop");
 #endif
-    JT_ASSERT(context.execution_list[1].unassigned_required_members.data.size() == 0);
+    JS_ASSERT(context.execution_list[1].unassigned_required_members.data.size() == 0);
 }
 
 int main()

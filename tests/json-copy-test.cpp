@@ -44,68 +44,68 @@ struct SubObject
     int number;
     bool valid;
 
-    JT_STRUCT(JT_MEMBER(number),
-              JT_MEMBER(valid));
+    JS_OBJECT(JS_MEMBER(number),
+              JS_MEMBER(valid));
 };
 
-void jt_validate_json(JT::Tokenizer &tokenizer)
+void js_validate_json(JS::Tokenizer &tokenizer)
 {
-    JT::Token token;;
-    JT::Error error;
+    JS::Token token;;
+    JS::Error error;
     std::string buffer;
     
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
     
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::Number);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::Number);
     
     error = tokenizer.nextToken(token);
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectStart);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectStart);
     tokenizer.copyFromValue(token, buffer);
     
-    while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
+    while(error == JS::Error::NoError && token.value_type != JS::Type::ObjectEnd)
         error = tokenizer.nextToken(token);
     
-    JT_ASSERT(error == JT::Error::NoError);
-    JT_ASSERT(token.value_type == JT::Type::ObjectEnd);
+    JS_ASSERT(error == JS::Error::NoError);
+    JS_ASSERT(token.value_type == JS::Type::ObjectEnd);
     tokenizer.copyIncludingValue(token, buffer);
     
-    while(error == JT::Error::NoError && token.value_type != JT::Type::ObjectEnd)
+    while(error == JS::Error::NoError && token.value_type != JS::Type::ObjectEnd)
         error = tokenizer.nextToken(token);
     
-    JT::ParseContext context(buffer.c_str(), buffer.size());
+    JS::ParseContext context(buffer.c_str(), buffer.size());
     fprintf(stderr, "buffer %s\n", buffer.c_str());
     SubObject subObj;
     context.parseTo(subObj);
     
-    JT_ASSERT(context.error == JT::Error::NoError);
-    JT_ASSERT(subObj.number == 45);
-    JT_ASSERT(subObj.valid == false);
+    JS_ASSERT(context.error == JS::Error::NoError);
+    JS_ASSERT(subObj.number == 45);
+    JS_ASSERT(subObj.valid == false);
 }
-void jt_copy_full()
+void js_copy_full()
 {
-    JT::Tokenizer tokenizer;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json);
-    jt_validate_json(tokenizer);
+    js_validate_json(tokenizer);
 }
 
-void jt_partial_1()
+void js_partial_1()
 {
-    JT::Tokenizer tokenizer;
+    JS::Tokenizer tokenizer;
     tokenizer.addData(json,40);
     tokenizer.addData(json + 40, sizeof(json) - 40);
-    jt_validate_json(tokenizer);
+    js_validate_json(tokenizer);
 }
 
-void jt_partial_2()
+void js_partial_2()
 {
-    JT::Tokenizer tokenizer;
+    JS::Tokenizer tokenizer;
     size_t offset = 0;
-    std::function<void (JT::Tokenizer &)> func = [&offset, &func] (JT::Tokenizer &tok)
+    std::function<void (JS::Tokenizer &)> func = [&offset, &func] (JS::Tokenizer &tok)
     {
         if (offset + 2 > sizeof(json)) {
             tok.addData(json + offset, sizeof(json) - offset);
@@ -117,14 +117,14 @@ void jt_partial_2()
     };
     auto ref = tokenizer.registerNeedMoreDataCallback(func);
 
-    jt_validate_json(tokenizer);
+    js_validate_json(tokenizer);
 }
 
-void jt_partial_3()
+void js_partial_3()
 {
-    JT::Tokenizer tokenizer;
+    JS::Tokenizer tokenizer;
     size_t offset = 0;
-    std::function<void (JT::Tokenizer &)> func = [&offset, &func] (JT::Tokenizer &tokenizer)
+    std::function<void (JS::Tokenizer &)> func = [&offset, &func] (JS::Tokenizer &tokenizer)
     {
         if (offset + 1 > sizeof(json)) {
             tokenizer.addData(json + offset, sizeof(json) - offset);
@@ -136,7 +136,7 @@ void jt_partial_3()
     };
     auto ref = tokenizer.registerNeedMoreDataCallback(func);
     
-    jt_validate_json(tokenizer);
+    js_validate_json(tokenizer);
 }
 
 const char json2[] =
@@ -153,8 +153,8 @@ struct Child
 {
 	bool sub_object_prop1;
 	int sub_object_prop2;
-	JT_STRUCT(JT_MEMBER(sub_object_prop1),
-			  JT_MEMBER(sub_object_prop2));
+	JS_OBJECT(JS_MEMBER(sub_object_prop1),
+			  JS_MEMBER(sub_object_prop2));
 };
 
 struct Parent
@@ -162,34 +162,34 @@ struct Parent
 	bool test;
 	Child more;
 	int int_value;
-	JT_STRUCT(JT_MEMBER(test),
-		      JT_MEMBER(more),
-		      JT_MEMBER(int_value));
+	JS_OBJECT(JS_MEMBER(test),
+		      JS_MEMBER(more),
+		      JS_MEMBER(int_value));
 };
 
-void jt_copy_parsed()
+void js_copy_parsed()
 {
-	JT::Tokenizer tokenizer;
+	JS::Tokenizer tokenizer;
 	tokenizer.addData(json2);
 
-	JT::Token token;;
-	JT::Error error = JT::Error::NoError;
-	std::vector<JT::Token> tokens;
-	while (error == JT::Error::NoError) {
+	JS::Token token;;
+	JS::Error error = JS::Error::NoError;
+	std::vector<JS::Token> tokens;
+	while (error == JS::Error::NoError) {
 		error = tokenizer.nextToken(token);
 		tokens.push_back(token);
 	}
 
-	JT::ParseContext context;
+	JS::ParseContext context;
 	context.tokenizer.addData(&tokens);
 	Parent parent;
 	context.parseTo(parent);
 
-	JT_ASSERT(context.error == JT::Error::NoError);
-	JT_ASSERT(parent.test == true);
-	JT_ASSERT(parent.more.sub_object_prop1 == true);
-	JT_ASSERT(parent.more.sub_object_prop2 == 456);
-	JT_ASSERT(parent.int_value == 65);
+	JS_ASSERT(context.error == JS::Error::NoError);
+	JS_ASSERT(parent.test == true);
+	JS_ASSERT(parent.more.sub_object_prop1 == true);
+	JS_ASSERT(parent.more.sub_object_prop2 == 456);
+	JS_ASSERT(parent.int_value == 65);
 }
 
 const char json_token_copy[] = R"json(
@@ -209,49 +209,49 @@ struct SecondChild
 {
     std::string some_more;
     int another_int;
-    JT_STRUCT(JT_MEMBER(some_more),
-        JT_MEMBER(another_int));
+    JS_OBJECT(JS_MEMBER(some_more),
+        JS_MEMBER(another_int));
 };
 struct SecondParent
 {
     int number;
     bool valid;
-    JT::JsonTokens child;
+    JS::JsonTokens child;
     std::string more_data;
     std::string super_data;
 
-    JT_STRUCT(JT_MEMBER(number),
-        JT_MEMBER(valid),
-        JT_MEMBER(child),
-        JT_MEMBER(more_data),
-        JT_MEMBER(super_data));
+    JS_OBJECT(JS_MEMBER(number),
+        JS_MEMBER(valid),
+        JS_MEMBER(child),
+        JS_MEMBER(more_data),
+        JS_MEMBER(super_data));
 };
 
-void jt_copy_tokens()
+void js_copy_tokens()
 {
     SecondParent parent;
-    JT::ParseContext parseContext(json_token_copy);
+    JS::ParseContext parseContext(json_token_copy);
     parseContext.parseTo(parent);
 
-    JT_ASSERT(parseContext.error == JT::Error::NoError);
-    JT_ASSERT(parent.child.data.size() == 4);
+    JS_ASSERT(parseContext.error == JS::Error::NoError);
+    JS_ASSERT(parent.child.data.size() == 4);
 
-    JT::ParseContext childContext;
+    JS::ParseContext childContext;
     childContext.tokenizer.addData(&parent.child.data);
     SecondChild child;
     childContext.parseTo(child);
-    JT_ASSERT(child.another_int == 495);
-    JT_ASSERT(child.some_more == "world");
+    JS_ASSERT(child.another_int == 495);
+    JS_ASSERT(child.some_more == "world");
      
 }
 int main()
 {
-    jt_copy_full();
-    jt_partial_1();
-    jt_partial_2();
-    jt_partial_3();
+    js_copy_full();
+    js_partial_1();
+    js_partial_2();
+    js_partial_3();
 
-	jt_copy_parsed();
-    jt_copy_tokens();
+	js_copy_parsed();
+    js_copy_tokens();
     return 0;
 }

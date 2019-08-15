@@ -24,7 +24,7 @@
 #include "assert.h"
 #include <string>
 
-static int assert_token(const JT::Token &token, JT::Type name_type, std::string property, JT::Type value_type, std::string value)
+static int assert_token(const JS::Token &token, JS::Type name_type, std::string property, JS::Type value_type, std::string value)
 {
     if (token.name_type != name_type) {
         fprintf(stderr, "token.name_type is: %hhu, expected %hhu\n", token.name_type, name_type);

@@ -44,23 +44,23 @@ struct JsonContainingStructMissingTypeHandler
 {
     JsonMissingTypeHandler data;
 
-    JT_STRUCT(JT_MEMBER(data));
+    JS_OBJECT(JS_MEMBER(data));
 };
 
 static void check_missing_meta()
 {
-    JT::ParseContext context(json_data);
+    JS::ParseContext context(json_data);
     JsonMissingMeta missing;
     //context.parseTo(missing);
-    //std::string out = JT::serializeStruct(missing);
+    //std::string out = JS::serializeStruct(missing);
 }
 
 static void check_missing_typehandler()
 {
-    JT::ParseContext context(json_data);
+    JS::ParseContext context(json_data);
     JsonContainingStructMissingTypeHandler missing;
     //context.parseTo(missing);
-    //std::string out = JT::serializeStruct(missing);
+    //std::string out = JS::serializeStruct(missing);
 }
 
 int main(int argc, char **argv)

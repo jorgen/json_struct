@@ -23,7 +23,7 @@
 #include <tuple>
 #include <json_struct.h>
 
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
 
 #define SUB_ELEM(elem) SubElem<elem>(#elem)
 #define SUB_LIST(...) std::make_tuple(__VA_ARGS__)
@@ -97,7 +97,7 @@ struct Cover
 #endif
 int main()
 {
-#if JT_HAVE_CONSTEXP
+#if JS_HAVE_CONSTEXP
 	Cover c;
 	Cover::FOO<Cover>::getList();
 	//Cover::FOO<Cover>::the_sublist();

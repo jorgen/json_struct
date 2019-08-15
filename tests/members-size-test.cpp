@@ -24,71 +24,71 @@
 
 #include "assert.h"
 
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
 struct A
 {
     int a;
-    JT_STRUCT(JT_MEMBER(a));
+    JS_OBJECT(JS_MEMBER(a));
 };
 
 struct B : public A
 {
     float b;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(A)),
-                         JT_MEMBER(b));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(A)),
+                         JS_MEMBER(b));
 };
 
 struct D
 {
     unsigned char d;
-    JT_STRUCT(JT_MEMBER(d));
+    JS_OBJECT(JS_MEMBER(d));
 };
 
 struct E : public D
 {
     double e;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(D)),
-                         JT_MEMBER(e));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(D)),
+                         JS_MEMBER(e));
 };
 
 struct F : public E
 {
     short f;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(E)),
-                         JT_MEMBER(f));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(E)),
+                         JS_MEMBER(f));
 };
 struct G
 {
     char g;
-    JT_STRUCT(JT_MEMBER(g));
+    JS_OBJECT(JS_MEMBER(g));
 };
 
 struct Subclass : public B, public F, public G
 {
     unsigned int h;
-    JT_STRUCT_WITH_SUPER(JT_SUPER_CLASSES(
-                           JT_SUPER_CLASS(B),
-                           JT_SUPER_CLASS(F),
-                           JT_SUPER_CLASS(G)),
-                         JT_MEMBER(h));
+    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
+                           JS_SUPER_CLASS(B),
+                           JS_SUPER_CLASS(F),
+                           JS_SUPER_CLASS(G)),
+                         JS_MEMBER(h));
 };
 
 #endif
 
 int main()
 {
-#if JT_HAVE_CONSTEXPR
-    size_t member_count = JT::Internal::memberCount<Subclass, 0>();
-    JT_ASSERT( member_count == 7);
-    int array[JT::Internal::memberCount<Subclass,0 >()];
-    for (size_t i = 0; i < JT::Internal::memberCount<Subclass, 0>(); i++) {
+#if JS_HAVE_CONSTEXPR
+    size_t member_count = JS::Internal::memberCount<Subclass, 0>();
+    JS_ASSERT( member_count == 7);
+    int array[JS::Internal::memberCount<Subclass,0 >()];
+    for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++) {
         array[i] = i;
     }
 
-    for (size_t i = 0; i < JT::Internal::memberCount<Subclass, 0>(); i++)
+    for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)
         fprintf(stderr, "array %d\n", array[i]);
 #endif
     return 0;

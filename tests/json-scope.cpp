@@ -23,9 +23,9 @@ struct Func1Arg
 {
     int arg1;
     std::string arg2;
-    JT_STRUCT(
-        JT_MEMBER(arg1),
-        JT_MEMBER(arg2)
+    JS_OBJECT(
+        JS_MEMBER(arg1),
+        JS_MEMBER(arg2)
     );
 };
 
@@ -33,9 +33,9 @@ struct Func2Arg
 {
     int one[4];
     bool two;
-    JT_STRUCT(
-        JT_MEMBER(one),
-        JT_MEMBER(two)
+    JS_OBJECT(
+        JS_MEMBER(one),
+        JS_MEMBER(two)
     );
 };
 
@@ -43,9 +43,9 @@ struct Func3Arg
 {
     int first;
     double second;
-    JT_STRUCT(
-        JT_MEMBER(first),
-        JT_MEMBER(second)
+    JS_OBJECT(
+        JS_MEMBER(first),
+        JS_MEMBER(second)
     );
 };
 
@@ -69,10 +69,10 @@ struct FunctionCont
     bool func1_called = false;
     bool func2_called = false;
     bool func3_called = false;
-    JT_FUNCTION_CONTAINER(
-        JT_FUNCTION(func1),
-        JT_FUNCTION(func2),
-        JT_FUNCTION(func3)
+    JS_FUNCTION_CONTAINER(
+        JS_FUNCTION(func1),
+        JS_FUNCTION(func2),
+        JS_FUNCTION(func3)
     );
 };
 
@@ -80,7 +80,7 @@ int main()
 {
     FunctionCont cont;
     std::string json_out;
-    JT::DefaultCallFunctionContext context(json, json_out);
-    JT::Error error = context.callFunctions(cont);
+    JS::DefaultCallFunctionContext context(json, json_out);
+    JS::Error error = context.callFunctions(cont);
     
 }
