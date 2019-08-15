@@ -29,7 +29,7 @@
  *
  * json_struct support parsing json into a stream of tokens using the \ref
  * tokenizer "JS::Tokenizer" api, or parsing json into c++ structures using the
- * \ref jt_struct "JS_STRUCT" api.
+ * \ref js_struct "JS_OBJECT" api.
  */
 
 /*! \page tokenizer Parsing json using JS::Tokenizer
@@ -57,7 +57,7 @@
  * requires the application code to keep some extra state. json_struct also has
  * functionality for parsing json data directly into c++ structures. This is
  * done by adding some metadata to the structure, or by adding a template
- * specialisation of a class.  \ref jt_struct "describes this" in more detail.
+ * specialisation of a class.  \ref js_struct "describes this" in more detail.
  */
 
 /*! \example simple_tokenize.cpp
@@ -70,16 +70,16 @@
  * This example shows basic usage of parsing Json directly into structs
  */
 
-/*! \page jt_struct Parsing json into C++ structs
+/*! \page js_struct Parsing json into C++ structs
  *
- * jt_tools makes it very easy to put your json data into c++ structures or
+ * json_struct makes it very easy to put your json data into c++ structures or
  * take data from c++ structures and generate json.
  *
  * This is best shown with an example: \include simple_struct.cpp
  *
  * The two interesting sections here are the lines are the:
  * \code{.cpp}
- *    JS_STRUCT(JS_MEMBER(key),
+ *    JS_OBJECT(JS_MEMBER(key),
  *              JS_MEMBER(number),
  *              JS_MEMBER(boolean));
  * \endcode
@@ -92,7 +92,7 @@
  *    parseContext.parseTo(dataStruct);
  * \endcode
  *
- * The JS_STRUCT call inside the JsonData struct will create a nested struct
+ * The JS_OBJECT call inside the JsonData struct will create a nested struct
  * declaration inside the JsonData struct. This nested struct will expose some
  * meta data about the struct, exposing the names of the members at runtime.
  * json_struct can then use this runtime information to populate the struct.
@@ -2230,79 +2230,79 @@ struct HasJsonToolsBase {
         static JS_CONSTEXPR no& test_in_base(...);
 };
 
-template<typename JS_BASE_STRUCT_T, typename JS_STRUCT_T>
+template<typename JS_BASE_STRUCT_T, typename JS_OBJECT_T>
 struct JsonToolsBaseDummy
 {
-    static_assert(sizeof(HasJsonToolsBase<JS_STRUCT_T>::template test_in_base<JS_STRUCT_T>(nullptr)) == sizeof(typename HasJsonToolsBase<JS_STRUCT_T>::yes), "Missing JS_STRUCT JS_STRUCT_EXTERNAL or TypeHandler specialisation\n");
-    using TT = typename std::remove_reference<decltype(JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_data_info())>::type;
-    using ST = typename std::remove_reference<decltype(JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_super_info())>::type;
-    static const TT &jt_static_meta_data_info()
+    static_assert(sizeof(HasJsonToolsBase<JS_OBJECT_T>::template test_in_base<JS_OBJECT_T>(nullptr)) == sizeof(typename HasJsonToolsBase<JS_OBJECT_T>::yes), "Missing JS_OBJECT JS_OBJECT_EXTERNAL or TypeHandler specialisation\n");
+    using TT = typename std::remove_reference<decltype(JS_OBJECT_T::template JsonToolsBase<JS_OBJECT_T>::js_static_meta_data_info())>::type;
+    using ST = typename std::remove_reference<decltype(JS_OBJECT_T::template JsonToolsBase<JS_OBJECT_T>::js_static_meta_super_info())>::type;
+    static const TT &js_static_meta_data_info()
     {
-        return JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_data_info();
+        return JS_OBJECT_T::template JsonToolsBase<JS_OBJECT_T>::js_static_meta_data_info();
     }
 
-    static const ST &jt_static_meta_super_info()
+    static const ST &js_static_meta_super_info()
     {
-        return JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_super_info();
+        return JS_OBJECT_T::template JsonToolsBase<JS_OBJECT_T>::js_static_meta_super_info();
     }
 };
 }
 
-#define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_STRUCT_T::member)
-#define JS_MEMBER_ALIASES(member, ...) JS::makeMemberInfo(#member, &JS_STRUCT_T::member, __VA_ARGS__)
-#define JS_MEMBER_WITH_NAME(member, name) JS::makeMemberInfo(name, &JS_STRUCT_T::member)
-#define JS_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JS::makeMemberInfo(name, &JS_STRUCT_T::member, __VA_ARGS__)
+#define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_OBJECT_T::member)
+#define JS_MEMBER_ALIASES(member, ...) JS::makeMemberInfo(#member, &JS_OBJECT_T::member, __VA_ARGS__)
+#define JS_MEMBER_WITH_NAME(member, name) JS::makeMemberInfo(name, &JS_OBJECT_T::member)
+#define JS_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JS::makeMemberInfo(name, &JS_OBJECT_T::member, __VA_ARGS__)
 
 #define JS_SUPER_CLASS(super) JS::Internal::SuperInfo<super>(JS::DataRef(#super))
 
 #define JS_SUPER_CLASSES(...) JS::makeTuple(__VA_ARGS__)
 
-#define JS_STRUCT(...) \
-    template<typename JS_STRUCT_T> \
+#define JS_OBJECT(...) \
+    template<typename JS_OBJECT_T> \
     struct JsonToolsBase \
     { \
        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-       static const TT &jt_static_meta_data_info() \
+       static const TT &js_static_meta_data_info() \
        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       static const decltype(JS::makeTuple()) &js_static_meta_super_info() \
        { static auto ret = JS::makeTuple(); return ret; } \
     }
 
-#define JS_STRUCT_WITH_SUPER(super_list, ...) \
-    template<typename JS_STRUCT_T> \
+#define JS_OBJECT_WITH_SUPER(super_list, ...) \
+    template<typename JS_OBJECT_T> \
     struct JsonToolsBase \
     { \
        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-       static const TT &jt_static_meta_data_info() \
+       static const TT &js_static_meta_data_info() \
        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-        static const decltype(super_list) &jt_static_meta_super_info() \
+        static const decltype(super_list) &js_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     }
 
-#define JS_STRUCT_EXTERNAL(Type, ...) \
+#define JS_OBJECT_EXTERNAL(Type, ...) \
     namespace JS {\
     namespace Internal {\
-    template<typename JS_STRUCT_T> \
-    struct JsonToolsBaseDummy<Type, JS_STRUCT_T> \
+    template<typename JS_OBJECT_T> \
+    struct JsonToolsBaseDummy<Type, JS_OBJECT_T> \
     { \
         using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-        static const TT &jt_static_meta_data_info() \
+        static const TT &js_static_meta_data_info() \
           { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       static const decltype(JS::makeTuple()) &js_static_meta_super_info() \
        { static auto ret = JS::makeTuple(); return ret; } \
     };\
     }}
 
-#define JS_STRUCT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
+#define JS_OBJECT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
     namespace JS {\
     namespace Internal {\
-    template<typename JS_STRUCT_T> \
-    struct JsonToolsBaseDummy<Type, JS_STRUCT_T> \
+    template<typename JS_OBJECT_T> \
+    struct JsonToolsBaseDummy<Type, JS_OBJECT_T> \
     { \
         using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-        static const TT &jt_static_meta_data_info() \
+        static const TT &js_static_meta_data_info() \
           { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-        static const decltype(super_list) &jt_static_meta_super_info() \
+        static const decltype(super_list) &js_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     };\
     }}
@@ -2439,8 +2439,8 @@ namespace Internal {
     template<typename T, size_t PAGE>
     JS_CONSTEXPR size_t memberCount()
     {
-        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_data_info())>::type;
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_data_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
         return Members::size + StartSuperRecursion<T, PAGE + Members::size, SuperMeta::size>::membersInSuperClasses();
     }
 
@@ -2512,14 +2512,14 @@ namespace Internal {
             if (error != Error::MissingPropertyMember)
                 return error;
 
-            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::jt_static_meta_super_info())>::type;
+            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::js_static_meta_super_info())>::type;
             return StartSuperRecursion<T, PAGE + Members::size, Super::size>::start(to_type, context, primary, assigned_members);
         }
 
         static Error verifyMembers(const Members &members, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
         {
             Error memberError = verifyMember(members.template get<0>(), PAGE, assigned_members, missing_members, super_name);
-            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::jt_static_meta_super_info())>::type;
+            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::js_static_meta_super_info())>::type;
             Error superError = StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(assigned_members, missing_members);
             if (memberError != Error::NoError)
                 return memberError;
@@ -2529,7 +2529,7 @@ namespace Internal {
         static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer, const char *super_name)
         {
             serializeMember(from_type, members.template get<Members::size - 1>(), token, serializer, super_name);
-            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::jt_static_meta_super_info())>::type;
+            using Super = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T, T>::js_static_meta_super_info())>::type;
             StartSuperRecursion<T, PAGE + Members::size, Super::size>::serializeMembers(from_type, token, serializer);
 
         }
@@ -2538,10 +2538,10 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t INDEX>
     Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
     {
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename JS::TypeAt<INDEX, SuperMeta>::type::type;
-        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
+        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info();
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
@@ -2555,11 +2555,11 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t INDEX>
     Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
     {
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
-        const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<INDEX>().name.data;
+        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info();
+        const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
 #if JS_HAVE_CONSTEXPR
         Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
@@ -2574,7 +2574,7 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t INDEX>
     size_t JS_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
     {
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
 #if JS_HAVE_CONSTEXPR
         return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
@@ -2586,10 +2586,10 @@ namespace Internal {
     template<typename T, size_t PAGE, size_t INDEX>
     void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Token &token, Serializer &serializer)
     {
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
+        using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+        auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info();
         MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
 #if JS_HAVE_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
@@ -2603,33 +2603,33 @@ namespace Internal {
     {
         static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
         {
-            using Meta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+            using Meta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, Meta>::type::type;
-            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::jt_static_meta_data_info();
+            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::js_static_meta_data_info();
             return MemberChecker<Super, Members, PAGE, Members::size- 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         }
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
-            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::jt_static_meta_data_info();
-            const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<0>().name.data;
+            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+            auto &members = Internal::template JsonToolsBaseDummy<Super, Super>::js_static_meta_data_info();
+            const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
         JS_CONSTEXPR static size_t membersInSuperClasses()
         {
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
             return memberCount<Super, PAGE>();
         }
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
         {
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
-            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
-			auto &members = Internal::JsonToolsBaseDummy<Super, Super>::jt_static_meta_data_info();
+            using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
+			auto &members = Internal::JsonToolsBaseDummy<Super, Super>::js_static_meta_data_info();
             MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
         }
     };
@@ -2668,7 +2668,7 @@ namespace Internal {
 
 namespace Internal {
     template<typename ...Ts>
-    static int jt_snprintf(char *dst, size_t max, const char * format, Ts ...args)
+    static int js_snprintf(char *dst, size_t max, const char * format, Ts ...args)
     {
 #ifdef _MSC_VER
         return _snprintf_s(dst, max, max, format, args...);
@@ -2812,7 +2812,7 @@ struct CallFunctionExecutionState
     SilentVector<std::string> missing_members;
     SilentVector<std::string> unassigned_required_members;
     SilentVector<CallFunctionExecutionState> child_states;
-    JS_STRUCT(
+    JS_OBJECT(
             JS_MEMBER(name),
             JS_MEMBER(context),
             JS_MEMBER(error),
@@ -2998,16 +2998,16 @@ struct HasJsonToolsFunctionContainer {
 template<typename JS_BASE_CONTAINER_STRUCT_T, typename JS_CONTAINER_STRUCT_T>
 struct JsonToolsFunctionContainerDummy
 {
-    using TT = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_functions_info())>::type;
-    using ST = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_super_info())>::type;
-    static const TT &jt_static_meta_functions_info()
+    using TT = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::js_static_meta_functions_info())>::type;
+    using ST = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::js_static_meta_super_info())>::type;
+    static const TT &js_static_meta_functions_info()
     {
-        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_functions_info();
+        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::js_static_meta_functions_info();
     }
 
-    static const ST &jt_static_meta_super_info()
+    static const ST &js_static_meta_super_info()
     {
-        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_super_info();
+        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::js_static_meta_super_info();
     }
 };
 
@@ -3022,9 +3022,9 @@ struct JsonToolsFunctionContainerDummy
     struct JsonToolsFunctionContainer \
     { \
         using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-        static const TT &jt_static_meta_functions_info() \
+        static const TT &js_static_meta_functions_info() \
         { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       static const decltype(JS::makeTuple()) &js_static_meta_super_info() \
        { static auto ret = JS::makeTuple(); return ret; } \
     }
 
@@ -3033,9 +3033,9 @@ struct JsonToolsFunctionContainerDummy
     struct JsonToolsFunctionContainer \
     { \
        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-       static const TT &jt_static_meta_functions_info() \
+       static const TT &js_static_meta_functions_info() \
        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(super_list) &jt_static_meta_super_info() \
+       static const decltype(super_list) &js_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     }
 
@@ -3046,9 +3046,9 @@ struct JsonToolsFunctionContainerDummy
     struct JsonToolsFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T> \
     { \
         using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-        static const TT &jt_static_meta_functions_info() \
+        static const TT &js_static_meta_functions_info() \
         { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       static const decltype(JS::makeTuple()) &js_static_meta_super_info() \
        { static auto ret = JS::makeTuple(); return ret; } \
     }; \
     }}
@@ -3060,9 +3060,9 @@ struct JsonToolsFunctionContainerDummy
     struct JsonToolsFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T> \
     { \
         using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
-        static const TT &jt_static_meta_functions_info() \
+        static const TT &js_static_meta_functions_info() \
         { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
-        static const decltype(super_list) &jt_static_meta_super_info() \
+        static const decltype(super_list) &js_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     }; \
     }}
@@ -3350,7 +3350,7 @@ namespace Internal {
                 return Error::NoError;
             if (error != Error::MissingFunction)
                 return error;
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::js_static_meta_super_info())>::type;
             return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
         }
     };
@@ -3360,7 +3360,7 @@ namespace Internal {
     {
         static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
         {
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::js_static_meta_super_info())>::type;
             return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
         }
     };
@@ -3437,7 +3437,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     token.value = DataRef("[");
     Internal::ArrayEndWriter endWriter(return_serializer, token);
     return_serializer.write(token);
-    auto &functions = Internal::JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_functions_info();
+    auto &functions = Internal::JsonToolsFunctionContainerDummy<T,T>::js_static_meta_functions_info();
     using FunctionsType	 = typename std::remove_reference<decltype(functions)>::type;
     while (parse_context.token.value_type != JS::Type::ObjectEnd)
     {
@@ -3497,9 +3497,9 @@ namespace Internal {
     template<typename T, size_t INDEX>
     Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context, bool primary)
     {
-        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
+        using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-        auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::jt_static_meta_functions_info();
+        auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::js_static_meta_functions_info();
         using FunctionsType =typename std::remove_reference<decltype(functions)>::type;
         Error error = FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         if (error != Error::MissingFunction)
@@ -3513,9 +3513,9 @@ namespace Internal {
     {
         static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
-            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_super_info())>::type;
+            using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsFunctionContainerDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
-            auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::jt_static_meta_functions_info();
+            auto &functions = Internal::template JsonToolsFunctionContainerDummy<Super,Super>::js_static_meta_functions_info();
             using FunctionsType = typename std::remove_reference<decltype(functions)>::type;
             return FunctionObjectTraverser<Super, FunctionsType, FunctionsType::size - 1>::call(container, context, functions, primary);
         }
@@ -3567,10 +3567,10 @@ enum class name \
 { \
     __VA_ARGS__ \
 }; \
-struct jt_##name##_string_struct \
+struct js_##name##_string_struct \
 { \
     template <size_t N> \
-    explicit jt_##name##_string_struct(const char(&data)[N]) \
+    explicit js_##name##_string_struct(const char(&data)[N]) \
     { \
         JS::Internal::populateEnumNames(_strings, data); \
     } \
@@ -3578,7 +3578,7 @@ struct jt_##name##_string_struct \
     \
     static const std::vector<JS::DataRef> & strings() \
     { \
-        static jt_##name##_string_struct ret(#__VA_ARGS__); \
+        static js_##name##_string_struct ret(#__VA_ARGS__); \
         return ret._strings; \
     } \
 }; \
@@ -3590,11 +3590,11 @@ struct TypeHandler<name> \
 { \
     static inline Error unpackToken(name&to_type, ParseContext &context) \
     { \
-        return Internal::EnumHandler<name, jt_##name##_string_struct>::unpackToken(to_type, context); \
+        return Internal::EnumHandler<name, js_##name##_string_struct>::unpackToken(to_type, context); \
     } \
     static inline void serializeToken(const name &from_type, Token &token, Serializer &serializer) \
     { \
-        return Internal::EnumHandler<name , jt_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+        return Internal::EnumHandler<name , js_##name##_string_struct>::serializeToken(from_type, token, serializer); \
     } \
 }; \
 }
@@ -3606,11 +3606,11 @@ struct TypeHandler<ns::name> \
 { \
     static inline Error unpackToken(ns::name &to_type, ParseContext &context) \
     { \
-        return Internal::EnumHandler<ns::name, ns::jt_##name##_string_struct>::unpackToken(to_type, context); \
+        return Internal::EnumHandler<ns::name, ns::js_##name##_string_struct>::unpackToken(to_type, context); \
     } \
     static inline void serializeToken(const ns::name &from_type, Token &token, Serializer &serializer) \
     { \
-        return Internal::EnumHandler<ns::name , ns::jt_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+        return Internal::EnumHandler<ns::name , ns::js_##name##_string_struct>::serializeToken(from_type, token, serializer); \
     } \
 }; \
 }
@@ -3625,7 +3625,7 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
     Error error = context.tokenizer.nextToken(context.token);
     if (error != JS::Error::NoError)
         return error;
-    auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
+    auto &members = Internal::JsonToolsBaseDummy<T,T>::js_static_meta_data_info();
     using MembersType = typename std::remove_reference<decltype(members)>::type;
 #if JS_HAVE_CONSTEXPR
     bool assigned_members[Internal::memberCount<T, 0>()];
@@ -3676,7 +3676,7 @@ void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer
     token.value_type = Type::ObjectStart;
     token.value = DataRef(objectStart);
     serializer.write(token);
-    auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
+    auto &members = Internal::JsonToolsBaseDummy<T,T>::js_static_meta_data_info();
     using MembersType = typename std::remove_reference<decltype(members)>::type;
     Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::serializeMembers(from_type, members, token, serializer, "");
     token.name.size = 0;
@@ -3871,7 +3871,7 @@ struct TypeHandler<double>
         //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
 		char buf[32];
 		int size;
-		size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%1.16e", d);
+		size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.16e", d);
 
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
@@ -3903,7 +3903,7 @@ struct TypeHandler<float>
     {
 		char buf[16];
 		int size;
-		size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%1.8e", f);
+		size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.8e", f);
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
             return;
@@ -3933,7 +3933,7 @@ struct TypeHandler<int32_t>
     static inline void serializeToken(const int32_t &d, Token &token, Serializer &serializer)
     {
         char buf[11];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -3964,7 +3964,7 @@ public:
     static void serializeToken(const uint32_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[12];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -3997,7 +3997,7 @@ public:
     {
         static_assert(sizeof(from_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
         char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%lld", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%lld", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -4030,7 +4030,7 @@ public:
     {
         static_assert(sizeof(from_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long int");
         char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%llu", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%llu", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -4086,7 +4086,7 @@ public:
     {
         static_assert(sizeof(from_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
         char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hd", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hd", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -4119,7 +4119,7 @@ public:
     {
         static_assert(sizeof(from_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long int");
         char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -4149,7 +4149,7 @@ public:
     static inline void serializeToken(const uint8_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[24];
-        int size = Internal::jt_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
