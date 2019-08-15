@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "assert.h"
-#include "json_tools.h"
+#include "json_struct.h"
 
 const char json[] = R"json({
     "func1" : {

@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "json_tools.h"
+#include "json_struct.h"
 #include "assert.h"
 #include <string>
 

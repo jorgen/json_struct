@@ -1,4 +1,4 @@
-include_directories(${JSON_TOOLS_INCLUDE_DIR})
+include_directories(${JSON_STRUCT_INCLUDE_DIR})
 
 include(CMakeRC.cmake)
 
@@ -30,15 +30,15 @@ add_executable(json-enum-test json-enum-test.cpp)
 add_executable(json-meta-test json-meta-test.cpp)
 add_executable(json-scope-test json-scope.cpp)
 add_executable(json-mias-mat-test json-mias-mat.cpp)
-add_executable(json-tools-performance json-tools-performance.cpp
+add_executable(json-struct-performance json-struct-performance.cpp
                 include/json/0.6/jsoncpp.cpp)
-add_executable(json-tools-diff json-tools-diff.cpp)
+add_executable(json-struct-diff json-struct-diff.cpp)
 add_executable(json-struct-external json-struct-external.cpp)
 add_executable(json-struct-fail json-struct-fail.cpp)
 add_executable(json-reformat json-reformat.cpp)
 target_link_libraries(json-reformat PRIVATE external_json::rc)
 
-target_include_directories(json-tools-performance PRIVATE include/json/0.6)
+target_include_directories(json-struct-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
 add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
 add_test(NAME json-tokenizer-test COMMAND json-tokenizer-test)
@@ -59,8 +59,8 @@ add_test(NAME json-enum-test COMMAND json-enum-test)
 add_test(NAME json-meta-test COMMAND json-meta-test)
 add_test(NAME json-scope-test COMMAND json-scope-test)
 add_test(NAME json-mias-mat-test COMMAND json-mias-mat-test)
-#add_test(NAME json-tools-performance COMMAND json-tools-performance)
-add_test(NAME json-tools-diff COMMAND json-tools-diff)
+#add_test(NAME json-struct-performance COMMAND json-struct-performance)
+add_test(NAME json-struct-diff COMMAND json-struct-diff)
 add_test(NAME json-struct-external COMMAND json-struct-external)
 add_test(NAME json-reformat COMMAND json-reformat)
 

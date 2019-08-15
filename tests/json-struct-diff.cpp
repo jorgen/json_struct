@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "json_tools_diff.h"
+#include "json_struct_diff.h"
 #include "assert.h"
 #include <memory>
 

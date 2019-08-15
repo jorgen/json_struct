@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <json_tools.h>
+#include "json_struct.h"
 #include "assert.h"
 
 JT_ENUM(Colors, Red , Green , Blue, Yellow4 ,
