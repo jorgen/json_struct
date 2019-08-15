@@ -1,1 +1,0 @@
- ../../tests/json-function-test.cpp -- -I ../../include -std=c++14

@@ -64,6 +64,3 @@ add_test(NAME json-tools-diff COMMAND json-tools-diff)
 add_test(NAME json-struct-external COMMAND json-struct-external)
 add_test(NAME json-reformat COMMAND json-reformat)
 
-if (ENABLE_EXTRACTOR)
-    add_subdirectory(extractor)
-endif()
