@@ -1,5 +1,5 @@
 #include <string>
-#include <json_tools.h>
+#include <json_struct.h>
 
 const char json[] = R"json(
 {
@@ -15,14 +15,14 @@ struct JsonData
     int number;
     bool boolean;
 
-    JT_STRUCT(JT_MEMBER(key),
-              JT_MEMBER(number),
-              JT_MEMBER(boolean));
+    JS_OBJECT(JS_MEMBER(key),
+              JS_MEMBER(number),
+              JS_MEMBER(boolean));
 };
 
 int main()
 {
-    JT::ParseContext parseContext(json);
+    JS::ParseContext parseContext(json);
     JsonData dataStruct;
     parseContext.parseTo(dataStruct);
 
