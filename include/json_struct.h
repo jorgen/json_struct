@@ -22,19 +22,19 @@
 
 /*! \file */
 
-/*! \mainpage json_tools
+/*! \mainpage json_struct
  *
- * json_tools is a set of classes meant for simple and efficient parse,
+ * json_struct is a set of classes meant for simple and efficient parse,
  * tokenize and validate json.
  *
- * json_tools support parsing json into a stream of tokens using the \ref
- * tokenizer "JT::Tokenizer" api, or parsing json into c++ structures using the
- * \ref jt_struct "JT_STRUCT" api.
+ * json_struct support parsing json into a stream of tokens using the \ref
+ * tokenizer "JS::Tokenizer" api, or parsing json into c++ structures using the
+ * \ref jt_struct "JS_STRUCT" api.
  */
 
-/*! \page tokenizer Parsing json using JT::Tokenizer
+/*! \page tokenizer Parsing json using JS::Tokenizer
  *
- * Tokenizing json JT::Tokenizer can be used to extract tokens
+ * Tokenizing json JS::Tokenizer can be used to extract tokens
  * from a json stream.  Tokens does not describe a full object, but only
  * key-value pairs. So a object would be: "some key" and object start. Then the
  * next token would be the first key value pair of that object. Then at some
@@ -54,7 +54,7 @@
  * Tokenizing json in this way allows you parse arbitrary large json data.
  * Also the tokenizer has mechanisms for asking for more data, making it easy
  * to stream json data. Using this interface to parse json is a bit verbose and
- * requires the application code to keep some extra state. json_tools also has
+ * requires the application code to keep some extra state. json_struct also has
  * functionality for parsing json data directly into c++ structures. This is
  * done by adding some metadata to the structure, or by adding a template
  * specialisation of a class.  \ref jt_struct "describes this" in more detail.
@@ -62,7 +62,7 @@
 
 /*! \example simple_tokenize.cpp
  *
- * This example show very basic usage of how JT::Tokenizer can be used
+ * This example show very basic usage of how JS::Tokenizer can be used
  */
 
 /*! \example simple_struct.cpp
@@ -79,38 +79,38 @@
  *
  * The two interesting sections here are the lines are the:
  * \code{.cpp}
- *    JT_STRUCT(JT_MEMBER(key),
- *              JT_MEMBER(number),
- *              JT_MEMBER(boolean));
+ *    JS_STRUCT(JS_MEMBER(key),
+ *              JS_MEMBER(number),
+ *              JS_MEMBER(boolean));
  * \endcode
  *
  * and
  *
  * \code{.cpp}
- *    JT::ParseContext parseContext(json);
+ *    JS::ParseContext parseContext(json);
  *    JsonData dataStruct;
  *    parseContext.parseTo(dataStruct);
  * \endcode
  *
- * The JT_STRUCT call inside the JsonData struct will create a nested struct
+ * The JS_STRUCT call inside the JsonData struct will create a nested struct
  * declaration inside the JsonData struct. This nested struct will expose some
  * meta data about the struct, exposing the names of the members at runtime.
- * json_tools can then use this runtime information to populate the struct.
+ * json_struct can then use this runtime information to populate the struct.
  *
- * Populating the struct is done by first creating a JT::ParseContext. The
- * JT::ParseContext contains a JT::Tokenizer. This tokenizer is what the actual
+ * Populating the struct is done by first creating a JS::ParseContext. The
+ * JS::ParseContext contains a JS::Tokenizer. This tokenizer is what the actual
  * state holder for the parsing. If allowing using '\n' instead of ',' to
  * seperate object and array elements, then this should be set on the
- * JT::Tokenizer.
+ * JS::Tokenizer.
  *
- * Since types will dictate the schema of the input json, the JT::ParseContext
+ * Since types will dictate the schema of the input json, the JS::ParseContext
  * will expose a list containing what members where not populated by the input
  * json, and what member in the input json that did not have any member to
  * populate.
 */
 
-#ifndef JSON_TOOLS_H
-#define JSON_TOOLS_H
+#ifndef JSON_STRUCT_H
+#define JSON_STRUCT_H
 
 #include <stddef.h>
 #include <functional>
@@ -123,37 +123,37 @@
 #include <assert.h>
 #include <atomic>
 
-#ifdef JT_UNORDERED_MAP_HANDLER
+#ifdef JS_UNORDERED_MAP_HANDLER
 #include <unordered_map>
 #endif
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4503)
 #if _MSC_VER > 1800
-#define JT_CONSTEXPR constexpr
-#define JT_HAVE_CONSTEXPR 1
+#define JS_CONSTEXPR constexpr
+#define JS_HAVE_CONSTEXPR 1
 #else
-#define JT_CONSTEXPR
-#define JT_HAVE_CONSTEXPR 0
+#define JS_CONSTEXPR
+#define JS_HAVE_CONSTEXPR 0
 #endif
 #else
-#define JT_CONSTEXPR constexpr
-#define JT_HAVE_CONSTEXPR 1
+#define JS_CONSTEXPR constexpr
+#define JS_HAVE_CONSTEXPR 1
 #endif
 
 #if defined(min) || defined(max)
 
-#error min or max macro is defined. Make sure these are not defined before including json_tools.h.\
+#error min or max macro is defined. Make sure these are not defined before including json_struct.h.\
  Use "#define NOMINMAX 1" before including Windows.h
 #endif
 
-#define JT_UNUSED(x) (void)(x)
+#define JS_UNUSED(x) (void)(x)
 
-#ifndef JT
-#define JT JT
+#ifndef JS
+#define JS JS
 #endif
 
-namespace JT {
+namespace JS {
 /*!
  *  \brief Pointer to data
  *
@@ -165,7 +165,7 @@ struct DataRef
     /*!
      * Constructs a null Dataref pointing to "" with size 0.
      */
-    JT_CONSTEXPR explicit DataRef()
+    JS_CONSTEXPR explicit DataRef()
         : data("")
         , size(0)
     {}
@@ -175,7 +175,7 @@ struct DataRef
      * \param data points to start of data.
      * \param size size of data.
      */
-    JT_CONSTEXPR explicit DataRef(const char *data, size_t size)
+    JS_CONSTEXPR explicit DataRef(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
@@ -186,7 +186,7 @@ struct DataRef
      * \param data  start of the data.
      */
     template <size_t N>
-    JT_CONSTEXPR explicit DataRef(const char (&data)[N])
+    JS_CONSTEXPR explicit DataRef(const char (&data)[N])
         : data(data)
         , size(N -1)
     {}
@@ -484,15 +484,15 @@ namespace Internal {
     
     struct ScopeCounter
     {
-        JT::Type type;
+        JS::Type type;
         uint16_t depth;
-        inline void handleType(JT::Type in_type)
+        inline void handleType(JS::Type in_type)
         {
-            if (type == JT::Type::ArrayStart || type == JT::Type::ObjectStart)
+            if (type == JS::Type::ArrayStart || type == JS::Type::ObjectStart)
             {
                 if (in_type == type)
                     depth++;
-                else if (in_type == JT::Type(static_cast<int>(type)+1))
+                else if (in_type == JS::Type(static_cast<int>(type)+1))
                     depth--;
             } else {
                 depth--;
@@ -542,9 +542,9 @@ public:
     void copyFromValue(const Token &token, std::string &to_buffer);
     void copyIncludingValue(const Token &token, std::string &to_buffer);
 
-    void pushScope(JT::Type type);
+    void pushScope(JS::Type type);
     void popScope();
-    JT::Error goToEndOfScope(JT::Token &token);
+    JS::Error goToEndOfScope(JS::Token &token);
 
     std::string makeErrorString() const;
     void setErrorContextConfig(size_t lineContext, size_t rangeContext);
@@ -771,7 +771,7 @@ inline ReleaseCBRef Tokenizer::registerReleaseCallback(std::function<void(const 
 inline Error Tokenizer::nextToken(Token &next_token)
 {
     assert(!scope_counter.size() ||
-            (scope_counter.back().type != JT::Type::ArrayEnd && scope_counter.back().type != JT::Type::ObjectEnd));
+            (scope_counter.back().type != JS::Type::ArrayEnd && scope_counter.back().type != JS::Type::ObjectEnd));
     if (scope_counter.size() && scope_counter.back().depth == 0)
     {
         return Error::ScopeHasEnded;
@@ -815,18 +815,18 @@ inline Error Tokenizer::nextToken(Token &next_token)
     }
 
     continue_after_need_more_data = error == Error::NeedMoreData;
-    if (error == JT::Error::NoError)
+    if (error == JS::Error::NoError)
     {
         if (next_token.value_type == Type::ArrayStart || next_token.value_type == Type::ObjectStart)
             container_stack.push_back(next_token.value_type);
         if (next_token.value_type == Type::ArrayEnd)
         {
-            assert(container_stack.size() && container_stack.back() == JT::Type::ArrayStart);
+            assert(container_stack.size() && container_stack.back() == JS::Type::ArrayStart);
             container_stack.pop_back();
         }
         if (next_token.value_type == Type::ObjectEnd)
         {
-            assert(container_stack.size() && container_stack.back() == JT::Type::ObjectStart);
+            assert(container_stack.size() && container_stack.back() == JS::Type::ObjectStart);
             container_stack.pop_back();
         }
         if (scope_counter.size())
@@ -878,7 +878,7 @@ inline void Tokenizer::copyIncludingValue(const Token &, std::string &to_buffer)
     copy_buffers.erase(it);
 }
 
-inline void Tokenizer::pushScope(JT::Type type)
+inline void Tokenizer::pushScope(JS::Type type)
 {
     scope_counter.push_back({type, 1});
     if (type != Type::ArrayStart && type != Type::ObjectStart)
@@ -891,10 +891,10 @@ inline void Tokenizer::popScope()
     scope_counter.pop_back(); 
 }
 
-inline JT::Error Tokenizer::goToEndOfScope(JT::Token &token)
+inline JS::Error Tokenizer::goToEndOfScope(JS::Token &token)
 {
-    JT::Error error = JT::Error::NoError;
-    while (scope_counter.back().depth && error == JT::Error::NoError)
+    JS::Error error = JS::Error::NoError;
+    while (scope_counter.back().depth && error == JS::Error::NoError)
     {
         error = nextToken(token);
     }
@@ -1775,7 +1775,7 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
-static JT::Error reformat(const char *data, size_t size, std::string &out, const SerializerOptions &options = SerializerOptions())
+static JS::Error reformat(const char *data, size_t size, std::string &out, const SerializerOptions &options = SerializerOptions())
 {
     Token token;
     Tokenizer tokenizer;
@@ -1886,7 +1886,7 @@ struct Tuple
 
         using Seq = typename Internal::GenSequence<sizeof...(Ts)>::type;
         Internal::TupleImpl<Seq, Ts...> impl;
-        static JT_CONSTEXPR const size_t size = sizeof...(Ts);
+        static JS_CONSTEXPR const size_t size = sizeof...(Ts);
 
         template<size_t Index>
         const typename TypeAt<Index, Ts...>::type &get() const
@@ -1930,7 +1930,7 @@ struct TypeAt<I, Tuple<Ts...>>
 template<>
 struct Tuple<>
 {
-        static JT_CONSTEXPR const size_t size = 0;
+        static JS_CONSTEXPR const size_t size = 0;
 };
 
 template<typename ...Ts>
@@ -2041,7 +2041,7 @@ struct JsonObjectOrArray
 
 struct JsonTokens
 {
-    std::vector<JT::Token> data;
+    std::vector<JS::Token> data;
 };
 
 struct JsonMeta
@@ -2075,7 +2075,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
         for (size_t parent_index : parent) {
             meta[parent_index].size++;
         }
-        const JT::Token &token = tokens.data.at(i);
+        const JS::Token &token = tokens.data.at(i);
         if (token.value_type == Type::ArrayEnd
             || token.value_type == Type::ObjectEnd)
         {
@@ -2099,7 +2099,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
             meta.push_back(JsonMeta(i, token.value_type == Type::ArrayStart));
             parent.push_back(meta.size()-1);
         }
-        else if (token.value_type != JT::Type::ArrayEnd && token.value_type != JT::Type::ObjectEnd)
+        else if (token.value_type != JS::Type::ArrayEnd && token.value_type != JS::Type::ObjectEnd)
         {
             for (size_t parent_index : parent) {
                 meta[parent_index].has_data = true;
@@ -2136,19 +2136,19 @@ struct IsOptionalType {
     typedef char no[2];
 
     template <typename C>
-    static JT_CONSTEXPR yes& test_in_optional(typename C::IsOptionalType*);
+    static JS_CONSTEXPR yes& test_in_optional(typename C::IsOptionalType*);
 
     template <typename>
-    static JT_CONSTEXPR no& test_in_optional(...);
+    static JS_CONSTEXPR no& test_in_optional(...);
 
-    static JT_CONSTEXPR const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
+    static JS_CONSTEXPR const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
 };
 
 /// \private
 template <typename T>
 struct IsOptionalType<std::unique_ptr<T>>
 {
-    static JT_CONSTEXPR const bool value = true;
+    static JS_CONSTEXPR const bool value = true;
 };
 
 struct ParseContext
@@ -2185,33 +2185,33 @@ struct ParseContext
     bool allow_unnasigned_required__members = true;
 };
 
-/*! \def JT_MEMBER
+/*! \def JS_MEMBER
  *
  * Create meta information of the member with the same name as
  * the member.
  */
-/*! \def JT_MEMBER_ALIASES
+/*! \def JS_MEMBER_ALIASES
  *
  * Create meta information where the primary name is the same as the member and
  * the subsequent names are aliases.
  */
-/*! \def JT_MEMBER_WITH_NAME
+/*! \def JS_MEMBER_WITH_NAME
  *
  * Create meta information where the primary name is argument name, and the subsequent
  * names are aliases.
  */
-/*! \def JT_MEMBER_WITH_NAME_AND_ALIASES
+/*! \def JS_MEMBER_WITH_NAME_AND_ALIASES
  *
  * Creates meta information where the primary name is argument name, a
  * and subsequent names are aliases
  */
 
-/*! \def JT_SUPER_CLASS
+/*! \def JS_SUPER_CLASS
  *
- * Creates superclass meta data which is used inside the JT_SUPER_CLASSES macro
+ * Creates superclass meta data which is used inside the JS_SUPER_CLASSES macro
  */
 
-/*! \def JT_SUPER_CLASSES
+/*! \def JS_SUPER_CLASSES
  *
  * Macro to contain the super class definitions
  */
@@ -2224,84 +2224,84 @@ struct HasJsonToolsBase {
     typedef char no[2];
 
     template <typename C>
-        static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
+        static JS_CONSTEXPR yes& test_in_base(typename C::template JsonToolsBase<C>*);
 
     template <typename>
-        static JT_CONSTEXPR no& test_in_base(...);
+        static JS_CONSTEXPR no& test_in_base(...);
 };
 
-template<typename JT_BASE_STRUCT_T, typename JT_STRUCT_T>
+template<typename JS_BASE_STRUCT_T, typename JS_STRUCT_T>
 struct JsonToolsBaseDummy
 {
-    static_assert(sizeof(HasJsonToolsBase<JT_STRUCT_T>::template test_in_base<JT_STRUCT_T>(nullptr)) == sizeof(typename HasJsonToolsBase<JT_STRUCT_T>::yes), "Missing JT_STRUCT JT_STRUCT_EXTERNAL or TypeHandler specialisation\n");
-    using TT = typename std::remove_reference<decltype(JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_data_info())>::type;
-    using ST = typename std::remove_reference<decltype(JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_super_info())>::type;
+    static_assert(sizeof(HasJsonToolsBase<JS_STRUCT_T>::template test_in_base<JS_STRUCT_T>(nullptr)) == sizeof(typename HasJsonToolsBase<JS_STRUCT_T>::yes), "Missing JS_STRUCT JS_STRUCT_EXTERNAL or TypeHandler specialisation\n");
+    using TT = typename std::remove_reference<decltype(JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_data_info())>::type;
+    using ST = typename std::remove_reference<decltype(JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_super_info())>::type;
     static const TT &jt_static_meta_data_info()
     {
-        return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_data_info();
+        return JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_data_info();
     }
 
     static const ST &jt_static_meta_super_info()
     {
-        return JT_STRUCT_T::template JsonToolsBase<JT_STRUCT_T>::jt_static_meta_super_info();
+        return JS_STRUCT_T::template JsonToolsBase<JS_STRUCT_T>::jt_static_meta_super_info();
     }
 };
 }
 
-#define JT_MEMBER(member) JT::makeMemberInfo(#member, &JT_STRUCT_T::member)
-#define JT_MEMBER_ALIASES(member, ...) JT::makeMemberInfo(#member, &JT_STRUCT_T::member, __VA_ARGS__)
-#define JT_MEMBER_WITH_NAME(member, name) JT::makeMemberInfo(name, &JT_STRUCT_T::member)
-#define JT_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JT::makeMemberInfo(name, &JT_STRUCT_T::member, __VA_ARGS__)
+#define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_STRUCT_T::member)
+#define JS_MEMBER_ALIASES(member, ...) JS::makeMemberInfo(#member, &JS_STRUCT_T::member, __VA_ARGS__)
+#define JS_MEMBER_WITH_NAME(member, name) JS::makeMemberInfo(name, &JS_STRUCT_T::member)
+#define JS_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JS::makeMemberInfo(name, &JS_STRUCT_T::member, __VA_ARGS__)
 
-#define JT_SUPER_CLASS(super) JT::Internal::SuperInfo<super>(JT::DataRef(#super))
+#define JS_SUPER_CLASS(super) JS::Internal::SuperInfo<super>(JS::DataRef(#super))
 
-#define JT_SUPER_CLASSES(...) JT::makeTuple(__VA_ARGS__)
+#define JS_SUPER_CLASSES(...) JS::makeTuple(__VA_ARGS__)
 
-#define JT_STRUCT(...) \
-    template<typename JT_STRUCT_T> \
+#define JS_STRUCT(...) \
+    template<typename JS_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
        static const TT &jt_static_meta_data_info() \
-       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::makeTuple(); return ret; } \
+       { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JS::makeTuple(); return ret; } \
     }
 
-#define JT_STRUCT_WITH_SUPER(super_list, ...) \
-    template<typename JT_STRUCT_T> \
+#define JS_STRUCT_WITH_SUPER(super_list, ...) \
+    template<typename JS_STRUCT_T> \
     struct JsonToolsBase \
     { \
-       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
        static const TT &jt_static_meta_data_info() \
-       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+       { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     }
 
-#define JT_STRUCT_EXTERNAL(Type, ...) \
-    namespace JT {\
+#define JS_STRUCT_EXTERNAL(Type, ...) \
+    namespace JS {\
     namespace Internal {\
-    template<typename JT_STRUCT_T> \
-    struct JsonToolsBaseDummy<Type, JT_STRUCT_T> \
+    template<typename JS_STRUCT_T> \
+    struct JsonToolsBaseDummy<Type, JS_STRUCT_T> \
     { \
-        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
         static const TT &jt_static_meta_data_info() \
-          { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::makeTuple(); return ret; } \
+          { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JS::makeTuple(); return ret; } \
     };\
     }}
 
-#define JT_STRUCT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
-    namespace JT {\
+#define JS_STRUCT_EXTERNAL_WITH_SUPER(Type,super_list, ...) \
+    namespace JS {\
     namespace Internal {\
-    template<typename JT_STRUCT_T> \
-    struct JsonToolsBaseDummy<Type, JT_STRUCT_T> \
+    template<typename JS_STRUCT_T> \
+    struct JsonToolsBaseDummy<Type, JS_STRUCT_T> \
     { \
-        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
         static const TT &jt_static_meta_data_info() \
-          { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+          { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     };\
@@ -2335,7 +2335,7 @@ namespace Internal {
 }
 
 template<typename T, typename U, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
+JS_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
 {
     return { {DataRef(name), DataRef(aliases)... }, member };
 }
@@ -2355,7 +2355,7 @@ namespace Internal {
         {
             if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
             {
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
                 assigned_members[index] = true;
 #endif
                 return TypeHandler<MI_T>::unpackToken(to_type.*memberInfo.member, context);
@@ -2364,7 +2364,7 @@ namespace Internal {
             for (size_t start = 1; start < MI_NC; start++) {
                 if (memberInfo.name[start].size == context.token.name.size && memcmp(memberInfo.name[start].data, context.token.name.data, context.token.name.size) == 0)
                 {
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
                     assigned_members[index] = true;
 #endif
                     return TypeHandler<MI_T>::unpackToken(to_type.*memberInfo.member, context);
@@ -2377,7 +2377,7 @@ namespace Internal {
     template<typename MI_T, typename MI_M, size_t MI_NC>
     inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
     {
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
         if (assigned_members[index])
             return Error::NoError;
         if (IsOptionalType<MI_T>::value)
@@ -2395,7 +2395,7 @@ namespace Internal {
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
     inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, Token &token, Serializer &serializer, const char *super_name)
     {
-        JT_UNUSED(super_name);
+        JS_UNUSED(super_name);
         token.name.data = memberInfo.name[0].data;
         token.name.size = memberInfo.name[0].size;
         token.name_type = Type::Ascii;
@@ -2408,7 +2408,7 @@ namespace Internal {
     {
         static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members);
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members);
-        static JT_CONSTEXPR size_t membersInSuperClasses();
+        static JS_CONSTEXPR size_t membersInSuperClasses();
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer);
     };
 
@@ -2425,7 +2425,7 @@ namespace Internal {
             return SuperClassHandler<T, PAGE, SIZE - 1>::verifyMembers(assigned_members, missing_members);
         }
 
-        static JT_CONSTEXPR size_t membersInSuperClasses()
+        static JS_CONSTEXPR size_t membersInSuperClasses()
         {
             return SuperClassHandler<T, PAGE, SIZE - 1>::membersInSuperClasses();
         }
@@ -2437,7 +2437,7 @@ namespace Internal {
     };
 
     template<typename T, size_t PAGE>
-    JT_CONSTEXPR size_t memberCount()
+    JS_CONSTEXPR size_t memberCount()
     {
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_data_info())>::type;
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
@@ -2449,30 +2449,30 @@ namespace Internal {
     {
         static Error start(T &to_type, ParseContext &context, bool primary, bool *assigned)
         {
-            JT_UNUSED(to_type);
-            JT_UNUSED(context);
-            JT_UNUSED(primary);
-            JT_UNUSED(assigned);
+            JS_UNUSED(to_type);
+            JS_UNUSED(context);
+            JS_UNUSED(primary);
+            JS_UNUSED(assigned);
             return Error::MissingPropertyMember;
         }
 
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members)
         {
-            JT_UNUSED(assigned_members);
-            JT_UNUSED(missing_members);
+            JS_UNUSED(assigned_members);
+            JS_UNUSED(missing_members);
             return Error::NoError;
         }
 
-        static JT_CONSTEXPR size_t membersInSuperClasses()
+        static JS_CONSTEXPR size_t membersInSuperClasses()
         {
             return 0;
         }
 
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
         {
-            JT_UNUSED(from_type);
-            JT_UNUSED(token);
-            JT_UNUSED(serializer);
+            JS_UNUSED(from_type);
+            JS_UNUSED(token);
+            JS_UNUSED(serializer);
         }
     };
 
@@ -2539,13 +2539,13 @@ namespace Internal {
     Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
     {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
-        using Super = typename JT::TypeAt<INDEX, SuperMeta>::type::type;
+        using Super = typename JS::TypeAt<INDEX, SuperMeta>::type::type;
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
         auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
         return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
 #else
         return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
@@ -2561,7 +2561,7 @@ namespace Internal {
         auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
         Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
 #else
         Error superError = SuperClassHandler<T, PAGE, INDEX - 1>::verifyMembers(assigned_members, missing_members);
@@ -2572,11 +2572,11 @@ namespace Internal {
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
-    size_t JT_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
+    size_t JS_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
     {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
         return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
 #else
         return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE, INDEX - 1>::membersInSuperClasses();
@@ -2591,7 +2591,7 @@ namespace Internal {
         using Members = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info())>::type;
         auto &members = Internal::template JsonToolsBaseDummy<Super,Super>::jt_static_meta_data_info();
         MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
 #else
         SuperClassHandler<T, PAGE, INDEX - 1>::serializeMembers(from_type, token, serializer);
@@ -2618,7 +2618,7 @@ namespace Internal {
             const char *super_name = Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
-        JT_CONSTEXPR static size_t membersInSuperClasses()
+        JS_CONSTEXPR static size_t membersInSuperClasses()
         {
             using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonToolsBaseDummy<T,T>::jt_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
@@ -2682,7 +2682,7 @@ template<typename T>
 inline void ParseContext::parseTo(T &to_type)
 {
     error = tokenizer.nextToken(token);
-    if (error != JT::Error::NoError)
+    if (error != JS::Error::NoError)
         return;
     error = TypeHandler<T>::unpackToken(to_type, *this);
 }
@@ -2714,8 +2714,8 @@ struct SerializerContext
     template<typename T>
     void serialize(const T &type)
     {
-        JT::Token token;
-        JT::TypeHandler<T>::serializeToken(type, token, serializer);
+        JS::Token token;
+        JS::TypeHandler<T>::serializeToken(type, token, serializer);
         flush();
     }
 
@@ -2763,7 +2763,7 @@ struct TypeHandler<Error>
     {
 		(void)to_type;
 		(void)context;
-//		if (context.token.value_type == JT::Type::Number) {
+//		if (context.token.value_type == JS::Type::Number) {
 //			int x;
 //			Error error = TypeHandler<int>::unpackToken(x, context);
 //			for (int i = 0; i < )
@@ -2771,7 +2771,7 @@ struct TypeHandler<Error>
 
 //        size_t level = 1;
 //        Error error = Error::NoError;
-//        while (error == JT::Error::NoError && level) {
+//        while (error == JS::Error::NoError && level) {
 //            error = context.nextToken();
 //            if (context.token.value_type == Type::ObjectStart)
 //                level++;
@@ -2786,8 +2786,8 @@ struct TypeHandler<Error>
 
     static inline void serializeToken(const Error &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::String;
-        if (from_type < JT::Error::UserDefinedErrors)
+        token.value_type = JS::Type::String;
+        if (from_type < JS::Error::UserDefinedErrors)
         {
             token.value = DataRef(Internal::error_strings[(int)from_type]);
         }
@@ -2812,14 +2812,14 @@ struct CallFunctionExecutionState
     SilentVector<std::string> missing_members;
     SilentVector<std::string> unassigned_required_members;
     SilentVector<CallFunctionExecutionState> child_states;
-    JT_STRUCT(
-            JT_MEMBER(name),
-            JT_MEMBER(context),
-            JT_MEMBER(error),
-            JT_MEMBER(error_string),
-            JT_MEMBER(missing_members),
-            JT_MEMBER(unassigned_required_members),
-            JT_MEMBER(child_states)
+    JS_STRUCT(
+            JS_MEMBER(name),
+            JS_MEMBER(context),
+            JS_MEMBER(error),
+            JS_MEMBER(error_string),
+            JS_MEMBER(missing_members),
+            JS_MEMBER(unassigned_required_members),
+            JS_MEMBER(child_states)
             );
 };
 
@@ -2942,42 +2942,42 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...},   function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JT_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
+JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
 {
     return{ {DataRef(name), DataRef(aliases)...}, function };
 }
@@ -2989,79 +2989,79 @@ struct HasJsonToolsFunctionContainer {
     typedef char no[2];
 
     template <typename C>
-        static JT_CONSTEXPR yes& test_in_base(typename C::template JsonToolsFunctionContainer<C>*);
+        static JS_CONSTEXPR yes& test_in_base(typename C::template JsonToolsFunctionContainer<C>*);
 
     template <typename>
-        static JT_CONSTEXPR no& test_in_base(...);
+        static JS_CONSTEXPR no& test_in_base(...);
 };
 
-template<typename JT_BASE_CONTAINER_STRUCT_T, typename JT_CONTAINER_STRUCT_T>
+template<typename JS_BASE_CONTAINER_STRUCT_T, typename JS_CONTAINER_STRUCT_T>
 struct JsonToolsFunctionContainerDummy
 {
-    using TT = typename std::remove_reference<decltype(JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_functions_info())>::type;
-    using ST = typename std::remove_reference<decltype(JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_super_info())>::type;
+    using TT = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_functions_info())>::type;
+    using ST = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_super_info())>::type;
     static const TT &jt_static_meta_functions_info()
     {
-        return JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_functions_info();
+        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_functions_info();
     }
 
     static const ST &jt_static_meta_super_info()
     {
-        return JT_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JT_CONTAINER_STRUCT_T>::jt_static_meta_super_info();
+        return JS_CONTAINER_STRUCT_T::template JsonToolsFunctionContainer<JS_CONTAINER_STRUCT_T>::jt_static_meta_super_info();
     }
 };
 
 }
 
-#define JT_FUNCTION(name) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name)
-#define JT_FUNCTION_ALIASES(name, ...) JT::makeFunctionInfo(#name, &JT_CONTAINER_STRUCT_T::name, __VA_ARGS__)
-#define JT_FUNCTION_WITH_NAME(member, name) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member)
-#define JT_FUNCTION_WITH_NAME_ALIASES(member, name, ...) JT::makeFunctionInfo(name, &JT_CONTAINER_STRUCT_T::member, __VA_ARGS__)
-#define JT_FUNCTION_CONTAINER(...) \
-    template<typename JT_CONTAINER_STRUCT_T> \
+#define JS_FUNCTION(name) JS::makeFunctionInfo(#name, &JS_CONTAINER_STRUCT_T::name)
+#define JS_FUNCTION_ALIASES(name, ...) JS::makeFunctionInfo(#name, &JS_CONTAINER_STRUCT_T::name, __VA_ARGS__)
+#define JS_FUNCTION_WITH_NAME(member, name) JS::makeFunctionInfo(name, &JS_CONTAINER_STRUCT_T::member)
+#define JS_FUNCTION_WITH_NAME_ALIASES(member, name, ...) JS::makeFunctionInfo(name, &JS_CONTAINER_STRUCT_T::member, __VA_ARGS__)
+#define JS_FUNCTION_CONTAINER(...) \
+    template<typename JS_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
         static const TT &jt_static_meta_functions_info() \
-        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::makeTuple(); return ret; } \
+        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JS::makeTuple(); return ret; } \
     }
 
-#define JT_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
-    template<typename JT_CONTAINER_STRUCT_T> \
+#define JS_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) \
+    template<typename JS_CONTAINER_STRUCT_T> \
     struct JsonToolsFunctionContainer \
     { \
-       using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+       using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
        static const TT &jt_static_meta_functions_info() \
-       { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+       { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
        static const decltype(super_list) &jt_static_meta_super_info() \
        { static auto ret = super_list; return ret; } \
     }
 
-#define JT_FUNCTION_CONTAINER_EXTERNAL(Type, ...) \
-    namespace JT { \
+#define JS_FUNCTION_CONTAINER_EXTERNAL(Type, ...) \
+    namespace JS { \
     namespace Internal { \
-    template<typename JT_CONTAINER_STRUCT_T> \
-    struct JsonToolsFunctionContainerDummy<Type, JT_CONTAINER_STRUCT_T> \
+    template<typename JS_CONTAINER_STRUCT_T> \
+    struct JsonToolsFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T> \
     { \
-        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
         static const TT &jt_static_meta_functions_info() \
-        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
-       static const decltype(JT::makeTuple()) &jt_static_meta_super_info() \
-       { static auto ret = JT::makeTuple(); return ret; } \
+        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
+       static const decltype(JS::makeTuple()) &jt_static_meta_super_info() \
+       { static auto ret = JS::makeTuple(); return ret; } \
     }; \
     }}
 
-#define JT_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(Type, super_list, ...) \
-    namespace JT { \
+#define JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(Type, super_list, ...) \
+    namespace JS { \
     namespace Internal { \
-    template<typename JT_CONTAINER_STRUCT_T> \
-    struct JsonToolsFunctionContainerDummy<Type, JT_CONTAINER_STRUCT_T> \
+    template<typename JS_CONTAINER_STRUCT_T> \
+    struct JsonToolsFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T> \
     { \
-        using TT = decltype(JT::makeTuple(__VA_ARGS__)); \
+        using TT = decltype(JS::makeTuple(__VA_ARGS__)); \
         static const TT &jt_static_meta_functions_info() \
-        { static auto ret = JT::makeTuple(__VA_ARGS__); return ret; } \
+        { static auto ret = JS::makeTuple(__VA_ARGS__); return ret; } \
         static const decltype(super_list) &jt_static_meta_super_info() \
         { static auto ret = super_list; return ret; } \
     }; \
@@ -3317,9 +3317,9 @@ namespace Internal {
     {
         static Error callFunction(T &container, CallFunctionContext &context, bool primary)
         {
-            JT_UNUSED(container);
-            JT_UNUSED(context);
-            JT_UNUSED(primary);
+            JS_UNUSED(container);
+            JS_UNUSED(context);
+            JS_UNUSED(primary);
             return Error::MissingFunction;
         }
     };
@@ -3423,14 +3423,14 @@ inline Error CallFunctionContext::callFunctions(T &container)
 {
     beforeCallFunctions();
     Internal::RAICallFunctionOnExit callOnExit(*this, &CallFunctionContext::afterCallFunctions);
-    JT::Error error = parse_context.nextToken();
-    if (error != JT::Error::NoError)
+    JS::Error error = parse_context.nextToken();
+    if (error != JS::Error::NoError)
         return error;
-    if (parse_context.token.value_type != JT::Type::ObjectStart) {
+    if (parse_context.token.value_type != JS::Type::ObjectStart) {
         return error_context.setError(Error::ExpectedObjectStart, "Can only call functions on objects with members");
     }
     error = parse_context.nextToken();
-    if (error != JT::Error::NoError)
+    if (error != JS::Error::NoError)
         return error;
     Token token;
     token.value_type = Type::ArrayStart;
@@ -3439,7 +3439,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
     return_serializer.write(token);
     auto &functions = Internal::JsonToolsFunctionContainerDummy<T,T>::jt_static_meta_functions_info();
     using FunctionsType	 = typename std::remove_reference<decltype(functions)>::type;
-    while (parse_context.token.value_type != JT::Type::ObjectEnd)
+    while (parse_context.token.value_type != JS::Type::ObjectEnd)
     {
         parse_context.tokenizer.pushScope(parse_context.token.value_type);
         execution_list.push_back(CallFunctionExecutionState(std::string(parse_context.token.name.data, parse_context.token.name.size)));
@@ -3460,7 +3460,7 @@ inline Error CallFunctionContext::callFunctions(T &container)
             return error;
 
         error = parse_context.nextToken();
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
     }
     
@@ -3560,9 +3560,9 @@ namespace Internal {
         }
     }
 }
-} //JT namespace
+} //JS namespace
 
-#define JT_ENUM(name, ...) \
+#define JS_ENUM(name, ...) \
 enum class name \
 { \
     __VA_ARGS__ \
@@ -3572,19 +3572,19 @@ struct jt_##name##_string_struct \
     template <size_t N> \
     explicit jt_##name##_string_struct(const char(&data)[N]) \
     { \
-        JT::Internal::populateEnumNames(_strings, data); \
+        JS::Internal::populateEnumNames(_strings, data); \
     } \
-    std::vector<JT::DataRef> _strings; \
+    std::vector<JS::DataRef> _strings; \
     \
-    static const std::vector<JT::DataRef> & strings() \
+    static const std::vector<JS::DataRef> & strings() \
     { \
         static jt_##name##_string_struct ret(#__VA_ARGS__); \
         return ret._strings; \
     } \
 }; \
 
-#define JT_ENUM_DECLARE_STRING_PARSER(name) \
-namespace JT { \
+#define JS_ENUM_DECLARE_STRING_PARSER(name) \
+namespace JS { \
 template<> \
 struct TypeHandler<name> \
 { \
@@ -3599,8 +3599,8 @@ struct TypeHandler<name> \
 }; \
 }
 
-#define JT_ENUM_NAMESPACE_DECLARE_STRING_PARSER(ns, name) \
-namespace JT { \
+#define JS_ENUM_NAMESPACE_DECLARE_STRING_PARSER(ns, name) \
+namespace JS { \
 template<> \
 struct TypeHandler<ns::name> \
 { \
@@ -3615,25 +3615,25 @@ struct TypeHandler<ns::name> \
 }; \
 }
 
-namespace JT
+namespace JS
 {
 template <typename T>
 inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
 {
-    if (context.token.value_type != JT::Type::ObjectStart)
+    if (context.token.value_type != JS::Type::ObjectStart)
         return Error::ExpectedObjectStart;
     Error error = context.tokenizer.nextToken(context.token);
-    if (error != JT::Error::NoError)
+    if (error != JS::Error::NoError)
         return error;
     auto &members = Internal::JsonToolsBaseDummy<T,T>::jt_static_meta_data_info();
     using MembersType = typename std::remove_reference<decltype(members)>::type;
-#if JT_HAVE_CONSTEXPR
+#if JS_HAVE_CONSTEXPR
     bool assigned_members[Internal::memberCount<T, 0>()];
     memset(assigned_members, 0, sizeof(assigned_members));
 #else
     bool *assigned_members = nullptr;
 #endif
-    while(context.token.value_type != JT::Type::ObjectEnd)
+    while(context.token.value_type != JS::Type::ObjectEnd)
     {
         std::string token_name(context.token.name.data, context.token.name.size);
         error = Internal::MemberChecker<T, MembersType, 0 ,MembersType::size - 1>::unpackMembers(to_type, members, context, true, assigned_members);
@@ -4264,21 +4264,21 @@ struct TypeHandler<std::vector<T>>
 public:
     static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ArrayStart)
+        if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
         Error error = context.nextToken();
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
         to_type.clear();
         to_type.reserve(10);
-        while(context.token.value_type != JT::Type::ArrayEnd)
+        while(context.token.value_type != JS::Type::ArrayEnd)
         {
             to_type.push_back(T());
             error = TypeHandler<T>::unpackToken(to_type.back(), context);
-            if (error != JT::Error::NoError)
+            if (error != JS::Error::NoError)
                 break;
             error = context.nextToken();
-            if (error != JT::Error::NoError)
+            if (error != JS::Error::NoError)
                 break;
         }
 
@@ -4313,23 +4313,23 @@ public:
     public:
         static inline Error unpackToken(std::vector<bool> &to_type, ParseContext &context)
         {
-            if (context.token.value_type != JT::Type::ArrayStart)
+            if (context.token.value_type != JS::Type::ArrayStart)
                 return Error::ExpectedArrayStart;
             Error error = context.nextToken();
-            if (error != JT::Error::NoError)
+            if (error != JS::Error::NoError)
                 return error;
             to_type.clear();
             to_type.reserve(10);
-            while(context.token.value_type != JT::Type::ArrayEnd)
+            while(context.token.value_type != JS::Type::ArrayEnd)
             {
                 
                 bool toBool;
                 error = TypeHandler<bool>::unpackToken(toBool, context);
                 to_type.push_back(toBool);
-                if (error != JT::Error::NoError)
+                if (error != JS::Error::NoError)
                     break;
                 error = context.nextToken();
-                if (error != JT::Error::NoError)
+                if (error != JS::Error::NoError)
                     break;
             }
             
@@ -4416,8 +4416,8 @@ struct TypeHandler<std::vector<Token>>
 public:
     static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ArrayStart &&
-                context.token.value_type != JT::Type::ObjectStart)
+        if (context.token.value_type != JS::Type::ArrayStart &&
+                context.token.value_type != JS::Type::ObjectStart)
         {
             to_type.push_back(context.token);
             return context.error;
@@ -4425,15 +4425,15 @@ public:
         to_type.clear();
         to_type.push_back(context.token);
         bool buffer_change = false;
-        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer)
         {
-            JT_UNUSED(tokenizer);
+            JS_UNUSED(tokenizer);
             buffer_change = true;
         });
 
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level && buffer_change == false) {
+        while (error == JS::Error::NoError && level && buffer_change == false) {
             error = context.nextToken();
             to_type.push_back(context.token);
             if (context.token.value_type == Type::ArrayStart || context.token.value_type == Type::ObjectStart)
@@ -4477,13 +4477,13 @@ struct TypeHandler<JsonArrayRef>
 {
     static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ArrayStart)
+        if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
 
         bool buffer_change = false;
-        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer)
                                                                   {
-                                                                  JT_UNUSED(tokenizer);
+                                                                  JS_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
@@ -4491,7 +4491,7 @@ struct TypeHandler<JsonArrayRef>
 
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level && buffer_change == false) {
+        while (error == JS::Error::NoError && level && buffer_change == false) {
             error = context.nextToken();
             if (context.token.value_type == Type::ArrayStart)
                 level++;
@@ -4520,14 +4520,14 @@ struct TypeHandler<JsonArray>
 {
     static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ArrayStart)
+        if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
 
         context.tokenizer.copyFromValue(context.token, to_type.data);
 
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level) {
+        while (error == JS::Error::NoError && level) {
             error = context.nextToken();
             if (context.token.value_type == Type::ArrayStart)
                 level++;
@@ -4535,7 +4535,7 @@ struct TypeHandler<JsonArray>
                 level--;
         }
 
-        if (error == JT::Error::NoError)
+        if (error == JS::Error::NoError)
             context.tokenizer.copyIncludingValue(context.token, to_type.data);
 
         return error;
@@ -4543,7 +4543,7 @@ struct TypeHandler<JsonArray>
 
     static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {
@@ -4564,20 +4564,20 @@ template<>
 struct TypeHandler<JsonObjectRef> {
     static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ObjectStart)
+        if (context.token.value_type != JS::Type::ObjectStart)
             return Error::ExpectedObjectStart;
 
         bool buffer_change = false;
-        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer)
                                                                   {
-                                                                  JT_UNUSED(tokenizer);
+                                                                  JS_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
         to_type.ref.data = context.token.value.data;
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level && buffer_change == false) {
+        while (error == JS::Error::NoError && level && buffer_change == false) {
             error = context.nextToken();
             if (context.token.value_type == Type::ObjectStart)
                 level++;
@@ -4605,14 +4605,14 @@ struct TypeHandler<JsonObject>
 {
     static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ObjectStart)
+        if (context.token.value_type != JS::Type::ObjectStart)
             return Error::ExpectedObjectStart;
 
         context.tokenizer.copyFromValue(context.token, to_type.data);
 
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level) {
+        while (error == JS::Error::NoError && level) {
             error = context.nextToken();
             if (context.token.value_type == Type::ObjectStart)
                 level++;
@@ -4627,7 +4627,7 @@ struct TypeHandler<JsonObject>
 
     static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {
@@ -4648,33 +4648,33 @@ template<>
 struct TypeHandler<JsonObjectOrArrayRef> {
     static inline Error unpackToken(JsonObjectOrArrayRef &to_type, ParseContext &context)
     {
-        JT::Type openType;
-        JT::Type closeType;
-        if (context.token.value_type == JT::Type::ObjectStart)
+        JS::Type openType;
+        JS::Type closeType;
+        if (context.token.value_type == JS::Type::ObjectStart)
         {
-            openType = JT::Type::ObjectStart;
-            closeType = JT::Type::ObjectEnd;
+            openType = JS::Type::ObjectStart;
+            closeType = JS::Type::ObjectEnd;
         }
-        else if (context.token.value_type == JT::Type::ArrayStart)
+        else if (context.token.value_type == JS::Type::ArrayStart)
         {
-            openType = JT::Type::ArrayStart;
-            closeType = JT::Type::ArrayEnd;
+            openType = JS::Type::ArrayStart;
+            closeType = JS::Type::ArrayEnd;
         }
         else {
             return Error::ExpectedObjectStart;
         }
 
         bool buffer_change = false;
-        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JT::Tokenizer &tokenizer)
+        auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer)
                                                                   {
-                                                                  JT_UNUSED(tokenizer);
+                                                                  JS_UNUSED(tokenizer);
                                                                   buffer_change = true;
                                                                   });
 
         to_type.ref.data = context.token.value.data;
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level && buffer_change == false) {
+        while (error == JS::Error::NoError && level && buffer_change == false) {
             error = context.nextToken();
             if (context.token.value_type == openType)
                 level++;
@@ -4702,17 +4702,17 @@ struct TypeHandler<JsonObjectOrArray>
 {
     static inline Error unpackToken(JsonObjectOrArray &to_type, ParseContext &context)
     {
-        JT::Type openType;
-        JT::Type closeType;
-        if (context.token.value_type == JT::Type::ObjectStart)
+        JS::Type openType;
+        JS::Type closeType;
+        if (context.token.value_type == JS::Type::ObjectStart)
         {
-            openType = JT::Type::ObjectStart;
-            closeType = JT::Type::ObjectEnd;
+            openType = JS::Type::ObjectStart;
+            closeType = JS::Type::ObjectEnd;
         }
-        else if (context.token.value_type == JT::Type::ArrayStart)
+        else if (context.token.value_type == JS::Type::ArrayStart)
         {
-            openType = JT::Type::ArrayStart;
-            closeType = JT::Type::ArrayEnd;
+            openType = JS::Type::ArrayStart;
+            closeType = JS::Type::ArrayEnd;
         }
         else {
             return Error::ExpectedObjectStart;
@@ -4723,7 +4723,7 @@ struct TypeHandler<JsonObjectOrArray>
 
         size_t level = 1;
         Error error = Error::NoError;
-        while (error == JT::Error::NoError && level) {
+        while (error == JS::Error::NoError && level) {
             error = context.nextToken();
             if (context.token.value_type == openType)
                 level++;
@@ -4738,7 +4738,7 @@ struct TypeHandler<JsonObjectOrArray>
 
     static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
-        token.value_type = JT::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
+        token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
         if (from_type.data.empty())
         {
@@ -4759,21 +4759,21 @@ namespace Internal
 template<size_t INDEX, typename ...Ts>
 struct TupleTypeHandler
 {
-    static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error unpackToken(JS::Tuple<Ts...> &to_type, ParseContext &context)
     {
-        using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        using Type = typename JS::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
         Error error = TypeHandler<Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
         error = context.nextToken();
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
         return TupleTypeHandler<INDEX - 1, Ts...>::unpackToken(to_type, context);
     }
 
-    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
-        using Type = typename JT::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
+        using Type = typename JS::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
         TypeHandler<Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
         TupleTypeHandler<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
     }
@@ -4784,41 +4784,41 @@ struct TupleTypeHandler
 template<typename ...Ts>
 struct TupleTypeHandler<0, Ts...>
 {
-    static inline Error unpackToken(JT::Tuple<Ts...>, ParseContext &context)
+    static inline Error unpackToken(JS::Tuple<Ts...>, ParseContext &context)
     {
-        JT_UNUSED(context);
+        JS_UNUSED(context);
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
-        JT_UNUSED(from_type);
-        JT_UNUSED(token);
-        JT_UNUSED(serializer);
+        JS_UNUSED(from_type);
+        JS_UNUSED(token);
+        JS_UNUSED(serializer);
     }
 };
 }
 
 /// \private
 template<typename ...Ts>
-struct TypeHandler<JT::Tuple<Ts...>>
+struct TypeHandler<JS::Tuple<Ts...>>
 {
-    static inline Error unpackToken(JT::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error unpackToken(JS::Tuple<Ts...> &to_type, ParseContext &context)
     {
-        if (context.token.value_type != JT::Type::ArrayStart)
+        if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
         Error error = context.nextToken();
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
-        error = JT::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
-        if (error != JT::Error::NoError)
+        error = JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
+        if (error != JS::Error::NoError)
             return error;
-        if (context.token.value_type != JT::Type::ArrayEnd)
+        if (context.token.value_type != JS::Type::ArrayEnd)
             return Error::ExpectedArrayEnd;
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JT::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef("[");
@@ -4826,7 +4826,7 @@ struct TypeHandler<JT::Tuple<Ts...>>
 
         token.name = DataRef("");
 
-        JT::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
+        JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
         token.name = DataRef("");
 
         token.value_type = Type::ArrayEnd;
@@ -4876,22 +4876,22 @@ public:
     static inline Error unpackToken(T (&to_type)[N], ParseContext &context)
     {
         if (context.token.value_type != Type::ArrayStart)
-            return JT::Error::ExpectedArrayStart;
+            return JS::Error::ExpectedArrayStart;
 
 		context.nextToken();
         for (size_t i = 0; i < N; i++)
         {
-			if (context.error != JT::Error::NoError)
+			if (context.error != JS::Error::NoError)
 				return context.error;
             context.error = TypeHandler<T>::unpackToken(to_type[i], context);
-            if (context.error != JT::Error::NoError)
+            if (context.error != JS::Error::NoError)
                 return context.error;
 
 			context.nextToken();
         }
 
         if (context.token.value_type != Type::ArrayEnd)
-            return JT::Error::ExpectedArrayEnd;
+            return JS::Error::ExpectedArrayEnd;
         return context.error;
     }
     static void serializeToken(const T (&from)[N], Token &token, Serializer &serializer)
@@ -4910,7 +4910,7 @@ public:
         serializer.write(token);
     }
 };
-#ifdef JT_UNORDERED_MAP_HANDLER
+#ifdef JS_UNORDERED_MAP_HANDLER
 template<typename Key, typename Value>
 class TypeHandler<std::unordered_map<Key, Value>>
 {
@@ -4919,18 +4919,18 @@ public:
     {
         if (context.token.value_type != Type::ObjectStart)
         {
-            return JT::Error::ExpectedObjectStart;
+            return JS::Error::ExpectedObjectStart;
         }
 
         Error error = context.nextToken();
-        if (error != JT::Error::NoError)
+        if (error != JS::Error::NoError)
             return error;
         while (context.token.value_type != Type::ObjectEnd)
         {
             Value v;
             error = TypeHandler<Value>::unpackToken(v, context);
             to_type[Key(context.token.name.data, context.token.name.size)] = v;
-            if (error != JT::Error::NoError)
+            if (error != JS::Error::NoError)
                 return error;
             error = context.nextToken();
         }
@@ -4959,4 +4959,4 @@ public:
 };
 #endif
 } //Namespace
-#endif //JSON_TOOLS_H
+#endif //JSON_STRUCT_H
