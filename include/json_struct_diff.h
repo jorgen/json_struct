@@ -22,18 +22,18 @@
 
 /*! \file */
 
-/*! \mainpage json_tools_diff
+/*! \mainpage json_struct_diff
  *
- * json_tools_diff is an extension to json_tools to efficiently diff json by
- * using json_tools itself.
+ * json_struct_diff is an extension to json_struct to efficiently diff json by
+ * using json_struct itself.
  */
 
-#ifndef JSON_TOOLS_DIFF_H
-#define JSON_TOOLS_DIFF_H
+#ifndef JSON_STRUCT_DIFF_H
+#define JSON_STRUCT_DIFF_H
 
-#include "json_tools.h"
+#include "json_struct.h"
 
-namespace JT {
+namespace JS {
 
 enum DiffFlags : unsigned char
 {
@@ -246,7 +246,7 @@ struct DiffTokens
     void addMissingMembers(const size_t startPos, const DiffTokens& baseTokens, const size_t basePos)
     {
         assert(startPos < size());
-        assert(tokens.data[startPos].value_type == JT::Type::ObjectStart);
+        assert(tokens.data[startPos].value_type == JS::Type::ObjectStart);
         const Token &token = baseTokens.tokens.data[basePos];
         addMissingToken(startPos, token);
 
@@ -309,7 +309,7 @@ struct DiffTokens
     void addMissingArrayItems(const size_t startPos, const DiffTokens& baseTokens, const size_t basePos)
     {
         assert(startPos < size());
-        assert(tokens.data[startPos].value_type == JT::Type::ArrayStart);
+        assert(tokens.data[startPos].value_type == JS::Type::ArrayStart);
         const Token &token = baseTokens.tokens.data[basePos];
         addMissingArrayToken(startPos, token);
 
@@ -475,11 +475,11 @@ namespace Internal
 
             dummyContext.token = baseToken;
             TypeHandler<bool>::unpackToken(baseBool, dummyContext);
-            assert(dummyContext.error == JT::Error::NoError);
+            assert(dummyContext.error == JS::Error::NoError);
 
             dummyContext.token = diffToken;
             TypeHandler<bool>::unpackToken(diffBool, dummyContext);
-            assert(dummyContext.error == JT::Error::NoError);
+            assert(dummyContext.error == JS::Error::NoError);
 
             if (baseBool ^ diffBool)
                 diff.set(diffPos, DiffType::ValueDiff);
@@ -702,7 +702,7 @@ namespace Internal
                         while (true)
                         {
                             const Token bToken = base.tokens.data[bPos];
-                            if (bToken.value_type == JT::Type::ArrayEnd)
+                            if (bToken.value_type == JS::Type::ArrayEnd)
                                 break;
                             diff.addMissingArrayItems(diffPos, base, bPos);
                             base.skip(&bPos);
@@ -859,4 +859,4 @@ struct DiffContext
 };
 
 } //Namespace
-#endif //JSON_TOOLS_DIFF_H
+#endif //JSON_STRUCT_DIFF_H
