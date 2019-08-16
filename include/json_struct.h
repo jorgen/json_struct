@@ -1941,6 +1941,29 @@ Tuple<Ts...> makeTuple(Ts ...args)
 //Tuple end
 
 template<typename T>
+struct Nullable
+{
+    Nullable()
+        : data()
+    {
+    }
+    Nullable(const T &t)
+        : data(t)
+    {
+    }
+
+    Nullable<T> &operator= (const T &other)
+    {
+        data = other;
+        return *this;
+    }
+
+    T data;
+    T &operator()() { return data; }
+    const T &operator()() const { return data; }
+};
+
+template<typename T>
 struct Optional
 {
     Optional()
@@ -2158,6 +2181,12 @@ struct ParseContext
     ParseContext(const char *data, size_t size)
     {
         tokenizer.addData(data, size);
+    }
+    template<typename T>
+    ParseContext(const char *data, size_t size, T &to_type)
+    {
+        tokenizer.addData(data, size);
+
     }
     ParseContext(const std::string &json)
         : ParseContext(json.c_str(), json.size())
@@ -4161,6 +4190,24 @@ public:
         serializer.write(token);
     }
 
+};
+
+/// \private
+template<typename T>
+struct TypeHandler<Nullable<T>>
+{
+public:
+    static inline Error to(Nullable<T> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type == Type::Null)
+            return Error::NoError;
+        return TypeHandler<T>::to(to_type.data, context);
+    }
+
+    static inline void from(const Nullable<T> &opt, Token &token, Serializer &serializer)
+    {
+        TypeHandler<T>::from(opt(), token, serializer);
+    }
 };
 
 /// \private

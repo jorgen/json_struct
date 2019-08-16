@@ -36,6 +36,7 @@ add_executable(json-struct-diff json-struct-diff.cpp)
 add_executable(json-struct-external json-struct-external.cpp)
 add_executable(json-struct-fail json-struct-fail.cpp)
 add_executable(json-reformat json-reformat.cpp)
+add_executable(json-nullable-test json-nullable-test.cpp)
 target_link_libraries(json-reformat PRIVATE external_json::rc)
 
 target_include_directories(json-struct-performance PRIVATE include/json/0.6)
@@ -63,4 +64,5 @@ add_test(NAME json-mias-mat-test COMMAND json-mias-mat-test)
 add_test(NAME json-struct-diff COMMAND json-struct-diff)
 add_test(NAME json-struct-external COMMAND json-struct-external)
 add_test(NAME json-reformat COMMAND json-reformat)
+add_test(NAME json-nullable-teste COMMAND json-nullable-test)
 
