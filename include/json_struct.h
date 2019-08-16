@@ -130,6 +130,14 @@
 #include <unordered_map>
 #endif
 
+#if __cplusplus >= 201703L
+#define JS_STD_OPTIONAL 1
+#endif
+
+#ifdef JS_STD_OPTIONAL
+#include <optional>
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(disable : 4503)
 #if _MSC_VER > 1800
@@ -2189,6 +2197,15 @@ struct IsOptionalType<std::unique_ptr<T>>
 {
     static JS_CONSTEXPR const bool value = true;
 };
+
+#ifdef JS_STD_OPTIONAL
+/// \private
+template <typename T>
+struct IsOptionalType<std::optional<T>>
+{
+    static JS_CONSTEXPR const bool value = true;
+};
+#endif
 
 struct ParseContext
 {
@@ -4259,6 +4276,26 @@ public:
             TypeHandler<T>::from(opt(), token, serializer);
     }
 };
+
+#ifdef JS_STD_OPTIONAL
+/// \private
+template<typename T>
+struct TypeHandler<std::optional<T>>
+{
+public:
+    static inline Error to(std::optional<T> &to_type, ParseContext &context)
+    {
+        to_type = {};
+        return TypeHandler<T>::to(to_type.value(), context);
+    }
+
+    static inline void from(const std::optional<T> &opt, Token &token, Serializer &serializer)
+    {
+        if (opt.has_value())
+            TypeHandler<T>::from(opt.value(), token, serializer);
+    }
+};
+#endif
 
 /// \private
 template<typename T>

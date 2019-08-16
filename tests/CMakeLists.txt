@@ -66,3 +66,9 @@ add_test(NAME json-struct-external COMMAND json-struct-external)
 add_test(NAME json-reformat COMMAND json-reformat)
 add_test(NAME json-nullable-teste COMMAND json-nullable-test)
 
+if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
+    add_executable(json-optional json-optional.cpp)
+    target_compile_features(json-optional PUBLIC cxx_std_17)
+    add_test(NAME json-optional COMMAND json-optional)
+endif()
+
