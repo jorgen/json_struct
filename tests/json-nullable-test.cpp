@@ -23,6 +23,17 @@ struct SmallStruct
 	);
 };
 
+struct SmallStructNullableChecked
+{
+	int a;
+        JS::NullableChecked<float> b = 2.2;
+
+	JS_OBJECT(
+		JS_MEMBER(a),
+		JS_MEMBER(b)
+	);
+};
+
 const char json[] = R"json(
 {
 	"a" : 1,
@@ -44,6 +55,16 @@ int main()
         context.parseTo(data);
         JS_ASSERT(context.error == JS::Error::NoError);
         JS_ASSERT(data.a == 1);
+        JS_ASSERT(data.b() > 2.199 && data.b() < 2.201);
+        return 0;
+    }
+    {
+        JS::ParseContext context(json);
+        SmallStructNullableChecked data;
+        context.parseTo(data);
+        JS_ASSERT(context.error == JS::Error::NoError);
+        JS_ASSERT(data.a == 1);
+        JS_ASSERT(data.b.null);
         JS_ASSERT(data.b() > 2.199 && data.b() < 2.201);
         return 0;
     }

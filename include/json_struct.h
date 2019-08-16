@@ -1980,6 +1980,34 @@ struct Nullable
 };
 
 template<typename T>
+struct NullableChecked
+{
+    NullableChecked()
+        : data()
+        , null(true)
+    { }
+    NullableChecked(const T &t)
+        : data(t)
+        , null(false)
+    { }
+    NullableChecked(const NullableChecked<T> &t)
+        : data(t.data)
+        , null(t.null)
+    { }
+    NullableChecked<T> &operator= (const T &other)
+    {
+        data = other;
+        null = false;
+        return *this;
+    }
+
+    T &operator()() { return data; }
+    const T &operator()() const { return data; }
+    T data;
+    bool null;
+};
+
+template<typename T>
 struct Optional
 {
     Optional()
@@ -4240,6 +4268,35 @@ public:
     static inline void from(const Nullable<T> &opt, Token &token, Serializer &serializer)
     {
         TypeHandler<T>::from(opt(), token, serializer);
+    }
+};
+
+/// \private
+template<typename T>
+struct TypeHandler<NullableChecked<T>>
+{
+public:
+    static inline Error to(NullableChecked<T> &to_type, ParseContext &context)
+    {
+        if (context.token.value_type == Type::Null)
+        {
+            to_type.null = true;
+            return Error::NoError;
+        }
+        to_type.null = false;
+        return TypeHandler<T>::to(to_type.data, context);
+    }
+
+    static inline void from(const NullableChecked<T> &opt, Token &token, Serializer &serializer)
+    {
+        if (opt.null) {
+            const char nullChar[] = "null";
+            token.value_type = Type::Null;
+            token.value = DataRef(nullChar);
+            serializer.write(token);
+        } else {
+            TypeHandler<T>::from(opt(), token, serializer);
+        }
     }
 };
 
