@@ -123,6 +123,9 @@
 #include <assert.h>
 #include <atomic>
 
+#if __cplusplus > 199711L || (defined(__MSC_VER) && __MSC_VER > 1800)
+#define JS_UNORDERED_MAP_HANDLER 1
+#endif
 #ifdef JS_UNORDERED_MAP_HANDLER
 #include <unordered_map>
 #endif
