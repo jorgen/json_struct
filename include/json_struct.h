@@ -2182,7 +2182,7 @@ struct ParseContext
     std::vector<std::string> missing_members;
     std::vector<std::string> unassigned_required_members;
     bool allow_missing_members = true;
-    bool allow_unnasigned_required__members = true;
+    bool allow_unnasigned_required_members = true;
 };
 
 /*! \def JS_MEMBER
@@ -2343,8 +2343,8 @@ JS_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&n
 template<typename T>
 struct TypeHandler
 {
-    static inline Error unpackToken(T &to_type, ParseContext &context);
-    static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer);
+    static inline Error to(T &to_type, ParseContext &context);
+    static inline void from(const T &from_type, Token &token, Serializer &serializer);
 };
 
 namespace Internal {
@@ -2358,7 +2358,7 @@ namespace Internal {
 #if JS_HAVE_CONSTEXPR
                 assigned_members[index] = true;
 #endif
-                return TypeHandler<MI_T>::unpackToken(to_type.*memberInfo.member, context);
+                return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
             }
         } else {
             for (size_t start = 1; start < MI_NC; start++) {
@@ -2367,7 +2367,7 @@ namespace Internal {
 #if JS_HAVE_CONSTEXPR
                     assigned_members[index] = true;
 #endif
-                    return TypeHandler<MI_T>::unpackToken(to_type.*memberInfo.member, context);
+                    return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
                 }
             }
         }
@@ -2400,7 +2400,7 @@ namespace Internal {
         token.name.size = memberInfo.name[0].size;
         token.name_type = Type::Ascii;
 
-        TypeHandler<MI_T>::serializeToken(from_type.*memberInfo.member, token, serializer);
+        TypeHandler<MI_T>::from(from_type.*memberInfo.member, token, serializer);
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
@@ -2684,7 +2684,7 @@ inline void ParseContext::parseTo(T &to_type)
     error = tokenizer.nextToken(token);
     if (error != JS::Error::NoError)
         return;
-    error = TypeHandler<T>::unpackToken(to_type, *this);
+    error = TypeHandler<T>::to(to_type, *this);
 }
 
 struct SerializerContext
@@ -2715,7 +2715,7 @@ struct SerializerContext
     void serialize(const T &type)
     {
         JS::Token token;
-        JS::TypeHandler<T>::serializeToken(type, token, serializer);
+        JS::TypeHandler<T>::from(type, token, serializer);
         flush();
     }
 
@@ -2739,7 +2739,7 @@ std::string serializeStruct(const T &from_type)
     std::string ret_string;
     SerializerContext serializeContext(ret_string);
     Token token;
-    TypeHandler<T>::serializeToken(from_type, token, serializeContext.serializer);
+    TypeHandler<T>::from(from_type, token, serializeContext.serializer);
     serializeContext.flush();
     return ret_string;
 }
@@ -2751,7 +2751,7 @@ std::string serializeStruct(const T &from_type, const SerializerOptions &options
     SerializerContext serializeContext(ret_string);
        serializeContext.serializer.setOptions(options);
     Token token;
-    TypeHandler<T>::serializeToken(from_type, token, serializeContext.serializer);
+    TypeHandler<T>::from(from_type, token, serializeContext.serializer);
     serializeContext.flush();
     return ret_string;
 }
@@ -2759,13 +2759,13 @@ std::string serializeStruct(const T &from_type, const SerializerOptions &options
 template<>
 struct TypeHandler<Error>
 {
-    static inline Error unpackToken(Error &to_type, ParseContext &context)
+    static inline Error to(Error &to_type, ParseContext &context)
     {
 		(void)to_type;
 		(void)context;
 //		if (context.token.value_type == JS::Type::Number) {
 //			int x;
-//			Error error = TypeHandler<int>::unpackToken(x, context);
+//			Error error = TypeHandler<int>::to(x, context);
 //			for (int i = 0; i < )
 //		}
 
@@ -2784,7 +2784,7 @@ struct TypeHandler<Error>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const Error &from_type, Token &token, Serializer &serializer)
+    static inline void from(const Error &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = JS::Type::String;
         if (from_type < JS::Error::UserDefinedErrors)
@@ -3076,12 +3076,12 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
-            TypeHandler<Ret>::serializeToken((container.*functionInfo.function)(arg), token, context.return_serializer);
+            TypeHandler<Ret>::from((container.*functionInfo.function)(arg), token, context.return_serializer);
             return Error::NoError;
         }
     };
@@ -3094,14 +3094,14 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
             Ret ret = (container.*functionInfo.function)(arg, context.error_context);
             if (context.execution_list.back().error == Error::NoError)
-                TypeHandler<Ret>::serializeToken(ret, token, context.return_serializer);
+                TypeHandler<Ret>::from(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -3114,14 +3114,14 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
             Token token;
             Ret ret = (container.*functionInfo.function)(arg, context);
             if (context.execution_list.back().error == Error::NoError)
-                    TypeHandler<Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret>::from(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -3134,7 +3134,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3151,7 +3151,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3168,7 +3168,7 @@ namespace Internal {
             typedef typename std::remove_reference<Arg>::type NonRefArg;
             typedef typename std::remove_cv<NonRefArg>::type PureArg;
             PureArg arg;
-            context.parse_context.error = TypeHandler<PureArg>::unpackToken(arg, context.parse_context);
+            context.parse_context.error = TypeHandler<PureArg>::to(arg, context.parse_context);
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
 
@@ -3198,7 +3198,7 @@ namespace Internal {
             if (context.parse_context.error != Error::NoError)
                 return context.parse_context.error;
             Token token;
-            TypeHandler<Ret>::serializeToken((container.*functionInfo.function)(), token, context.return_serializer);
+            TypeHandler<Ret>::from((container.*functionInfo.function)(), token, context.return_serializer);
             return Error::NoError;
         }
     };
@@ -3215,7 +3215,7 @@ namespace Internal {
             Token token;
             Ret ret = (container.*functionInfo.function)(context.error_context);
             if (context.execution_list.back().error == Error::NoError)
-                    TypeHandler<Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret>::from(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -3232,7 +3232,7 @@ namespace Internal {
             Token token;
             Ret ret = (container.*functionInfo.function)(context);
             if (context.execution_list.back().error == Error::NoError)
-                    TypeHandler<Ret>::serializeToken(ret, token, context.return_serializer);
+                    TypeHandler<Ret>::from(ret, token, context.return_serializer);
             return context.execution_list.back().error;
         }
     };
@@ -3588,13 +3588,13 @@ namespace JS { \
 template<> \
 struct TypeHandler<name> \
 { \
-    static inline Error unpackToken(name&to_type, ParseContext &context) \
+    static inline Error to(name&to_type, ParseContext &context) \
     { \
-        return Internal::EnumHandler<name, js_##name##_string_struct>::unpackToken(to_type, context); \
+        return Internal::EnumHandler<name, js_##name##_string_struct>::to(to_type, context); \
     } \
-    static inline void serializeToken(const name &from_type, Token &token, Serializer &serializer) \
+    static inline void from(const name &from_type, Token &token, Serializer &serializer) \
     { \
-        return Internal::EnumHandler<name , js_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+        return Internal::EnumHandler<name , js_##name##_string_struct>::from(from_type, token, serializer); \
     } \
 }; \
 }
@@ -3604,13 +3604,13 @@ namespace JS { \
 template<> \
 struct TypeHandler<ns::name> \
 { \
-    static inline Error unpackToken(ns::name &to_type, ParseContext &context) \
+    static inline Error to(ns::name &to_type, ParseContext &context) \
     { \
-        return Internal::EnumHandler<ns::name, ns::js_##name##_string_struct>::unpackToken(to_type, context); \
+        return Internal::EnumHandler<ns::name, ns::js_##name##_string_struct>::to(to_type, context); \
     } \
-    static inline void serializeToken(const ns::name &from_type, Token &token, Serializer &serializer) \
+    static inline void from(const ns::name &from_type, Token &token, Serializer &serializer) \
     { \
-        return Internal::EnumHandler<ns::name , ns::js_##name##_string_struct>::serializeToken(from_type, token, serializer); \
+        return Internal::EnumHandler<ns::name , ns::js_##name##_string_struct>::from(from_type, token, serializer); \
     } \
 }; \
 }
@@ -3618,7 +3618,7 @@ struct TypeHandler<ns::name> \
 namespace JS
 {
 template <typename T>
-inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
+inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
 {
     if (context.token.value_type != JS::Type::ObjectStart)
         return Error::ExpectedObjectStart;
@@ -3662,14 +3662,14 @@ inline Error TypeHandler<T>::unpackToken(T &to_type, ParseContext &context)
     error = Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::verifyMembers(members, assigned_members, unassigned_required_members, "");
     if (error == Error::UnassignedRequiredMember) {
         context.unassigned_required_members.insert(context.unassigned_required_members.end(),unassigned_required_members.begin(), unassigned_required_members.end());
-        if (context.allow_unnasigned_required__members)
+        if (context.allow_unnasigned_required_members)
             error = Error::NoError;
     }
     return error;
 }
 
 template<typename T>
-void TypeHandler<T>::serializeToken(const T &from_type, Token &token, Serializer &serializer)
+void TypeHandler<T>::from(const T &from_type, Token &token, Serializer &serializer)
 {
     static const char objectStart[] = "{";
     static const char objectEnd[] = "}";
@@ -3691,7 +3691,7 @@ namespace Internal {
     template<typename T, typename F>
     struct EnumHandler
     {
-        static inline Error unpackToken(T &to_type, ParseContext &context)
+        static inline Error to(T &to_type, ParseContext &context)
         {
             if (context.token.value_type == Type::String)
             {
@@ -3710,7 +3710,7 @@ namespace Internal {
             return Error::IllegalDataValue;
         }
 
-        static inline void serializeToken(const T &from_type, Token &token, Serializer &serializer)
+        static inline void from(const T &from_type, Token &token, Serializer &serializer)
         {
             size_t i = static_cast<size_t>(from_type);
             token.value = F::strings()[i];
@@ -3835,14 +3835,14 @@ namespace Internal
 template<>
 struct TypeHandler<std::string>
 {
-    static inline Error unpackToken(std::string &to_type, ParseContext &context)
+    static inline Error to(std::string &to_type, ParseContext &context)
     {
         to_type.clear();
         Internal::handle_json_escapes_in(context.token.value, to_type);
         return Error::NoError;
     }
 
-    static inline void serializeToken(const std::string &str, Token &token, Serializer &serializer)
+    static inline void from(const std::string &str, Token &token, Serializer &serializer)
     {
         std::string buffer;
         DataRef ref = Internal::handle_json_escapes_out(str, buffer);
@@ -3857,7 +3857,7 @@ struct TypeHandler<std::string>
 template<>
 struct TypeHandler<double>
 {
-    static inline Error unpackToken(double &to_type, ParseContext &context)
+    static inline Error to(double &to_type, ParseContext &context)
     {
         char *pointer;
         to_type = strtod(context.token.value.data, &pointer);
@@ -3866,7 +3866,7 @@ struct TypeHandler<double>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const double &d, Token &token, Serializer &serializer)
+    static inline void from(const double &d, Token &token, Serializer &serializer)
     {
         //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
 		char buf[32];
@@ -3890,7 +3890,7 @@ struct TypeHandler<double>
 template<>
 struct TypeHandler<float>
 {
-    static inline Error unpackToken(float &to_type, ParseContext &context)
+    static inline Error to(float &to_type, ParseContext &context)
     {
         char *pointer;
         to_type = strtof(context.token.value.data, &pointer);
@@ -3899,7 +3899,7 @@ struct TypeHandler<float>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const float &f, Token &token, Serializer &serializer)
+    static inline void from(const float &f, Token &token, Serializer &serializer)
     {
 		char buf[16];
 		int size;
@@ -3920,7 +3920,7 @@ struct TypeHandler<float>
 template<>
 struct TypeHandler<int32_t>
 {
-    static inline Error unpackToken(int32_t &to_type, ParseContext &context)
+    static inline Error to(int32_t &to_type, ParseContext &context)
     {
         char *pointer;
         long value = strtol(context.token.value.data, &pointer, 10);
@@ -3930,7 +3930,7 @@ struct TypeHandler<int32_t>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const int32_t &d, Token &token, Serializer &serializer)
+    static inline void from(const int32_t &d, Token &token, Serializer &serializer)
     {
         char buf[11];
         int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%d", d);
@@ -3951,7 +3951,7 @@ template<>
 struct TypeHandler<uint32_t>
 {
 public:
-    static inline Error unpackToken(uint32_t &to_type, ParseContext &context)
+    static inline Error to(uint32_t &to_type, ParseContext &context)
     {
         char *pointer;
         unsigned long value = strtoul(context.token.value.data, &pointer, 10);
@@ -3961,7 +3961,7 @@ public:
         return Error::NoError;
     }
 
-    static void serializeToken(const uint32_t &from_type, Token &token, Serializer &serializer)
+    static void from(const uint32_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[12];
         int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%u", from_type);
@@ -3983,7 +3983,7 @@ template<>
 struct TypeHandler<int64_t>
 {
 public:
-    static inline Error unpackToken(int64_t &to_type, ParseContext &context)
+    static inline Error to(int64_t &to_type, ParseContext &context)
     {
         static_assert(sizeof(to_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
         char *pointer;
@@ -3993,7 +3993,7 @@ public:
         return Error::NoError;
     }
 
-    static void serializeToken(const int64_t &from_type, Token &token, Serializer &serializer)
+    static void from(const int64_t &from_type, Token &token, Serializer &serializer)
     {
         static_assert(sizeof(from_type) == sizeof(long long int), "sizeof int64_t != sizeof long long int");
         char buf[24];
@@ -4016,7 +4016,7 @@ template<>
 struct TypeHandler<uint64_t>
 {
 public:
-    static inline Error unpackToken(uint64_t &to_type, ParseContext &context)
+    static inline Error to(uint64_t &to_type, ParseContext &context)
     {
         static_assert(sizeof(to_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long unsinged int");
         char *pointer;
@@ -4026,7 +4026,7 @@ public:
         return Error::NoError;
     }
 
-    static inline void serializeToken(const uint64_t &from_type, Token &token, Serializer &serializer)
+    static inline void from(const uint64_t &from_type, Token &token, Serializer &serializer)
     {
         static_assert(sizeof(from_type) == sizeof(long long unsigned int), "sizeof uint64_t != sizeof long long int");
         char buf[24];
@@ -4072,7 +4072,7 @@ template<>
 struct TypeHandler<int16_t>
 {
 public:
-    static inline Error unpackToken(int16_t &to_type, ParseContext &context)
+    static inline Error to(int16_t &to_type, ParseContext &context)
     {
         static_assert(sizeof(to_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
         char *pointer;
@@ -4082,7 +4082,7 @@ public:
         return boundsAssigner(value, to_type);
     }
 
-    static inline void serializeToken(const int16_t &from_type, Token &token, Serializer &serializer)
+    static inline void from(const int16_t &from_type, Token &token, Serializer &serializer)
     {
         static_assert(sizeof(from_type) == sizeof(short int), "sizeof int16_t != sizeof long long int");
         char buf[24];
@@ -4105,7 +4105,7 @@ template<>
 struct TypeHandler<uint16_t>
 {
 public:
-    static inline Error unpackToken(uint16_t &to_type, ParseContext &context)
+    static inline Error to(uint16_t &to_type, ParseContext &context)
     {
         static_assert(sizeof(to_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long unsinged int");
         char *pointer;
@@ -4115,7 +4115,7 @@ public:
         return boundsAssigner(value, to_type);
     }
 
-    static inline void serializeToken(const uint16_t &from_type, Token &token, Serializer &serializer)
+    static inline void from(const uint16_t &from_type, Token &token, Serializer &serializer)
     {
         static_assert(sizeof(from_type) == sizeof(unsigned short int), "sizeof uint16_t != sizeof long long int");
         char buf[24];
@@ -4137,7 +4137,7 @@ template<>
 struct TypeHandler<uint8_t>
 {
 public:
-    static inline Error unpackToken(uint8_t &to_type, ParseContext &context)
+    static inline Error to(uint8_t &to_type, ParseContext &context)
     {
         char *pointer;
         unsigned long value = strtoul(context.token.value.data, &pointer, 10);
@@ -4146,7 +4146,7 @@ public:
         return boundsAssigner(value, to_type);
     }
 
-    static inline void serializeToken(const uint8_t &from_type, Token &token, Serializer &serializer)
+    static inline void from(const uint8_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[24];
         int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
@@ -4168,14 +4168,14 @@ template<typename T>
 struct TypeHandler<Optional<T>>
 {
 public:
-    static inline Error unpackToken(Optional<T> &to_type, ParseContext &context)
+    static inline Error to(Optional<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<T>::unpackToken(to_type.data, context);
+        return TypeHandler<T>::to(to_type.data, context);
     }
 
-    static inline void serializeToken(const Optional<T> &opt, Token &token, Serializer &serializer)
+    static inline void from(const Optional<T> &opt, Token &token, Serializer &serializer)
     {
-        TypeHandler<T>::serializeToken(opt(), token, serializer);
+        TypeHandler<T>::from(opt(), token, serializer);
     }
 };
 
@@ -4184,16 +4184,16 @@ template<typename T>
 struct TypeHandler<OptionalChecked<T>>
 {
 public:
-    static inline Error unpackToken(OptionalChecked<T> &to_type, ParseContext &context)
+    static inline Error to(OptionalChecked<T> &to_type, ParseContext &context)
     {
         to_type.assigned = true;
-        return TypeHandler<T>::unpackToken(to_type.data, context);
+        return TypeHandler<T>::to(to_type.data, context);
     }
 
-    static inline void serializeToken(const OptionalChecked<T> &opt, Token &token, Serializer &serializer)
+    static inline void from(const OptionalChecked<T> &opt, Token &token, Serializer &serializer)
     {
         if (opt.assigned)
-            TypeHandler<T>::serializeToken(opt(), token, serializer);
+            TypeHandler<T>::from(opt(), token, serializer);
     }
 };
 
@@ -4202,20 +4202,20 @@ template<typename T>
 struct TypeHandler<std::unique_ptr<T>>
 {
 public:
-    static inline Error unpackToken(std::unique_ptr<T> &to_type, ParseContext &context)
+    static inline Error to(std::unique_ptr<T> &to_type, ParseContext &context)
     {
         if (context.token.value_type != Type::Null) {
             to_type.reset(new T());
-            return TypeHandler<T>::unpackToken(*to_type.get(), context);
+            return TypeHandler<T>::to(*to_type.get(), context);
         }
         to_type.reset(nullptr);
         return Error::NoError;
     }
 
-    static inline void serializeToken(const std::unique_ptr<T> &unique, Token &token, Serializer &serializer)
+    static inline void from(const std::unique_ptr<T> &unique, Token &token, Serializer &serializer)
     {
         if (unique) {
-            TypeHandler<T>::serializeToken(*unique.get(), token, serializer);
+            TypeHandler<T>::from(*unique.get(), token, serializer);
         } else {
             const char nullChar[] = "null";
             token.value_type = Type::Null;
@@ -4230,7 +4230,7 @@ public:
 template<>
 struct TypeHandler<bool>
 {
-    static inline Error unpackToken(bool &to_type, ParseContext &context)
+    static inline Error to(bool &to_type, ParseContext &context)
     {
         if (context.token.value.size == sizeof("true") - 1 && memcmp("true", context.token.value.data, sizeof("true") - 1) == 0)
             to_type = true;
@@ -4242,7 +4242,7 @@ struct TypeHandler<bool>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const bool &b, Token &token, Serializer &serializer)
+    static inline void from(const bool &b, Token &token, Serializer &serializer)
     {
         const char trueChar[] = "true";
         const char falseChar[] = "false";
@@ -4262,7 +4262,7 @@ template<typename T>
 struct TypeHandler<std::vector<T>>
 {
 public:
-    static inline Error unpackToken(std::vector<T> &to_type, ParseContext &context)
+    static inline Error to(std::vector<T> &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
@@ -4274,7 +4274,7 @@ public:
         while(context.token.value_type != JS::Type::ArrayEnd)
         {
             to_type.push_back(T());
-            error = TypeHandler<T>::unpackToken(to_type.back(), context);
+            error = TypeHandler<T>::to(to_type.back(), context);
             if (error != JS::Error::NoError)
                 break;
             error = context.nextToken();
@@ -4285,7 +4285,7 @@ public:
         return error;
     }
 
-    static inline void serializeToken(const std::vector<T> &vec, Token &token, Serializer &serializer)
+    static inline void from(const std::vector<T> &vec, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef("[");
@@ -4295,7 +4295,7 @@ public:
 
         for (auto &index : vec)
         {
-            TypeHandler<T>::serializeToken(index, token, serializer);
+            TypeHandler<T>::from(index, token, serializer);
         }
 
         token.name = DataRef("");
@@ -4311,7 +4311,7 @@ public:
     struct TypeHandler<std::vector<bool>>
     {
     public:
-        static inline Error unpackToken(std::vector<bool> &to_type, ParseContext &context)
+        static inline Error to(std::vector<bool> &to_type, ParseContext &context)
         {
             if (context.token.value_type != JS::Type::ArrayStart)
                 return Error::ExpectedArrayStart;
@@ -4324,7 +4324,7 @@ public:
             {
                 
                 bool toBool;
-                error = TypeHandler<bool>::unpackToken(toBool, context);
+                error = TypeHandler<bool>::to(toBool, context);
                 to_type.push_back(toBool);
                 if (error != JS::Error::NoError)
                     break;
@@ -4336,7 +4336,7 @@ public:
             return error;
         }
         
-        static inline void serializeToken(const std::vector<bool> &vec, Token &token, Serializer &serializer)
+        static inline void from(const std::vector<bool> &vec, Token &token, Serializer &serializer)
         {
             token.value_type = Type::ArrayStart;
             token.value = DataRef("[");
@@ -4346,7 +4346,7 @@ public:
             
             for (bool index : vec)
             {
-                TypeHandler<bool>::serializeToken(index, token, serializer);
+                TypeHandler<bool>::from(index, token, serializer);
             }
             
             token.name = DataRef("");
@@ -4361,14 +4361,14 @@ public:
 template<>
 struct TypeHandler<SilentString>
 {
-    static inline Error unpackToken(SilentString &to_type, ParseContext &context)
+    static inline Error to(SilentString &to_type, ParseContext &context)
     {
-        return TypeHandler<std::string>::unpackToken(to_type.data, context);
+        return TypeHandler<std::string>::to(to_type.data, context);
     }
-    static inline void serializeToken(const SilentString &str, Token &token, Serializer &serializer)
+    static inline void from(const SilentString &str, Token &token, Serializer &serializer)
     {
         if (str.data.size()) {
-            TypeHandler<std::string>::serializeToken(str.data, token, serializer);
+            TypeHandler<std::string>::from(str.data, token, serializer);
         }
     }
 };
@@ -4378,15 +4378,15 @@ template<typename T>
 struct TypeHandler<SilentVector<T>>
 {
 public:
-    static inline Error unpackToken(SilentVector<T> &to_type, ParseContext &context)
+    static inline Error to(SilentVector<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<std::vector<T>>::unpackToken(to_type, context);
+        return TypeHandler<std::vector<T>>::to(to_type, context);
     }
 
-    static inline void serializeToken(const SilentVector<T> &vec, Token &token, Serializer &serializer)
+    static inline void from(const SilentVector<T> &vec, Token &token, Serializer &serializer)
     {
         if (vec.data.size()) {
-            TypeHandler<std::vector<T>>::serializeToken(vec.data, token, serializer);
+            TypeHandler<std::vector<T>>::from(vec.data, token, serializer);
         }
     }
 };
@@ -4396,15 +4396,15 @@ template<typename T>
 struct TypeHandler<SilentUniquePtr<T>>
 {
 public:
-    static inline Error unpackToken(SilentUniquePtr<T> &to_type, ParseContext &context)
+    static inline Error to(SilentUniquePtr<T> &to_type, ParseContext &context)
     {
-        return TypeHandler<std::unique_ptr<T>>::unpackToken(to_type.data, context);
+        return TypeHandler<std::unique_ptr<T>>::to(to_type.data, context);
     }
 
-    static inline void serializeToken(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
+    static inline void from(const SilentUniquePtr<T> &ptr, Token &token, Serializer &serializer)
     {
         if (ptr.data) {
-            TypeHandler<std::unique_ptr<T>>::serializeToken(ptr.data, token, serializer);
+            TypeHandler<std::unique_ptr<T>>::from(ptr.data, token, serializer);
         }
     }
 };
@@ -4414,7 +4414,7 @@ template<>
 struct TypeHandler<std::vector<Token>>
 {
 public:
-    static inline Error unpackToken(std::vector<Token> &to_type, ParseContext &context)
+    static inline Error to(std::vector<Token> &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ArrayStart &&
                 context.token.value_type != JS::Type::ObjectStart)
@@ -4447,7 +4447,7 @@ public:
         return error;
     }
 
-    static inline void serializeToken(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
+    static inline void from(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
     {
         for (auto &t : from_type) {
             token = t;
@@ -4461,13 +4461,13 @@ template<>
 struct TypeHandler<JsonTokens>
 {
 public:
-    static inline Error unpackToken(JsonTokens &to_type, ParseContext &context)
+    static inline Error to(JsonTokens &to_type, ParseContext &context)
     {
-        return TypeHandler<std::vector<Token>>::unpackToken(to_type.data, context);
+        return TypeHandler<std::vector<Token>>::to(to_type.data, context);
     }
-    static inline void serializeToken(const JsonTokens &from, Token &token, Serializer &serializer)
+    static inline void from(const JsonTokens &from, Token &token, Serializer &serializer)
     {
-        return TypeHandler<std::vector<Token>>::serializeToken(from.data, token, serializer);
+        return TypeHandler<std::vector<Token>>::from(from.data, token, serializer);
     }
 };
 
@@ -4475,7 +4475,7 @@ public:
 template<>
 struct TypeHandler<JsonArrayRef>
 {
-    static inline Error unpackToken(JsonArrayRef &to_type, ParseContext &context)
+    static inline Error to(JsonArrayRef &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
@@ -4506,7 +4506,7 @@ struct TypeHandler<JsonArrayRef>
         return error;
     }
 
-    static inline void serializeToken(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonArrayRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
         token.value_type = Type::Verbatim;
@@ -4518,7 +4518,7 @@ struct TypeHandler<JsonArrayRef>
 template<>
 struct TypeHandler<JsonArray>
 {
-    static inline Error unpackToken(JsonArray &to_type, ParseContext &context)
+    static inline Error to(JsonArray &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
@@ -4541,7 +4541,7 @@ struct TypeHandler<JsonArray>
         return error;
     }
 
-    static inline void serializeToken(const JsonArray &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonArray &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
@@ -4562,7 +4562,7 @@ struct TypeHandler<JsonArray>
 /// \private
 template<>
 struct TypeHandler<JsonObjectRef> {
-    static inline Error unpackToken(JsonObjectRef &to_type, ParseContext &context)
+    static inline Error to(JsonObjectRef &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ObjectStart)
             return Error::ExpectedObjectStart;
@@ -4591,7 +4591,7 @@ struct TypeHandler<JsonObjectRef> {
         return error;
     }
 
-    static inline void serializeToken(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonObjectRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
         token.value_type = Type::Verbatim;
@@ -4603,7 +4603,7 @@ struct TypeHandler<JsonObjectRef> {
 template<>
 struct TypeHandler<JsonObject>
 {
-    static inline Error unpackToken(JsonObject &to_type, ParseContext &context)
+    static inline Error to(JsonObject &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ObjectStart)
             return Error::ExpectedObjectStart;
@@ -4625,7 +4625,7 @@ struct TypeHandler<JsonObject>
         return error;
     }
 
-    static inline void serializeToken(const JsonObject &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonObject &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
@@ -4646,7 +4646,7 @@ struct TypeHandler<JsonObject>
 /// \private
 template<>
 struct TypeHandler<JsonObjectOrArrayRef> {
-    static inline Error unpackToken(JsonObjectOrArrayRef &to_type, ParseContext &context)
+    static inline Error to(JsonObjectOrArrayRef &to_type, ParseContext &context)
     {
         JS::Type openType;
         JS::Type closeType;
@@ -4688,7 +4688,7 @@ struct TypeHandler<JsonObjectOrArrayRef> {
         return error;
     }
 
-    static inline void serializeToken(const JsonObjectOrArrayRef &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonObjectOrArrayRef &from_type, Token &token, Serializer &serializer)
     {
         token.value = from_type.ref;
         token.value_type = Type::Verbatim;
@@ -4700,7 +4700,7 @@ struct TypeHandler<JsonObjectOrArrayRef> {
 template<>
 struct TypeHandler<JsonObjectOrArray>
 {
-    static inline Error unpackToken(JsonObjectOrArray &to_type, ParseContext &context)
+    static inline Error to(JsonObjectOrArray &to_type, ParseContext &context)
     {
         JS::Type openType;
         JS::Type closeType;
@@ -4736,7 +4736,7 @@ struct TypeHandler<JsonObjectOrArray>
         return error;
     }
 
-    static inline void serializeToken(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JsonObjectOrArray &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = JS::Type::Verbatim; //Need to fool the serializer to just write value as verbatim
 
@@ -4759,23 +4759,23 @@ namespace Internal
 template<size_t INDEX, typename ...Ts>
 struct TupleTypeHandler
 {
-    static inline Error unpackToken(JS::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error to(JS::Tuple<Ts...> &to_type, ParseContext &context)
     {
         using Type = typename JS::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
-        Error error = TypeHandler<Type>::unpackToken(to_type.template get<sizeof...(Ts) - INDEX>(), context);
+        Error error = TypeHandler<Type>::to(to_type.template get<sizeof...(Ts) - INDEX>(), context);
         if (error != JS::Error::NoError)
             return error;
         error = context.nextToken();
         if (error != JS::Error::NoError)
             return error;
-        return TupleTypeHandler<INDEX - 1, Ts...>::unpackToken(to_type, context);
+        return TupleTypeHandler<INDEX - 1, Ts...>::to(to_type, context);
     }
 
-    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         using Type = typename JS::TypeAt<sizeof...(Ts) - INDEX, Ts...>::type;
-        TypeHandler<Type>::serializeToken(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
-        TupleTypeHandler<INDEX - 1, Ts...>::serializeToken(from_type, token, serializer);
+        TypeHandler<Type>::from(from_type.template get<sizeof...(Ts) - INDEX>(), token, serializer);
+        TupleTypeHandler<INDEX - 1, Ts...>::from(from_type, token, serializer);
     }
 
 };
@@ -4784,13 +4784,13 @@ struct TupleTypeHandler
 template<typename ...Ts>
 struct TupleTypeHandler<0, Ts...>
 {
-    static inline Error unpackToken(JS::Tuple<Ts...>, ParseContext &context)
+    static inline Error to(JS::Tuple<Ts...>, ParseContext &context)
     {
         JS_UNUSED(context);
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         JS_UNUSED(from_type);
         JS_UNUSED(token);
@@ -4803,14 +4803,14 @@ struct TupleTypeHandler<0, Ts...>
 template<typename ...Ts>
 struct TypeHandler<JS::Tuple<Ts...>>
 {
-    static inline Error unpackToken(JS::Tuple<Ts...> &to_type, ParseContext &context)
+    static inline Error to(JS::Tuple<Ts...> &to_type, ParseContext &context)
     {
         if (context.token.value_type != JS::Type::ArrayStart)
             return Error::ExpectedArrayStart;
         Error error = context.nextToken();
         if (error != JS::Error::NoError)
             return error;
-        error = JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::unpackToken(to_type, context);
+        error = JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::to(to_type, context);
         if (error != JS::Error::NoError)
             return error;
         if (context.token.value_type != JS::Type::ArrayEnd)
@@ -4818,7 +4818,7 @@ struct TypeHandler<JS::Tuple<Ts...>>
         return Error::NoError;
     }
 
-    static inline void serializeToken(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+    static inline void from(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef("[");
@@ -4826,7 +4826,7 @@ struct TypeHandler<JS::Tuple<Ts...>>
 
         token.name = DataRef("");
 
-        JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::serializeToken(from_type, token, serializer);
+        JS::Internal::TupleTypeHandler<sizeof...(Ts), Ts...>::from(from_type, token, serializer);
         token.name = DataRef("");
 
         token.value_type = Type::ArrayEnd;
@@ -4844,27 +4844,27 @@ template<typename T>
 class TypeHandler<OneOrMany<T>>
 {
 public:
-    static inline Error unpackToken(OneOrMany<T> &to_type, ParseContext &context)
+    static inline Error to(OneOrMany<T> &to_type, ParseContext &context)
     {
         if (context.token.value_type == Type::ArrayStart)
         {
-            context.error = TypeHandler<std::vector<T>>::unpackToken(to_type.data, context);
+            context.error = TypeHandler<std::vector<T>>::to(to_type.data, context);
         }
         else {
             to_type.data.push_back(T());
-            context.error = TypeHandler<T>::unpackToken(to_type.data.back(), context);
+            context.error = TypeHandler<T>::to(to_type.data.back(), context);
         }
         return context.error;
     }
-    static void serializeToken(const OneOrMany<T> &from, Token &token, Serializer &serializer)
+    static void from(const OneOrMany<T> &from, Token &token, Serializer &serializer)
     {
         if (from.data.empty())
             return;
         if (from.data.size() > 1) {
-            TypeHandler<std::vector<T>>::serializeToken(from.data, token, serializer);
+            TypeHandler<std::vector<T>>::from(from.data, token, serializer);
         }
         else {
-            TypeHandler<T>::serializeToken(from.data.front(), token, serializer);
+            TypeHandler<T>::from(from.data.front(), token, serializer);
         }
     }
 };
@@ -4873,7 +4873,7 @@ template<typename T, size_t N>
 class TypeHandler<T[N]>
 {
 public:
-    static inline Error unpackToken(T (&to_type)[N], ParseContext &context)
+    static inline Error to(T (&to_type)[N], ParseContext &context)
     {
         if (context.token.value_type != Type::ArrayStart)
             return JS::Error::ExpectedArrayStart;
@@ -4883,7 +4883,7 @@ public:
         {
 			if (context.error != JS::Error::NoError)
 				return context.error;
-            context.error = TypeHandler<T>::unpackToken(to_type[i], context);
+            context.error = TypeHandler<T>::to(to_type[i], context);
             if (context.error != JS::Error::NoError)
                 return context.error;
 
@@ -4894,7 +4894,7 @@ public:
             return JS::Error::ExpectedArrayEnd;
         return context.error;
     }
-    static void serializeToken(const T (&from)[N], Token &token, Serializer &serializer)
+    static void from(const T (&from)[N], Token &token, Serializer &serializer)
     {
         token.value_type = Type::ArrayStart;
         token.value = DataRef("[");
@@ -4902,7 +4902,7 @@ public:
 
         token.name = DataRef("");
         for (size_t i = 0; i < N; i++)
-            TypeHandler<T>::serializeToken(from[i], token, serializer);
+            TypeHandler<T>::from(from[i], token, serializer);
         
         token.name = DataRef("");
         token.value_type = Type::ArrayEnd;
@@ -4915,7 +4915,7 @@ template<typename Key, typename Value>
 class TypeHandler<std::unordered_map<Key, Value>>
 {
 public:
-    static inline Error unpackToken(std::unordered_map<Key, Value> &to_type, ParseContext &context)
+    static inline Error to(std::unordered_map<Key, Value> &to_type, ParseContext &context)
     {
         if (context.token.value_type != Type::ObjectStart)
         {
@@ -4928,7 +4928,7 @@ public:
         while (context.token.value_type != Type::ObjectEnd)
         {
             Value v;
-            error = TypeHandler<Value>::unpackToken(v, context);
+            error = TypeHandler<Value>::to(v, context);
             to_type[Key(context.token.name.data, context.token.name.size)] = v;
             if (error != JS::Error::NoError)
                 return error;
@@ -4938,7 +4938,7 @@ public:
         return error;
     }
 
-    static void serializeToken(const std::unordered_map<Key, Value> &from, Token &token, Serializer &serializer)
+    static void from(const std::unordered_map<Key, Value> &from, Token &token, Serializer &serializer)
     {
         token.value_type = Type::ObjectStart;
         token.value = DataRef("{");
@@ -4947,7 +4947,7 @@ public:
         {
             token.name = DataRef(it->first);
             token.name_type = Type::String;
-            TypeHandler<Value>::serializeToken(it->second, token, serializer);
+            TypeHandler<Value>::from(it->second, token, serializer);
         }
         token.name.size = 0;
         token.name.data = "";

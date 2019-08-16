@@ -474,11 +474,11 @@ namespace Internal
             ParseContext dummyContext;
 
             dummyContext.token = baseToken;
-            TypeHandler<bool>::unpackToken(baseBool, dummyContext);
+            TypeHandler<bool>::to(baseBool, dummyContext);
             assert(dummyContext.error == JS::Error::NoError);
 
             dummyContext.token = diffToken;
-            TypeHandler<bool>::unpackToken(diffBool, dummyContext);
+            TypeHandler<bool>::to(diffBool, dummyContext);
             assert(dummyContext.error == JS::Error::NoError);
 
             if (baseBool ^ diffBool)
