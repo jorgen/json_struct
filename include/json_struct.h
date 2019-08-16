@@ -1952,6 +1952,11 @@ struct Nullable
     {
     }
 
+    Nullable(const Nullable<T> &t)
+        : data(t.data)
+    {
+    }
+
     Nullable<T> &operator= (const T &other)
     {
         data = other;
@@ -1975,6 +1980,10 @@ struct Optional
     {
     }
 
+    Optional(const Optional<T> &t)
+        : data(t.data)
+    {
+    }
     Optional<T> &operator= (const T &other)
     {
         data = other;
@@ -1997,6 +2006,10 @@ struct OptionalChecked
     OptionalChecked(const T &t)
         : data(t)
         , assigned(true)
+    { }
+    OptionalChecked(const OptionalChecked<T> &t)
+        : data(t.data)
+        , assigned(t.assigned)
     { }
     OptionalChecked<T> &operator= (const T &other)
     {
