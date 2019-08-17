@@ -1,5 +1,7 @@
 #include "json_struct.h"
+#ifdef JS_STD_OPTIONAL
 #include <optional>
+#endif
 #include "assert.h"
 
 struct SmallStructWithoutOptional
@@ -13,6 +15,7 @@ struct SmallStructWithoutOptional
 	);
 };
 
+#ifdef JS_STD_OPTIONAL
 struct SmallStructStd
 {
 	int a;
@@ -23,6 +26,7 @@ struct SmallStructStd
 		JS_MEMBER(b)
 	);
 };
+#endif
 
 
 const char json[] = R"json(
@@ -40,6 +44,7 @@ int main()
         context.parseTo(data);
         JS_ASSERT(context.error != JS::Error::NoError);
     }
+#ifdef JS_STD_OPTIONAL
     {
         JS::ParseContext context(json);
         context.allow_unnasigned_required_members = false;
@@ -48,6 +53,7 @@ int main()
         JS_ASSERT(context.error == JS::Error::NoError);
         JS_ASSERT(data.a == 1);
         JS_ASSERT(data.b.value() > 2.199 && data.b.value() < 2.201);
-        return 0;
     }
+#endif
+        return 0;
 }
