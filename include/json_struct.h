@@ -130,8 +130,14 @@
 #include <unordered_map>
 #endif
 
-#if __cplusplus >= 201703L
+#ifndef JS_STD_OPTIONAL
+#if defined(__APPLE__)
+#if __clang_major__ > 9 && __cplusplus >= 201703L
 #define JS_STD_OPTIONAL 1
+#endif
+#elif __cplusplus >= 201703L
+#define JS_STD_OPTIONAL 1
+#endif
 #endif
 
 #ifdef JS_STD_OPTIONAL
