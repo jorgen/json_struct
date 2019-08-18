@@ -113,7 +113,7 @@ template<>
 struct TypeHandler<uint32_t>
 {
 public:
-    static inline Error unpackToken(uint32_t &to_type, ParseContext &context)
+    static inline Error to(uint32_t &to_type, ParseContext &context)
     {
         char *pointer;
         unsigned long value = strtoul(context.token.value.data, &pointer, 10);
@@ -123,7 +123,7 @@ public:
         return Error::NoError;
     }
 
-    static void serializeToken(const uint32_t &from_type, Token &token, Serializer &serializer)
+    static void from(const uint32_t &from_type, Token &token, Serializer &serializer)
     {
         std::string buf = std::to_string(from_type);
         token.value_type = Type::Number;
@@ -137,8 +137,8 @@ public:
 
 This gives you complete control of serialization deserialization of a type and it can unfold to a json object or array if needed.
 
-For more information checkout the not so complete documentation at:
-http://jorgen.github.io/json_struct/
+For more information checkout the examples at:
+https://github.com/jorgen/json_struct/tree/master/examples
 
 and have a look at the more complete unit tests at:
-https://github.com/jorgen/json_struct/blob/master/tests
+https://github.com/jorgen/json_struct/tree/master/tests
