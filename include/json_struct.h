@@ -2249,10 +2249,12 @@ struct ParseContext
     {
         tokenizer.addData(data, size);
     }
+
     template<typename T>
     ParseContext(const char *data, size_t size, T &to_type)
     {
         tokenizer.addData(data, size);
+        parseTo(to_type);
 
     }
     ParseContext(const std::string &json)
@@ -2265,13 +2267,19 @@ struct ParseContext
     }
 
     template<typename T>
-    void parseTo(T &to_type);
+    Error parseTo(T &to_type);
 
     Error nextToken()
     {
         error = tokenizer.nextToken(token);
         return error;
     }
+
+    std::string makeErrorString() const
+    {
+        return tokenizer.makeErrorString();
+    }
+
     Tokenizer tokenizer;
     Token token;
     Error error = Error::NoError;
@@ -2775,12 +2783,13 @@ namespace Internal {
 }
 
 template<typename T>
-inline void ParseContext::parseTo(T &to_type)
+inline Error ParseContext::parseTo(T &to_type)
 {
     error = tokenizer.nextToken(token);
     if (error != JS::Error::NoError)
-        return;
+        return error;
     error = TypeHandler<T>::to(to_type, *this);
+    return error;
 }
 
 struct SerializerContext

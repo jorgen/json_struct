@@ -2,3 +2,6 @@ include_directories(${JSON_STRUCT_INCLUDE_DIR})
 
 add_executable(simple_tokenize simple_tokenize.cpp)
 add_executable(simple_struct simple_struct.cpp)
+add_executable(optional_types optional_types.cpp)
+add_executable(custom_type custom_type.cpp)
+add_executable(nested_types nested_types.cpp)

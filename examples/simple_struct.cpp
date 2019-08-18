@@ -22,9 +22,14 @@ struct JsonData
 
 int main()
 {
-    JS::ParseContext parseContext(json);
     JsonData dataStruct;
-    parseContext.parseTo(dataStruct);
+    JS::ParseContext parseContext(json);
+    if (parseContext.parseTo(dataStruct) != JS::Error::NoError)
+    {
+        std::string errorStr = parseContext.makeErrorString();
+        fprintf(stderr, "Error parsing struct %s\n", errorStr.c_str());
+        return -1;
+    }
 
     fprintf(stdout, "Key is: %s, number is %d bool is %d\n",
             dataStruct.key.c_str(),
