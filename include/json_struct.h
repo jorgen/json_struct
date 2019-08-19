@@ -1826,6 +1826,10 @@ static JS::Error reformat(const char *data, size_t size, std::string &out, const
 
     return error;
 }
+static JS::Error reformat(const std::string &in, std::string &out, const SerializerOptions &options = SerializerOptions())
+{
+    return reformat(in.c_str(), in.size(), out, options);
+}
 
 //Tuple start
 namespace Internal
