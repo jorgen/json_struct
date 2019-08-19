@@ -41,9 +41,13 @@ struct JsonData
     std::tuple<std::string, float, SubType> tuple;
 #ifdef JS_STD_UNORDERED_MAP
     std::unordered_map<std::string, double> unordered_map;
+#else
+    JS::JsonObject unordered_map;
 #endif
 #ifdef JS_STD_OPTIONAL
     std::optional<std::string> optional;
+#else
+    JS::Optional<std::string> optional;
 #endif
 
     uint8_t uint8_number;
@@ -54,12 +58,8 @@ struct JsonData
     JS_OBJECT(JS_MEMBER(vector),
               JS_MEMBER(string),
               JS_MEMBER(tuple),
-#ifdef JS_STD_UNORDERED_MAP
               JS_MEMBER(unordered_map),
-#endif
-#ifdef JS_STD_OPTIONAL
               JS_MEMBER(optional),
-#endif
               JS_MEMBER(uint8_number),
               JS_MEMBER(uint16_number),
               JS_MEMBER(uint32_number),
