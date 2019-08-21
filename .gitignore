@@ -20,7 +20,6 @@ stamp-h1
 .libs/
 *.lo
 *.o
-src/json_tools-version.h
 *.la
 tests/json-tokenizer-test
 *.swp

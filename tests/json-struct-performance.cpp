@@ -30,7 +30,7 @@ void runBenchmark(const std::string &json, BenchmarkRun &benchmark)
 
 struct JsonTokenizerRun : public BenchmarkRun
 {
-    std::string name() const override { return "JsonTools tokenizer"; }
+    std::string name() const override { return "JsonStruct tokenizer"; }
     void run(const std::string &json) override
     {
         JS::Tokenizer tokenizer;
@@ -59,9 +59,9 @@ struct JsonTokenizerRun : public BenchmarkRun
     }
 };
 
-struct JsonToolsStructRun : public BenchmarkRun
+struct JsonStructRun : public BenchmarkRun
 {
-    std::string name() const override { return "JsonTools struct"; }
+    std::string name() const override { return "JsonStruct struct"; }
     void run(const std::string &json) override
     {
         JS::ParseContext context(json.c_str(), json.size());
@@ -117,7 +117,7 @@ int main()
     BenchmarkRun *run = new JsonTokenizerRun();
     runBenchmark(std::string(generatedJson), *run);
     delete run;
-    run = new JsonToolsStructRun();
+    run = new JsonStructRun();
     runBenchmark(std::string(generatedJson), *run);
     delete run;
     run = new RapidJsonRun();
