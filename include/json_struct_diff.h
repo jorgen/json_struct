@@ -100,7 +100,7 @@ struct DiffTokens
     DiffTokens()
     {}
 
-    DiffTokens(const char* json, size_t size)
+    explicit DiffTokens(const char* json, size_t size)
     {
         reset(json, size);
     }
@@ -769,12 +769,12 @@ namespace Internal
 
 struct DiffContext
 {
-    DiffContext(const DiffOptions &options = {})
+    explicit DiffContext(const DiffOptions &options = {})
         : base()
         , options(options)
     {}
 
-    DiffContext(const char* baseJson, size_t baseSize, const DiffOptions &options = {})
+    explicit DiffContext(const char* baseJson, size_t baseSize, const DiffOptions &options = {})
         : base(baseJson, baseSize)
         , options(options)
     {
@@ -782,11 +782,11 @@ struct DiffContext
     }
 
     template <size_t SIZE>
-    DiffContext(const char (&baseJson)[SIZE], const DiffOptions &options = {})
+    explicit DiffContext(const char (&baseJson)[SIZE], const DiffOptions &options = {})
         : DiffContext(baseJson, SIZE, options)
     {}
 
-    DiffContext(const std::string &baseJson, const DiffOptions &options = {})
+    explicit DiffContext(const std::string &baseJson, const DiffOptions &options = {})
         : DiffContext(baseJson.c_str(), baseJson.size(), options)
     {}
 

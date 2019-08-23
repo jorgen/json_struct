@@ -2249,23 +2249,23 @@ struct ParseContext
 {
     ParseContext()
     {}
-    ParseContext(const char *data, size_t size)
+    explicit ParseContext(const char *data, size_t size)
     {
         tokenizer.addData(data, size);
     }
 
     template<typename T>
-    ParseContext(const char *data, size_t size, T &to_type)
+    explicit ParseContext(const char *data, size_t size, T &to_type)
     {
         tokenizer.addData(data, size);
         parseTo(to_type);
 
     }
-    ParseContext(const std::string &json)
+    explicit ParseContext(const std::string &json)
         : ParseContext(json.c_str(), json.size())
     {}
     template<size_t SIZE>
-    ParseContext(const char (&data)[SIZE])
+    explicit ParseContext(const char (&data)[SIZE])
     {
         tokenizer.addData(data);
     }
@@ -2910,7 +2910,7 @@ struct TypeHandler<Error>
 
 struct CallFunctionExecutionState
 {
-    CallFunctionExecutionState(const std::string &name)
+    explicit CallFunctionExecutionState(const std::string &name)
         : name(name)
         , error(Error::NoError)
     {}
