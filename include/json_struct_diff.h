@@ -781,6 +781,11 @@ struct DiffContext
         error = base.error;
     }
 
+    template <size_t SIZE>
+    DiffContext(const char (&baseJson)[SIZE], const DiffOptions &options = {})
+        : DiffContext(baseJson, SIZE, options)
+    {}
+
     DiffContext(const std::string &baseJson, const DiffOptions &options = {})
         : DiffContext(baseJson.c_str(), baseJson.size(), options)
     {}
