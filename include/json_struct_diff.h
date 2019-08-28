@@ -852,6 +852,12 @@ struct DiffContext
         return diff(json.c_str(), json.size());
     }
 
+    template <size_t SIZE>
+    size_t diff(const char (&json)[SIZE])
+    {
+        return diff(json, SIZE);
+    }
+
     void diff(DiffTokens &diffTokens)
     {
         Internal::Diff::diff(base, diffTokens, options);
