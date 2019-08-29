@@ -87,9 +87,9 @@ namespace Internal
             Token token;
             std::vector<Token> missingTokens;
 
-            bool operator ==(const Token& token) const
+            bool operator ==(const Token& t) const
             {
-                return this->token.name.data == token.name.data;
+                return (token.name.data == t.name.data) && (token.value.data == t.value.data);
             }
         };
     }
