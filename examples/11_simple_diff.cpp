@@ -1,19 +1,5 @@
 #include <string>
-
 #include <json_struct_diff.h>
-
-struct JsonData
-{
-    std::string key;
-    int number;
-    float value;
-    bool boolean;
-
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(number),
-              JS_MEMBER(value),
-              JS_MEMBER(boolean));
-};
 
 const char jsonBase[] = R"json(
 {
