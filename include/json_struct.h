@@ -1073,34 +1073,25 @@ inline Error Tokenizer::findAsciiEnd(const DataRef &json_data, size_t *chars_ahe
 inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ahead)
 {
     size_t end = cursor_index;
+    while(end + 4 < json_data.size) {
+        unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
+        if (!(lc & (Internal::NumberEnd)))
+            break;
+        lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
+        if (!(lc & (Internal::NumberEnd)))
+            break;
+        lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
+        if (!(lc & (Internal::NumberEnd)))
+            break;
+        lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
+        if (!(lc & (Internal::NumberEnd)))
+            break;
+        end++;
+    }
     while (end < json_data.size) {
-        while(end + 4 < json_data.size) {
-            unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
-            if (!(lc & (Internal::NumberEnd)))
-                break;
-            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
-            if (!(lc & (Internal::NumberEnd)))
-                break;
-            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
-            if (!(lc & (Internal::NumberEnd)))
-                break;
-            lc = Internal::lookup()[(unsigned char)json_data.data[++end]];
-            if (!(lc & (Internal::NumberEnd)))
-                break;
+        unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
+        if (lc & (Internal::NumberEnd)) {
             end++;
-        }
-        char number_code = json_data.data[end];
-        if ((number_code >= '0' && number_code <= '9')) {
-            end++;
-            continue;
-        } else if (number_code == '.'
-                   || number_code == '+'
-                   || number_code == '-'
-                   || number_code == 'e'
-                   || number_code == 'E'
-                  ) {
-            end++;
-            continue;
         } else {
             *chars_ahead = end - cursor_index;
             return Error::NoError;
