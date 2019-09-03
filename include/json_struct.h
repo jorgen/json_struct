@@ -1074,7 +1074,7 @@ inline Error Tokenizer::findNumberEnd(const DataRef &json_data, size_t *chars_ah
 {
     size_t end = cursor_index;
     while (end < json_data.size) {
-        while(end + 4 < json_data.size) {
+        while(end + 4 <= json_data.size) {
             unsigned char lc = Internal::lookup()[(unsigned char)json_data.data[end]];
             if (!(lc & (Internal::NumberEnd)))
                 break;
