@@ -3970,17 +3970,17 @@ struct TypeHandler<double>
     {
         char *pointer;
         to_type = strtod(context.token.value.data, &pointer);
-        if (context.token.value.data == pointer)
-            return context.tokenizer.updateErrorContext(Error::FailedToParseFloat);
+        if (context.token.value.data + context.token.value.size != pointer)
+            return Error::FailedToParseDouble;
         return Error::NoError;
     }
 
     static inline void from(const double &d, Token &token, Serializer &serializer)
     {
         //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-		char buf[32];
-		int size;
-		size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.16e", d);
+        char buf[32];
+        int size;
+        size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.16e", d);
 
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
@@ -4003,16 +4003,16 @@ struct TypeHandler<float>
     {
         char *pointer;
         to_type = strtof(context.token.value.data, &pointer);
-        if (context.token.value.data == pointer)
+        if (context.token.value.data + context.token.value.size != pointer)
             return Error::FailedToParseFloat;
         return Error::NoError;
     }
 
     static inline void from(const float &f, Token &token, Serializer &serializer)
     {
-		char buf[16];
-		int size;
-		size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.8e", f);
+        char buf[16];
+        int size;
+        size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%1.8e", f);
         if (size < 0) {
             fprintf(stderr, "error serializing float token\n");
             return;

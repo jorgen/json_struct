@@ -852,6 +852,29 @@ void check_short_floating_point()
     JS_ASSERT(context.error == JS::Error::NoError);
 }
 
+struct InvalidFloating
+{
+    bool enabled;
+    float value;
+    JS_OBJECT(JS_MEMBER(enabled),
+              JS_MEMBER(value));
+};
+
+const char invalid_floating[] = R"json({
+    "enabled": true,
+    "value": 0.5.e..-.E.5
+})json";
+
+void check_invalid_floating_point()
+{
+    JS::ParseContext context(invalid_floating);
+    FloatingPointAtTheEnd data;
+    context.parseTo(data);
+    JS_ASSERT(context.error == JS::Error::FailedToParseFloat);
+}
+
+
+
 int main(int, char **)
 {
     check_json_tree_nodes();
@@ -870,11 +893,12 @@ int main(int, char **)
     check_json_object_or_array_array_ref();
     check_json_map();
     check_json_type_handler_types();
-    	check_json_array_test();
+    check_json_array_test();
     check_json_skip_test();
     check_multi_top_level_json();
     check_json_escaped();
     check_json_meta_outside();
     check_short_floating_point();
+    check_invalid_floating_point();
     return 0;
 }
