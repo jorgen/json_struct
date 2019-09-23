@@ -707,7 +707,6 @@ private:
     bool m_first : 1;
     bool m_token_start : 1;
     SerializerOptions m_option;
-    std::function<const Token&(const Token &)> m_token_transformer;
 };
 
 // IMPLEMENTATION
@@ -1647,8 +1646,7 @@ inline void Serializer::setOptions(const SerializerOptions &option)
 
 inline bool Serializer::write(const Token &in_token)
 {
-    const Token &token =
-        m_token_transformer == nullptr? in_token : m_token_transformer(in_token);
+    const Token &token = in_token;
     if (!m_token_start) {
         if (token.value_type != Type::ObjectEnd
                 && token.value_type != Type::ArrayEnd) {
