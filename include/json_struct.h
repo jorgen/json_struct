@@ -3899,7 +3899,7 @@ namespace Internal
                     {
                         buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
                     }
-                    start_index = i + 1;
+                    start_index = int(i) + 1;
 
                     switch (cur)
                     {
