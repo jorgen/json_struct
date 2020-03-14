@@ -1817,7 +1817,7 @@ static JS::Error reformat(const char *data, size_t size, std::string &out, const
 
     return error;
 }
-static JS::Error reformat(const std::string &in, std::string &out, const SerializerOptions &options = SerializerOptions())
+static inline JS::Error reformat(const std::string &in, std::string &out, const SerializerOptions &options = SerializerOptions())
 {
     return reformat(in.c_str(), in.size(), out, options);
 }
@@ -2188,7 +2188,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 
 namespace Internal
 {
-    static size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+    static inline size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
     {
         const JsonMeta &meta = meta_vec[start_index];
         if (!meta.has_data)
