@@ -3845,37 +3845,40 @@ namespace Internal
 		const char *start = ref.data;
 		bool escaped = false;
 		for (size_t i = 0; i < ref.size; i++)
-		{
-                    if (escaped)
-                    {
-                        escaped = false;
-                        bool found = false;
-                        const char current_char = ref.data[i];
-                        for (int n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
-                        {
-                            if (current_char == escaped_table[n][0])
-                            {
-                                to_type.push_back(escaped_table[n][1]);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
-                        {
-                            to_type.push_back('\\');
-                            to_type.push_back(current_char);
-                        }
-                    }
-                    else if (ref.data[i] == '\\')
-                    {
-                        auto diff = &ref.data[i] - start;
-                        to_type += std::string(start, diff);
-                        start = &ref.data[i + 2];
-                        escaped = true;
-                    }
-		}
-		auto diff = &ref.data[ref.size - 1] - start;
-		to_type += std::string(start, diff + 1);
+    {
+      if (escaped)
+      {
+        escaped = false;
+        bool found = false;
+        const char current_char = ref.data[i];
+        for (int n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
+        {
+          if (current_char == escaped_table[n][0])
+          {
+            to_type.push_back(escaped_table[n][1]);
+            found = true;
+            break;
+          }
+        }
+        if (!found)
+        {
+          to_type.push_back('\\');
+          to_type.push_back(current_char);
+        }
+      }
+      else if (ref.data[i] == '\\')
+      {
+        auto diff = &ref.data[i] - start;
+        to_type.insert(to_type.end(), start, start + diff);
+        start = &ref.data[i + 2];
+        escaped = true;
+      }
+    }
+    if (start < ref.data + ref.size) //This isn't strictly needed since the tokenizer will enforce a char after \ 
+    {
+      auto diff = ref.data + ref.size - start;
+      to_type.insert(to_type.end(), start, start + diff);
+    }
 	}
 
         static DataRef handle_json_escapes_out(const std::string &data, std::string &buffer)
@@ -3893,7 +3896,7 @@ namespace Internal
                     size_t diff = i - start_index;
                     if (diff > 0)
                     {
-                        buffer += std::string(data.data() + start_index, diff);
+                        buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
                     }
                     start_index = i + 1;
 
@@ -3931,7 +3934,7 @@ namespace Internal
                 size_t diff = data.size() - start_index;
                 if (diff > 0)
                 {
-                    buffer += std::string(data.data() + start_index, diff);
+                    buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
                 }
                 return DataRef(buffer.data(), buffer.size());
             }

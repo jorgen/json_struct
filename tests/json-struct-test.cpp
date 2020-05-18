@@ -874,6 +874,50 @@ void check_invalid_floating_point()
 }
 
 
+const char moreEscapedJsonAtEnd[] = R"json({
+    "some_text" : "more\n",
+    "some_other" : "tests\"",
+    "pure_escape" : "\n",
+    "strange_escape" : "foo\s",
+    "pure_strange_escape" : "\k",
+    "empty_string" : ""
+    }
+})json";
+
+struct MoreEscapedStruct
+{
+    std::string some_text;
+    std::string some_other;
+    std::string pure_escape;
+    std::string strange_escape;
+    std::string pure_strange_escape;
+    std::string empty_string;
+    JS_OBJECT(
+      JS_MEMBER(some_text),
+      JS_MEMBER(some_other),
+      JS_MEMBER(pure_escape),
+      JS_MEMBER(strange_escape),
+      JS_MEMBER(pure_strange_escape),
+      JS_MEMBER(empty_string)
+    );
+};
+
+static int check_json_escaped_end()
+{
+  JS::ParseContext context(moreEscapedJsonAtEnd);
+  MoreEscapedStruct data;
+  context.parseTo(data);
+  JS_ASSERT(context.error == JS::Error::NoError);
+  JS_ASSERT(data.some_text == std::string("more\n"));
+  JS_ASSERT(data.some_other == std::string("tests\""));
+  JS_ASSERT(data.pure_escape == std::string("\n"));
+  JS_ASSERT(data.strange_escape == std::string("foo\\s"));
+  JS_ASSERT(data.pure_strange_escape == std::string("\\k"));
+  std::string json = JS::serializeStruct(data);
+  //fprintf(stderr, "%s\n", json.c_str());
+  return 0;
+};
+
 
 int main(int, char **)
 {
@@ -900,5 +944,6 @@ int main(int, char **)
     check_json_meta_outside();
     check_short_floating_point();
     check_invalid_floating_point();
+    check_json_escaped_end();
     return 0;
 }
