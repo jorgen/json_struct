@@ -3874,7 +3874,7 @@ namespace Internal
         escaped = true;
       }
     }
-    if (start < ref.data + ref.size) //This isn't strictly needed since the tokenizer will enforce a char after \ 
+    if (start < ref.data + ref.size) //This isn't strictly needed since the tokenizer will enforce a char after '\' 
     {
       auto diff = ref.data + ref.size - start;
       to_type.insert(to_type.end(), start, start + diff);
