@@ -5600,7 +5600,7 @@ public:
     static inline void from(const uint8_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[24];
-        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhu", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -5612,6 +5612,64 @@ public:
         serializer.write(token);
     }
 
+};
+
+template<>
+struct TypeHandler<int8_t>
+{
+public:
+    static inline Error to(int8_t &to_type, ParseContext &context)
+    {
+        char *pointer;
+        long value = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return boundsAssigner(value, to_type);
+    }
+
+    static inline void from(const int8_t &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[24];
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size_t(size);
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TypeHandler<char>
+{
+public:
+    static inline Error to(char &to_type, ParseContext &context)
+    {
+        char *pointer;
+        long value = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return boundsAssigner(value, to_type);
+    }
+
+    static inline void from(const char &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[24];
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size_t(size);
+        serializer.write(token);
+    }
 };
 
 /// \private
