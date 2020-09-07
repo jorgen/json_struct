@@ -567,6 +567,11 @@ struct TypeHandlerTypes
     uint64_t uint64N;
     int16_t int16N;
     uint16_t uint16N;
+    uint8_t uint8N;
+    int8_t int8N;
+    char charN;
+    signed char scharN;   // Normally same as int8_t
+    unsigned char ucharN; // Normally same as uint8_t
     bool boolN;
 
 
@@ -578,6 +583,11 @@ struct TypeHandlerTypes
               JS_MEMBER(uint64N),
               JS_MEMBER(int16N),
               JS_MEMBER(uint16N),
+              JS_MEMBER(uint8N),
+              JS_MEMBER(int8N),
+              JS_MEMBER(charN),
+              JS_MEMBER(scharN),
+              JS_MEMBER(ucharN),
               JS_MEMBER(boolN)
               );
 };
@@ -591,6 +601,11 @@ const char jsonTypeHandlerTypes[] = R"json({
     "uint64N" : 987,
     "int16N" : -23,
     "uint16N" : 45,
+    "uint8N" : 255,
+    "int8N" : -127,
+    "charN": 123,
+    "scharN": -123,
+    "ucharN": 234,
     "boolN" : true
 })json";
 
@@ -600,6 +615,93 @@ void check_json_type_handler_types()
     TypeHandlerTypes obj;
     context.parseTo(obj);
     JS_ASSERT(context.error == JS::Error::NoError);
+}
+
+struct TypeHandlerIntTypes
+{
+    int intN;
+    unsigned int uintN;
+    int64_t int64N;
+    uint64_t uint64N;
+    int16_t int16N;
+    uint16_t uint16N;
+    uint8_t uint8N;
+    int8_t int8N;
+    char charN;
+    signed char scharN;   // Normally same as int8_t
+    unsigned char ucharN; // Normally same as uint8_t
+    bool boolN;
+
+    JS_OBJECT(JS_MEMBER(intN),
+              JS_MEMBER(uintN),
+              JS_MEMBER(int64N),
+              JS_MEMBER(uint64N),
+              JS_MEMBER(int16N),
+              JS_MEMBER(uint16N),
+              JS_MEMBER(uint8N),
+              JS_MEMBER(int8N),
+              JS_MEMBER(charN),
+              JS_MEMBER(scharN),
+              JS_MEMBER(ucharN),
+              JS_MEMBER(boolN)
+              );
+};
+
+const char jsonTypeHandlerIntTypes[] = R"json({
+    "intN" : -345,
+    "uintN" : 567,
+    "int64N" : -1234,
+    "uint64N" : 987,
+    "int16N" : -23,
+    "uint16N" : 45,
+    "uint8N" : 255,
+    "int8N" : -127,
+    "charN": 123,
+    "scharN": -123,
+    "ucharN": 234,
+    "boolN" : true
+})json";
+
+void check_json_type_handler_integer_types()
+{
+    JS::ParseContext context(jsonTypeHandlerIntTypes);
+    TypeHandlerIntTypes obj;
+    context.parseTo(obj);
+    JS_ASSERT(context.error == JS::Error::NoError);
+
+    std::string serialized = JS::serializeStruct(obj);
+
+    JS::ParseContext context2(serialized);
+    TypeHandlerIntTypes obj2;
+    context2.parseTo(obj2);
+    JS_ASSERT(context2.error == JS::Error::NoError);
+
+    JS_ASSERT(obj.intN    ==  -345);
+    JS_ASSERT(obj.uintN   ==   567);
+    JS_ASSERT(obj.int64N  == -1234);
+    JS_ASSERT(obj.uint64N ==   987);
+    JS_ASSERT(obj.int16N  ==   -23);
+    JS_ASSERT(obj.uint16N ==    45);
+    JS_ASSERT(obj.uint8N  ==   255);
+    JS_ASSERT(obj.int8N   ==  -127);
+    JS_ASSERT(obj.charN   ==   123);
+    JS_ASSERT(obj.scharN  ==  -123);
+    JS_ASSERT(obj.ucharN  ==   234);
+    JS_ASSERT(obj.boolN   ==  true);
+
+    JS_ASSERT(obj.intN    == obj2.intN);
+    JS_ASSERT(obj.uintN   == obj2.uintN);
+    JS_ASSERT(obj.int64N  == obj2.int64N);
+    JS_ASSERT(obj.uint64N == obj2.uint64N);
+    JS_ASSERT(obj.int16N  == obj2.int16N);
+    JS_ASSERT(obj.int16N  == obj2.int16N);
+    JS_ASSERT(obj.uint16N == obj2.uint16N);
+    JS_ASSERT(obj.uint8N  == obj2.uint8N);
+    JS_ASSERT(obj.int8N   == obj2.int8N);
+    JS_ASSERT(obj.charN   == obj2.charN);
+    JS_ASSERT(obj.scharN  == obj2.scharN);
+    JS_ASSERT(obj.ucharN  == obj2.ucharN);
+    JS_ASSERT(obj.boolN   == obj2.boolN);
 }
 
 struct ArrayTest 
@@ -937,6 +1039,7 @@ int main(int, char **)
     check_json_object_or_array_array_ref();
     check_json_map();
     check_json_type_handler_types();
+    check_json_type_handler_integer_types();
     check_json_array_test();
     check_json_skip_test();
     check_multi_top_level_json();
