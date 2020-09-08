@@ -1817,7 +1817,7 @@ static JS::Error reformat(const char *data, size_t size, std::string &out, const
 
     return error;
 }
-static JS::Error reformat(const std::string &in, std::string &out, const SerializerOptions &options = SerializerOptions())
+static inline JS::Error reformat(const std::string &in, std::string &out, const SerializerOptions &options = SerializerOptions())
 {
     return reformat(in.c_str(), in.size(), out, options);
 }
@@ -2188,7 +2188,7 @@ static inline std::vector<JsonMeta> metaForTokens(const JsonTokens &tokens)
 
 namespace Internal
 {
-    static size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
+    static inline size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_vec, size_t start_index)
     {
         const JsonMeta &meta = meta_vec[start_index];
         if (!meta.has_data)
@@ -3899,7 +3899,7 @@ namespace Internal
                     {
                         buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
                     }
-                    start_index = i + 1;
+                    start_index = int(i) + 1;
 
                     switch (cur)
                     {
@@ -5600,7 +5600,7 @@ public:
     static inline void from(const uint8_t &from_type, Token &token, Serializer &serializer)
     {
         char buf[24];
-        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hu", from_type);
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhu", from_type);
         if (size < 0) {
             fprintf(stderr, "error serializing int token\n");
             return;
@@ -5612,6 +5612,64 @@ public:
         serializer.write(token);
     }
 
+};
+
+template<>
+struct TypeHandler<int8_t>
+{
+public:
+    static inline Error to(int8_t &to_type, ParseContext &context)
+    {
+        char *pointer;
+        long value = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return boundsAssigner(value, to_type);
+    }
+
+    static inline void from(const int8_t &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[24];
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size_t(size);
+        serializer.write(token);
+    }
+};
+
+template<>
+struct TypeHandler<char>
+{
+public:
+    static inline Error to(char &to_type, ParseContext &context)
+    {
+        char *pointer;
+        long value = strtol(context.token.value.data, &pointer, 10);
+        if (context.token.value.data == pointer)
+            return Error::FailedToParseInt;
+        return boundsAssigner(value, to_type);
+    }
+
+    static inline void from(const char &from_type, Token &token, Serializer &serializer)
+    {
+        char buf[24];
+        int size = Internal::js_snprintf(buf, sizeof buf / sizeof *buf, "%hhd", from_type);
+        if (size < 0) {
+            fprintf(stderr, "error serializing int token\n");
+            return;
+        }
+
+        token.value_type = Type::Number;
+        token.value.data = buf;
+        token.value.size = size_t(size);
+        serializer.write(token);
+    }
 };
 
 /// \private
