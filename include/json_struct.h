@@ -1783,7 +1783,7 @@ inline bool Serializer::write(const char *data, size_t size)
     return written == size;
 }
 
-static JS::Error reformat(const char *data, size_t size, std::string &out, const SerializerOptions &options = SerializerOptions())
+static inline JS::Error reformat(const char *data, size_t size, std::string &out, const SerializerOptions &options = SerializerOptions())
 {
     Token token;
     Tokenizer tokenizer;
@@ -3852,7 +3852,7 @@ namespace Internal
         escaped = false;
         bool found = false;
         const char current_char = ref.data[i];
-        for (int n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
+        for (size_t n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
         {
           if (current_char == escaped_table[n][0])
           {
