@@ -1,5 +1,5 @@
 /*
- * Copyright © 209 Jorgen Lind
+ * Copyright © 2019 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
