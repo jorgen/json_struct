@@ -2202,7 +2202,7 @@ namespace Internal
             if (current_child.has_data)
                 return i;
         }
-        return -1;
+        return size_t(-1);
     }
 }
 

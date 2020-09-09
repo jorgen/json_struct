@@ -797,25 +797,25 @@ struct DiffContext
         : DiffContext(baseJson.c_str(), baseJson.size(), options)
     {}
 
-    void clear(const DiffOptions &options = {})
+    void clear(const DiffOptions &opt = {})
     {
         base.clear();
         diffs.clear();
-        this->options = options;
+        options = opt;
         error = DiffError::NoError;
     }
 
-    void reset(const char* baseJson, size_t baseSize, const DiffOptions &options = {})
+    void reset(const char* baseJson, size_t baseSize, const DiffOptions &opt = {})
     {
         base.reset(baseJson, baseSize);
-        this->options = options;
+        options = opt;
         diffs.clear();
         error = DiffError::NoError;
     }
 
-    void reset(const std::string &baseJson, const DiffOptions &options = {})
+    void reset(const std::string &baseJson, const DiffOptions &opt = {})
     {
-        reset(baseJson.c_str(), baseJson.size(), options);
+        reset(baseJson.c_str(), baseJson.size(), opt);
     }
 
     void changeBase(const size_t pos)
@@ -827,9 +827,9 @@ struct DiffContext
         invalidate(this->options);
     }
 
-    void invalidate(const DiffOptions &options)
+    void invalidate(const DiffOptions &opt)
     {
-        this->options = options;
+        options = opt;
         base.invalidate();
         for (auto &diffTokens : diffs)
         {
@@ -848,7 +848,7 @@ struct DiffContext
         DiffTokens diffTokens(json, size);
         error = diffTokens.error;
         if (error != DiffError::NoError)
-            return -1;
+            return size_t(-1);
         diff(diffTokens);
         diffs.emplace_back(diffTokens);
         return diffs.size() - 1;
