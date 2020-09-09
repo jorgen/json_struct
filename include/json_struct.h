@@ -4780,7 +4780,7 @@ namespace Internal
         }
       };
 
-      int digitsInNumber(uint64_t n)
+      static inline int digitsInNumber(uint64_t n)
       {
         return NumberLength<10, 17, 17>::countCharactersInNumber(n);
       }
@@ -4879,7 +4879,7 @@ namespace Internal
         return ret[index];
       }
 
-      uint64_t pow_int(int n, int exp)
+      static inline uint64_t pow_int(int n, int exp)
       {
         if (!exp)
           return 1;
