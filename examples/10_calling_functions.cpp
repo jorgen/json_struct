@@ -29,7 +29,7 @@ struct FunctionBArguments
 
 struct FunctionBReturn
 {
-    int functionBReturnA;
+    float functionBReturnA;
     std::string functionBReturnB;
     double functionBReturnC[3];
 
