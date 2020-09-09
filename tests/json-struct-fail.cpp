@@ -63,7 +63,7 @@ static void check_missing_typehandler()
     //std::string out = JS::serializeStruct(missing);
 }
 
-int main(int argc, char **argv)
+int main()
 {
     check_missing_meta();
     check_missing_typehandler();

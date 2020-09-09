@@ -64,7 +64,7 @@ void test_simple()
     Executor executor;
     std::string json_out;
     JS::DefaultCallFunctionContext context(json_data, json_out);
-    JS::Error called = context.callFunctions(executor);
+    context.callFunctions(executor);
 
     JS_ASSERT(context.execution_list.size() == 2);
 #if JS_HAVE_CONSTEXPR

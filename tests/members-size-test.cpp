@@ -85,7 +85,7 @@ int main()
     JS_ASSERT( member_count == 7);
     int array[JS::Internal::memberCount<Subclass,0 >()];
     for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++) {
-        array[i] = i;
+        array[i] = static_cast<int>(i);
     }
 
     for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)

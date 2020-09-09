@@ -7,7 +7,7 @@
 struct SmallStructWithoutOptional
 {
 	int a;
-        float b = 2.2;
+        float b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),
@@ -19,7 +19,7 @@ struct SmallStructWithoutOptional
 struct SmallStructStd
 {
 	int a;
-        std::optional<float> b = 2.2;
+        std::optional<float> b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),

@@ -28,7 +28,7 @@
 
 CMRC_DECLARE(external_json);
 
-int main(int argc, char **argv)
+int main()
 {
     auto fs = cmrc::external_json::get_filesystem();
     auto generated = fs.open("generated.json");

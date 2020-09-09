@@ -81,6 +81,6 @@ int main()
     FunctionCont cont;
     std::string json_out;
     JS::DefaultCallFunctionContext context(json, json_out);
-    JS::Error error = context.callFunctions(cont);
+    context.callFunctions(cont);
     
 }

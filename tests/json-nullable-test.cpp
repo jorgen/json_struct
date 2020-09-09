@@ -15,7 +15,7 @@ struct SmallStructWithoutNullable
 struct SmallStruct
 {
 	int a;
-        JS::Nullable<float> b = 2.2;
+        JS::Nullable<float> b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),
@@ -26,7 +26,7 @@ struct SmallStruct
 struct SmallStructNullableChecked
 {
 	int a;
-        JS::NullableChecked<float> b = 2.2;
+        JS::NullableChecked<float> b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),
