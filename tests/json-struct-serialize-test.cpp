@@ -110,9 +110,9 @@ const char expected2[] = R"json({
     "h" : 7,
     "g" : "OutputString",
     "f" : 6,
-    "e" : 5.5e0,
+    "e" : 5.5,
     "d" : 5,
-    "b" : 4.5e0,
+    "b" : 4.5,
     "a" : 4
 })json";
 
@@ -150,7 +150,7 @@ void test_escaped_data()
     JS_ASSERT(output == escaped_expected);
 }
 
-const char expected3[]=R"json({"h":7,"g":"OutputString","f":6,"e":5.5e0,"d":5,"b":4.5e0,"a":4})json";
+const char expected3[]=R"json({"h":7,"g":"OutputString","f":6,"e":5.5,"d":5,"b":4.5,"a":4})json";
 void test_compact()
 {
     Subclass subclass;

@@ -4085,6 +4085,7 @@ namespace Internal
       static inline constexpr int str_to_float_binary_exponen_init() noexcept { return  64 + 60; }
       static inline constexpr uint64_t str_to_float_mask() noexcept { return  ~((uint64_t(1) << 60) - 1); }
       static inline constexpr uint64_t str_to_float_top_bit_in_mask() noexcept { return uint64_t(1) << 63; }
+      static inline constexpr int str_to_float_expanded_length() noexcept { return 19; }
       static inline constexpr bool conversion_type_has_mask(const str_to_float_conversion_type& a) noexcept { return a[1] & str_to_float_mask(); }
       static inline constexpr bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) noexcept { return a[1] & str_to_float_top_bit_in_mask(); }
       static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type& a) noexcept { return !a[0] && !a[1]; }
@@ -4158,6 +4159,7 @@ namespace Internal
       static inline constexpr int str_to_float_binary_exponen_init() noexcept { return 60; }
       static inline constexpr uint64_t str_to_float_mask() noexcept { return  ~((uint64_t(1) << 60) - 1); }
       static inline constexpr uint64_t str_to_float_top_bit_in_mask() noexcept { return uint64_t(1) << 63; }
+      static inline constexpr int str_to_float_expanded_length() noexcept { return 10; }
       static inline constexpr bool conversion_type_has_mask(const str_to_float_conversion_type& a) noexcept { return a & str_to_float_mask(); }
       static inline constexpr bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) noexcept { return a & str_to_float_top_bit_in_mask(); }
       static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type& a) noexcept { return !a; }
@@ -4359,19 +4361,19 @@ namespace Internal
     template<typename T>
     T iabs(typename std::enable_if<std::is_unsigned<T>::value, T>::type a)
     {
-        return a;
+      return a;
     }
 
     template<typename T>
     T iabs(typename std::enable_if<std::is_signed<T>::value, T>::type a)
     {
-        return a < T(0) ? -a : a;
+      return a < T(0) ? -a : a;
     }
 
     template<typename T>
     int count_chars(T t) noexcept
     {
-      if (t < T(10))
+      if (iabs<T>(t) < T(10))
         return 1;
       constexpr int maxChars = StaticLog10<T, std::numeric_limits<T>::max(), 0, 0, true>::get() + 1;
       return CharsInDigit<T, maxChars, 0>::lower_bounds(iabs<T>(t)) - 1;
@@ -4980,11 +4982,11 @@ namespace Internal
 
         if (is_nan(f))
         {
-          return { negative, false, true };
+          return { negative, false, true, 0, 0 ,0 };
         }
         if (is_inf(f))
         {
-          return { negative, true, false };
+          return { negative, true, false, 0, 0, 0 };
         }
         if (!exp && !mentissa)
         {
@@ -5062,13 +5064,13 @@ namespace Internal
         uint64_t shortest_base10;
         compute_shortest(a, b, c, accept_smaller && zero[0], accept_larger || !zero[2], zero[1], exponent_adjust, shortest_base10);
         int significand_digit_count = count_chars(shortest_base10);
-        int32_t e = exponent_adjust + e10 + q + significand_digit_count - 1;
+        int32_t e = exponent_adjust + e10 + q;
         return { negative, false, false, uint8_t(significand_digit_count), e, shortest_base10 };
       }
 
-      static int to_string_int(const float_base10& result, char* buffer, int32_t buffer_size)
+      inline int convert_parsed_to_buffer(const float_base10& result, char* buffer, int32_t buffer_size, int max_expanded_length, int* digits_truncated = nullptr)
       {
-        if (!buffer_size)
+        if (buffer_size < 1)
           return 0;
         int offset = 0;
         if (result.nan)
@@ -5096,48 +5098,141 @@ namespace Internal
         }
 
         char significan_buffer[17];
-        assert(result.significand_digit_count <= 17);
-        uint64_t significand = result.significand;
-        for (int i = 0; i < result.significand_digit_count; i++)
+        assert(result.significand_digit_count <= uint8_t(17));
+        int digits_before_decimals = result.significand_digit_count + result.exp;
+        int digits_after_decimals = result.exp < 0 ? -result.exp : 0;
+        int complete_digits = max(1, digits_before_decimals) + max(1, digits_after_decimals) + 1;
+        if (complete_digits < max_expanded_length)
         {
-          significan_buffer[result.significand_digit_count - i - 1] = '0' + significand % 10;
-          significand /= 10;
-        }
+          char* target_buffer = buffer + offset;
+          uint64_t significand = result.significand;
+          bool print_desimal_seperator = true;
+          if (buffer_size < complete_digits)
+          {
+            int to_remove = complete_digits - buffer_size;
+            if (digits_truncated)
+              *digits_truncated = to_remove;
 
-        int32_t abs_exp = std::abs(result.exp);
-        char exponent_buffer[4];
-        int exponent_digit_count = count_chars(uint32_t(abs_exp));
-        if (result.exp < 0)
-        {
-          exponent_buffer[0] = '-';
-        }
-        for (int i = 0; i < exponent_digit_count; i++)
-        {
-          exponent_buffer[exponent_digit_count + (result.exp < 0) - i - 1] = '0' + abs_exp % 10;
-          abs_exp /= 10;
-        }
-        exponent_digit_count += result.exp < 0;
+            int to_remove_after_decimals = std::min(to_remove, digits_after_decimals);
+            for (int i = 0; i < to_remove_after_decimals; i++)
+            {
+              complete_digits--;
+              digits_after_decimals--;
+              significand /= 10;
+            }
+            to_remove -= to_remove_after_decimals;
+            if (to_remove > 0)
+            {
+              print_desimal_seperator = false;
+              if (!digits_after_decimals)
+              {
+                complete_digits--;
+                to_remove--;
 
-        buffer[offset++] = significan_buffer[0];
-        if (buffer_size < 2)
-          return 1;
-        if (result.significand_digit_count > 1)
-          buffer[offset++] = '.';
-        if (buffer_size < 3)
-          return 2;
-        int32_t to_copy = min(buffer_size - offset, int32_t(result.significand_digit_count) - 1);
-        for (int i = 0; i < to_copy; i++)
-        {
-          buffer[offset++] = significan_buffer[1 + i];
+              }
+              complete_digits--;
+              to_remove--;
+              if (to_remove > 0)
+              {
+                int to_remove_before_decimals = std::min(to_remove, digits_before_decimals);
+                for (int i = 0; i < to_remove_before_decimals; i++)
+                {
+                  complete_digits--;
+                  digits_before_decimals--;
+                  significand /= 10;
+                }
+              }
+            }
+            else if (to_remove == 0 && digits_after_decimals == 0)
+            {
+              print_desimal_seperator = false;
+              complete_digits--;
+            }
+          }
+          int index_pos = std::max(complete_digits - 1, 0);
+          for (int i = 0; i < digits_after_decimals; i++, index_pos--)
+          {
+            char remainder = char(significand % 10);
+            significand /= 10;
+            target_buffer[index_pos] = '0' + remainder;
+          }
+          if (print_desimal_seperator)
+          {
+            if (digits_after_decimals == 0)
+            {
+              target_buffer[index_pos--] = '0';
+            }
+            target_buffer[index_pos--] = '.';
+          }
+          int add_zeros_before_decimal = std::max(result.exp, 0);
+          for (int i = 0; i < add_zeros_before_decimal; i++, index_pos--)
+          {
+            target_buffer[index_pos] = '0';
+            digits_before_decimals--;
+          }
+          for (int i = 0; i < digits_before_decimals; i++, index_pos--)
+          {
+            char remainder = char(significand % 10);
+            significand /= 10;
+            target_buffer[index_pos] = '0' + remainder;
+          }
+          if (digits_before_decimals <= 0)
+            target_buffer[index_pos] = '0';
+          return complete_digits + offset;
         }
-        if (offset >= buffer_size)
-          return offset;
-
-        buffer[offset++] = 'e';
-        to_copy = min(buffer_size - offset, exponent_digit_count);
-        for (int i = 0; i < to_copy; i++)
+        else
         {
-          buffer[offset++] = exponent_buffer[i];
+          uint64_t significand = result.significand;
+          int exp = result.exp;
+          for (int i = 0; i < result.significand_digit_count; i++)
+          {
+            significan_buffer[result.significand_digit_count - i - 1] = '0' + significand % 10;
+            significand /= 10;
+          }
+
+          exp += result.significand_digit_count;
+          exp--;
+          char exponent_buffer[4];
+          int exponent_digit_count = count_chars(exp);
+          if (exp < 0)
+          {
+            exponent_buffer[0] = '-';
+          }
+          int abs_exp = std::abs(exp);
+          for (int i = 0; i < exponent_digit_count; i++)
+          {
+            exponent_buffer[exponent_digit_count + (exp < 0) - i - 1] = '0' + abs_exp % 10;
+            abs_exp /= 10;
+          }
+          exponent_digit_count += exp < 0;
+
+          if (offset < buffer_size)
+            buffer[offset++] = significan_buffer[0];
+          else
+            return offset;
+
+          if (result.significand_digit_count > 1)
+          {
+            if (offset < buffer_size)
+              buffer[offset++] = '.';
+            else return offset;
+          }
+          int32_t to_copy = min(buffer_size - offset, int32_t(result.significand_digit_count) - 1);
+          for (int i = 0; i < to_copy; i++)
+          {
+            buffer[offset++] = significan_buffer[1 + i];
+          }
+
+          if (offset >= buffer_size)
+            return offset;
+
+          buffer[offset++] = 'e';
+
+          to_copy = min(buffer_size - offset, exponent_digit_count);
+          for (int i = 0; i < to_copy; i++)
+          {
+            buffer[offset++] = exponent_buffer[i];
+          }
         }
 
         return offset;
@@ -5337,19 +5432,20 @@ namespace Internal
     namespace ryu
     {
       template<typename T>
+      int to_buffer(T d, char* buffer, int buffer_size, int* digits_truncated = nullptr)
+      {
+        auto decoded = decode(d);
+        return convert_parsed_to_buffer(decoded, buffer, buffer_size, float_info<T>::str_to_float_expanded_length(), digits_truncated);
+      }
+
+      template<typename T>
       inline std::string to_string(T f)
       {
         auto decoded = decode(f);
         std::string ret;
         ret.resize(25);
-        ret.resize(size_t(to_string_int(decoded, &ret[0], int(ret.size()))));
+        ret.resize(size_t(convert_parsed_to_buffer(decoded, &ret[0], int(ret.size()), float_info<T>::str_to_float_expanded_length())));
         return ret;
-      }
-
-      inline int to_string(double d, char* buffer, int buffer_size)
-      {
-        auto decoded = decode(d);
-        return to_string_int(decoded, buffer, buffer_size);
       }
     }
 
@@ -5401,7 +5497,7 @@ struct TypeHandler<double>
         //char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
         char buf[32];
         int size;
-        size = Internal::ft::ryu::to_string(d, buf, sizeof(buf));
+        size = Internal::ft::ryu::to_buffer(d, buf, sizeof(buf));
 
         if (size <= 0) {
             return;
@@ -5433,7 +5529,7 @@ struct TypeHandler<float>
     {
         char buf[16];
         int size;
-        size = Internal::ft::ryu::to_string(f, buf, sizeof(buf));
+        size = Internal::ft::ryu::to_buffer(f, buf, sizeof(buf));
         if (size < 0) {
             return;
         }
