@@ -85,20 +85,28 @@ void test_zero_value_parse(const char * const json)
 	JS_ASSERT(zero.d_pos_zero == d_pos_zero);
 	JS_ASSERT(zero.d_neg_zero == d_neg_zero);
 
-	auto foo1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_pos_zero)>::uint_alias*>(&zero.f_pos_zero);
-	auto foo2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_neg_zero)>::uint_alias*>(&zero.f_neg_zero);
-	auto foo3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_pos_zero)>::uint_alias*>(&zero.d_pos_zero);
-	auto foo4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_neg_zero)>::uint_alias*>(&zero.d_neg_zero);
+	JS_ASSERT(memcmp(&f_pos_zero, &zero.f_pos_zero, sizeof(float))  == 0);
+	JS_ASSERT(memcmp(&f_neg_zero, &zero.f_neg_zero, sizeof(float))  == 0);
+	JS_ASSERT(memcmp(&d_pos_zero, &zero.d_pos_zero, sizeof(double)) == 0);
+	JS_ASSERT(memcmp(&d_neg_zero, &zero.d_neg_zero, sizeof(double)) == 0);
 
-	auto bar1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_pos_zero)>::uint_alias*>(&f_pos_zero);
-	auto bar2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_neg_zero)>::uint_alias*>(&f_neg_zero);
-	auto bar3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_pos_zero)>::uint_alias*>(&d_pos_zero);
-	auto bar4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_neg_zero)>::uint_alias*>(&d_neg_zero);
+	// --------------------------
+	// Keeping this code to debug on GCC later. foo2 == bar2 fails!
+	//auto foo1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_pos_zero)>::uint_alias*>(&zero.f_pos_zero);
+	//auto foo2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_neg_zero)>::uint_alias*>(&zero.f_neg_zero);
+	//auto foo3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_pos_zero)>::uint_alias*>(&zero.d_pos_zero);
+	//auto foo4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_neg_zero)>::uint_alias*>(&zero.d_neg_zero);
 
-	JS_ASSERT(foo1 == bar1);
-	JS_ASSERT(foo2 == bar2);
-	JS_ASSERT(foo3 == bar3);
-	JS_ASSERT(foo4 == bar4);
+	//auto bar1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_pos_zero)>::uint_alias*>(&f_pos_zero);
+	//auto bar2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_neg_zero)>::uint_alias*>(&f_neg_zero);
+	//auto bar3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_pos_zero)>::uint_alias*>(&d_pos_zero);
+	//auto bar4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_neg_zero)>::uint_alias*>(&d_neg_zero);
+
+	//JS_ASSERT(foo1 == bar1);
+	//JS_ASSERT(foo2 == bar2);
+	//JS_ASSERT(foo3 == bar3);
+	//JS_ASSERT(foo4 == bar4);
+	// --------------------------
 }
 
 int main()
