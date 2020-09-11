@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/jorgen/json_struct.svg?branch=master)](https://travis-ci.org/jorgen/json_struct)
 
-json_struct is a single header only library parse JSON to C++ structs/classes
+json_struct is a single header only library that parses JSON to C++ structs/classes
 and serializing structs/classes to JSON.
 
 It is intented to be used by copying the json_struct.h file from the include
