@@ -76,3 +76,21 @@ if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
     add_test(NAME json-optional COMMAND json-optional)
 endif()
 
+# Tests for zero value floating points (both negative and positive zeros).
+# The tests are run with different compiler options for floating point math.
+add_executable(zero-value-test-fp-default zero-value-test.cpp)
+add_executable(zero-value-test-fp-fast zero-value-test.cpp)
+add_test(NAME zero-value-test-fp-default COMMAND zero-value-test-fp-default)
+add_test(NAME zero-value-test-fp-fast COMMAND zero-value-test-fp-fast)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    target_compile_options(zero-value-test-fp-fast PRIVATE "/fp:fast")
+    message("Enable fast floating point math for zero-value-test-fp-fast: /fp:fast")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    target_compile_options(zero-value-test-fp-fast PRIVATE "-ffast-math")
+    message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    target_compile_options(zero-value-test-fp-fast PRIVATE "-ffast-math")
+    message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
+endif()
+
