@@ -5540,8 +5540,8 @@ namespace Internal
       if (parsed.significand < ((uint64_t(1) << 53))
         && iabs<int>(parsed.exp) < count_chars((uint64_t(1) << 53)))
       {
-        double ds(parsed.significand);
-        double de(getPow10(iabs<int>(parsed.exp)));
+        double ds(double(parsed.significand));
+        double de(double(getPow10(iabs<int>(parsed.exp))));
         if (parsed.negative)
           ds = -ds;
         return parsed.exp < 0 ? T(ds / de) : T(ds * de);
