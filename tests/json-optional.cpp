@@ -7,7 +7,7 @@
 struct SmallStructWithoutOptional
 {
 	int a;
-        float b = 2.2f;
+  float b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),
@@ -19,7 +19,7 @@ struct SmallStructWithoutOptional
 struct SmallStructStd
 {
 	int a;
-        std::optional<float> b = 2.2f;
+  std::optional<float> b = 2.2f;
 
 	JS_OBJECT(
 		JS_MEMBER(a),
@@ -35,7 +35,7 @@ const char json[] = R"json(
 }
 )json";
 
-int main()
+int main(int argc, char **argv)
 {
     {
         JS::ParseContext context(json);
