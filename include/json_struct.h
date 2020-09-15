@@ -145,26 +145,6 @@
 #include <optional>
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4503)
-#if _MSC_VER > 1800
-#define JS_CONSTEXPR constexpr
-#define JS_HAS_CONSTEXPR 1
-#define JS_NOEXCEPT noexcept
-#define JS_HAS_NOEXCEPT 1
-#else
-#define JS_CONSTEXPR
-#define JS_HAS_CONSTEXPR 0
-#define JS_NOEXCEPT
-#define JS_HAS_NOEXCEPT 0
-#endif
-#else
-#define JS_CONSTEXPR constexpr
-#define JS_HAS_CONSTEXPR 1
-#define JS_NOEXCEPT noexcept
-#define JS_HAS_NOEXCEPT 1
-#endif
-
 #if defined(min) || defined(max)
 
 #error min or max macro is defined. Make sure these are not defined before including json_struct.h.\
@@ -189,7 +169,7 @@ struct DataRef
     /*!
      * Constructs a null Dataref pointing to "" with size 0.
      */
-    JS_CONSTEXPR explicit DataRef()
+    constexpr explicit DataRef()
         : data("")
         , size(0)
     {}
@@ -199,7 +179,7 @@ struct DataRef
      * \param data points to start of data.
      * \param size size of data.
      */
-    JS_CONSTEXPR explicit DataRef(const char *data, size_t size)
+    constexpr explicit DataRef(const char *data, size_t size)
         : data(data)
         , size(size)
     {}
@@ -210,7 +190,7 @@ struct DataRef
      * \param data  start of the data.
      */
     template <size_t N>
-    JS_CONSTEXPR explicit DataRef(const char (&data)[N])
+    constexpr explicit DataRef(const char (&data)[N])
         : data(data)
         , size(N -1)
     {}
@@ -1904,7 +1884,7 @@ struct Tuple
 
         using Seq = typename Internal::GenSequence<sizeof...(Ts)>::type;
         Internal::TupleImpl<Seq, Ts...> impl;
-        static JS_CONSTEXPR const size_t size = sizeof...(Ts);
+        static constexpr const size_t size = sizeof...(Ts);
 
         template<size_t Index>
         const typename TypeAt<Index, Ts...>::type &get() const
@@ -1948,7 +1928,7 @@ struct TypeAt<I, Tuple<Ts...>>
 template<>
 struct Tuple<>
 {
-        static JS_CONSTEXPR const size_t size = 0;
+        static constexpr const size_t size = 0;
 };
 
 template<typename ...Ts>
@@ -2218,19 +2198,19 @@ struct IsOptionalType {
     typedef char no[2];
 
     template <typename C>
-    static JS_CONSTEXPR yes& test_in_optional(typename C::IsOptionalType*);
+    static constexpr yes& test_in_optional(typename C::IsOptionalType*);
 
     template <typename>
-    static JS_CONSTEXPR no& test_in_optional(...);
+    static constexpr no& test_in_optional(...);
 
-    static JS_CONSTEXPR const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
+    static constexpr const bool value = sizeof(test_in_optional<T>(0)) == sizeof(yes);
 };
 
 /// \private
 template <typename T>
 struct IsOptionalType<std::unique_ptr<T>>
 {
-    static JS_CONSTEXPR const bool value = true;
+    static constexpr const bool value = true;
 };
 
 #ifdef JS_STD_OPTIONAL
@@ -2238,7 +2218,7 @@ struct IsOptionalType<std::unique_ptr<T>>
 template <typename T>
 struct IsOptionalType<std::optional<T>>
 {
-    static JS_CONSTEXPR const bool value = true;
+    static constexpr const bool value = true;
 };
 #endif
 
@@ -2337,10 +2317,10 @@ struct HasJsonStructBase {
     typedef char no[2];
 
     template <typename C>
-        static JS_CONSTEXPR yes& test_in_base(typename C::template JsonStructBase<C>*);
+        static constexpr yes& test_in_base(typename C::template JsonStructBase<C>*);
 
     template <typename>
-        static JS_CONSTEXPR no& test_in_base(...);
+        static constexpr no& test_in_base(...);
 };
 
 template<typename JS_BASE_STRUCT_T, typename JS_OBJECT_T>
@@ -2567,13 +2547,13 @@ namespace Internal {
 }
 
 template<typename T, typename U, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
+constexpr const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char(&name)[NAME_SIZE], T U::* member, Aliases ... aliases)
 {
     return { {DataRef(name), DataRef(aliases)... }, member };
 }
 
 template<typename T, size_t NAME_SIZE>
-JS_CONSTEXPR const Internal::SuperInfo<T> makeSuperInfo(const char(&name)[NAME_SIZE])
+constexpr const Internal::SuperInfo<T> makeSuperInfo(const char(&name)[NAME_SIZE])
 {
   return Internal::SuperInfo<T>(DataRef(name));
 }
@@ -2593,18 +2573,14 @@ namespace Internal {
         {
             if (memberInfo.name[0].size == context.token.name.size && memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
             {
-#if JS_HAS_CONSTEXPR
                 assigned_members[index] = true;
-#endif
                 return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
             }
         } else {
             for (size_t start = 1; start < MI_NC; start++) {
                 if (memberInfo.name[start].size == context.token.name.size && memcmp(memberInfo.name[start].data, context.token.name.data, context.token.name.size) == 0)
                 {
-#if JS_HAS_CONSTEXPR
                     assigned_members[index] = true;
-#endif
                     return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
                 }
             }
@@ -2615,7 +2591,6 @@ namespace Internal {
     template<typename MI_T, typename MI_M, size_t MI_NC>
     inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_t index, bool *assigned_members, std::vector<std::string> &missing_members, const char *super_name)
     {
-#if JS_HAS_CONSTEXPR
         if (assigned_members[index])
             return Error::NoError;
         if (IsOptionalType<MI_T>::value)
@@ -2625,9 +2600,6 @@ namespace Internal {
         to_push += std::string(memberInfo.name[0].data, memberInfo.name[0].size);
         missing_members.push_back(to_push);
         return Error::UnassignedRequiredMember;
-#else
-        return Error::NoError;
-#endif
     }
 
     template<typename T, typename MI_T, typename MI_M, size_t MI_NC>
@@ -2646,7 +2618,7 @@ namespace Internal {
     {
         static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members);
         static Error verifyMembers(bool *assigned_members, std::vector<std::string> &missing_members);
-        static JS_CONSTEXPR size_t membersInSuperClasses();
+        static constexpr size_t membersInSuperClasses();
         static void serializeMembers(const T &from_type, Token &token, Serializer &serializer);
     };
 
@@ -2663,7 +2635,7 @@ namespace Internal {
             return SuperClassHandler<T, PAGE, SIZE - 1>::verifyMembers(assigned_members, missing_members);
         }
 
-        static JS_CONSTEXPR size_t membersInSuperClasses()
+        static constexpr size_t membersInSuperClasses()
         {
             return SuperClassHandler<T, PAGE, SIZE - 1>::membersInSuperClasses();
         }
@@ -2675,7 +2647,7 @@ namespace Internal {
     };
 
     template<typename T, size_t PAGE>
-    JS_CONSTEXPR size_t memberCount()
+    constexpr size_t memberCount()
     {
         using Members = typename std::remove_reference<decltype(Internal::template JsonStructBaseDummy<T,T>::js_static_meta_data_info())>::type;
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonStructBaseDummy<T,T>::js_static_meta_super_info())>::type;
@@ -2701,7 +2673,7 @@ namespace Internal {
             return Error::NoError;
         }
 
-        static JS_CONSTEXPR size_t membersInSuperClasses()
+        static constexpr size_t membersInSuperClasses()
         {
             return 0;
         }
@@ -2783,11 +2755,7 @@ namespace Internal {
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members, context, primary, assigned_members);
         if (error != Error::MissingPropertyMember)
             return error;
-#if JS_HAS_CONSTEXPR
         return SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
-#else
-        return SuperClassHandler<T, PAGE, INDEX - 1>::handleSuperClasses(to_type, context, primary, assigned_members);
-#endif
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
@@ -2799,26 +2767,18 @@ namespace Internal {
         auto &members = Internal::template JsonStructBaseDummy<Super,Super>::js_static_meta_data_info();
         const char *super_name = Internal::template JsonStructBaseDummy<T,T>::js_static_meta_super_info().template get<INDEX>().name.data;
         Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
-#if JS_HAS_CONSTEXPR
         Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, missing_members);
-#else
-        Error superError = SuperClassHandler<T, PAGE, INDEX - 1>::verifyMembers(assigned_members, missing_members);
-#endif
         if (error != Error::NoError)
             return error;
         return superError;
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
-    size_t JS_CONSTEXPR SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
+    size_t constexpr SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
     {
         using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonStructBaseDummy<T,T>::js_static_meta_super_info())>::type;
         using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-#if JS_HAS_CONSTEXPR
         return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
-#else
-        return memberCount<Super, PAGE>() + SuperClassHandler<T, PAGE, INDEX - 1>::membersInSuperClasses();
-#endif
     }
 
     template<typename T, size_t PAGE, size_t INDEX>
@@ -2829,11 +2789,7 @@ namespace Internal {
         using Members = typename std::remove_reference<decltype(Internal::template JsonStructBaseDummy<Super,Super>::js_static_meta_data_info())>::type;
         auto &members = Internal::template JsonStructBaseDummy<Super,Super>::js_static_meta_data_info();
         MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
-#if JS_HAS_CONSTEXPR
         SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
-#else
-        SuperClassHandler<T, PAGE, INDEX - 1>::serializeMembers(from_type, token, serializer);
-#endif
     }
 
     template<typename T, size_t PAGE>
@@ -2856,7 +2812,7 @@ namespace Internal {
             const char *super_name = Internal::template JsonStructBaseDummy<T,T>::js_static_meta_super_info().template get<0>().name.data;
             return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, missing_members, super_name);
         }
-        JS_CONSTEXPR static size_t membersInSuperClasses()
+        constexpr static size_t membersInSuperClasses()
         {
             using SuperMeta = typename std::remove_reference<decltype(Internal::template JsonStructBaseDummy<T,T>::js_static_meta_super_info())>::type;
             using Super = typename TypeAt<0, SuperMeta>::type::type;
@@ -3181,42 +3137,42 @@ struct FunctionInfo<T, Ret, void, NAME_COUNT, 2>
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { { DataRef(name), DataRef(aliases)...} , function };
 }
 
 /// \private
 template<typename T, typename Ret, typename Arg, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, Arg, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(Arg, CallFunctionContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...},   function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 0> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(void), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 1> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionErrorContext &), Aliases ...aliases)
 {
     return { {DataRef(name), DataRef(aliases)...}, function };
 }
 
 /// \private
 template<typename T, typename Ret, size_t NAME_SIZE, typename ...Aliases>
-JS_CONSTEXPR FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
+constexpr FunctionInfo<T, Ret, void, sizeof...(Aliases) + 1, 2> makeFunctionInfo(const char(&name)[NAME_SIZE], Ret(T::*function)(CallFunctionContext &), Aliases ...aliases)
 {
     return{ {DataRef(name), DataRef(aliases)...}, function };
 }
@@ -3228,10 +3184,10 @@ struct HasJsonStructFunctionContainer {
     typedef char no[2];
 
     template <typename C>
-        static JS_CONSTEXPR yes& test_in_base(typename C::template JsonStructFunctionContainer<C>*);
+        static constexpr yes& test_in_base(typename C::template JsonStructFunctionContainer<C>*);
 
     template <typename>
-        static JS_CONSTEXPR no& test_in_base(...);
+        static constexpr no& test_in_base(...);
 };
 
 template<typename JS_BASE_CONTAINER_STRUCT_T, typename JS_CONTAINER_STRUCT_T>
@@ -3866,12 +3822,8 @@ inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
         return error;
     auto &members = Internal::JsonStructBaseDummy<T,T>::js_static_meta_data_info();
     using MembersType = typename std::remove_reference<decltype(members)>::type;
-#if JS_HAS_CONSTEXPR
     bool assigned_members[Internal::memberCount<T, 0>()];
     memset(assigned_members, 0, sizeof(assigned_members));
-#else
-    bool *assigned_members = nullptr;
-#endif
     while(context.token.value_type != JS::Type::ObjectEnd)
     {
         std::string token_name(context.token.name.data, context.token.name.size);
@@ -4095,8 +4047,6 @@ struct TypeHandler<std::string>
     }
 };
 
-#define FT_CONSTEXPR JS_CONSTEXPR
-#define FT_NOEXCEPT JS_NOEXCEPT
 
 namespace Internal
 {
@@ -4127,8 +4077,8 @@ namespace Internal
       illegal_exponent_value
     };
 
-    FT_CONSTEXPR static inline uint64_t high(uint64_t x) { return x >> 32; }
-    FT_CONSTEXPR static inline uint64_t low(uint64_t x) { return x & ~uint32_t(0); }
+    constexpr static inline uint64_t high(uint64_t x) { return x >> 32; }
+    constexpr static inline uint64_t low(uint64_t x) { return x & ~uint32_t(0); }
 
     template<int shift = 1>
     inline void left_shift(uint64_t(&a)[2])
@@ -4206,24 +4156,24 @@ namespace Internal
     template<>
     struct float_info<double>
     {
-      static inline FT_CONSTEXPR int mentissa_width() FT_NOEXCEPT { return 52; }
-      static inline FT_CONSTEXPR int exponent_width() FT_NOEXCEPT { return 11; }
-      static inline FT_CONSTEXPR int bias() FT_NOEXCEPT { return (1 << (exponent_width() - 1)) - 1; }
-      static inline FT_CONSTEXPR int max_base10_exponent() FT_NOEXCEPT { return 308; }
-      static inline FT_CONSTEXPR int min_base10_exponent() FT_NOEXCEPT { return -324; }
-      static inline FT_CONSTEXPR int max_double_5_pow_q() FT_NOEXCEPT { return 23; }//floor(log_5(1 << (mentissawidth + 2)))
-      static inline FT_CONSTEXPR int max_double_2_pow_q() FT_NOEXCEPT { return 54; }//floor(log_2(1 << (mentissawidth + 2)))
+      static inline constexpr int mentissa_width() noexcept { return 52; }
+      static inline constexpr int exponent_width() noexcept { return 11; }
+      static inline constexpr int bias() noexcept { return (1 << (exponent_width() - 1)) - 1; }
+      static inline constexpr int max_base10_exponent() noexcept { return 308; }
+      static inline constexpr int min_base10_exponent() noexcept { return -324; }
+      static inline constexpr int max_double_5_pow_q() noexcept { return 23; }//floor(log_5(1 << (mentissawidth + 2)))
+      static inline constexpr int max_double_2_pow_q() noexcept { return 54; }//floor(log_2(1 << (mentissawidth + 2)))
 
 
       using str_to_float_conversion_type = uint64_t[2];
       using uint_alias = uint64_t;
-      static inline FT_CONSTEXPR int str_to_float_binary_exponen_init() FT_NOEXCEPT { return  64 + 60; }
-      static inline FT_CONSTEXPR uint64_t str_to_float_mask() FT_NOEXCEPT { return  ~((uint64_t(1) << 60) - 1); }
-      static inline FT_CONSTEXPR uint64_t str_to_float_top_bit_in_mask() FT_NOEXCEPT { return uint64_t(1) << 63; }
-      static inline FT_CONSTEXPR int str_to_float_expanded_length() FT_NOEXCEPT { return 19; }
-      static inline FT_CONSTEXPR bool conversion_type_has_mask(const str_to_float_conversion_type& a) FT_NOEXCEPT { return a[1] & str_to_float_mask(); }
-      static inline FT_CONSTEXPR bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) FT_NOEXCEPT { return a[1] & str_to_float_top_bit_in_mask(); }
-      static inline FT_CONSTEXPR bool conversion_type_is_null(const str_to_float_conversion_type& a) FT_NOEXCEPT { return !a[0] && !a[1]; }
+      static inline constexpr int str_to_float_binary_exponen_init() noexcept { return  64 + 60; }
+      static inline constexpr uint64_t str_to_float_mask() noexcept { return  ~((uint64_t(1) << 60) - 1); }
+      static inline constexpr uint64_t str_to_float_top_bit_in_mask() noexcept { return uint64_t(1) << 63; }
+      static inline constexpr int str_to_float_expanded_length() noexcept { return 19; }
+      static inline constexpr bool conversion_type_has_mask(const str_to_float_conversion_type& a) noexcept { return a[1] & str_to_float_mask(); }
+      static inline constexpr bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) noexcept { return a[1] & str_to_float_top_bit_in_mask(); }
+      static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type& a) noexcept { return !a[0] && !a[1]; }
       static inline void copy_denormal_to_type(const str_to_float_conversion_type& a, int binary_exponent, bool negative, double& to_digit)
       {
         uint64_t q = a[1];
@@ -4281,23 +4231,23 @@ namespace Internal
     template<>
     struct float_info<float>
     {
-      static inline FT_CONSTEXPR int mentissa_width() FT_NOEXCEPT { return 23; }
-      static inline FT_CONSTEXPR int exponent_width() FT_NOEXCEPT { return 8; }
-      static inline FT_CONSTEXPR int bias() FT_NOEXCEPT { return (1 << (exponent_width() - 1)) - 1; }
-      static inline FT_CONSTEXPR int max_base10_exponent() FT_NOEXCEPT { return 38; }
-      static inline FT_CONSTEXPR int min_base10_exponent() FT_NOEXCEPT { return -45; }
-      static inline FT_CONSTEXPR int max_double_5_pow_q() FT_NOEXCEPT { return 10; } //floor(log_5(1 << (mentissawidth + 2)))
-      static inline FT_CONSTEXPR int max_double_2_pow_q() FT_NOEXCEPT { return 25; } //floor(log_2(1 << (mentissawidth + 2)))
+      static inline constexpr int mentissa_width() noexcept { return 23; }
+      static inline constexpr int exponent_width() noexcept { return 8; }
+      static inline constexpr int bias() noexcept { return (1 << (exponent_width() - 1)) - 1; }
+      static inline constexpr int max_base10_exponent() noexcept { return 38; }
+      static inline constexpr int min_base10_exponent() noexcept { return -45; }
+      static inline constexpr int max_double_5_pow_q() noexcept { return 10; } //floor(log_5(1 << (mentissawidth + 2)))
+      static inline constexpr int max_double_2_pow_q() noexcept { return 25; } //floor(log_2(1 << (mentissawidth + 2)))
 
       using str_to_float_conversion_type = uint64_t;
       using uint_alias = uint32_t;
-      static inline FT_CONSTEXPR int str_to_float_binary_exponen_init() FT_NOEXCEPT { return 60; }
-      static inline FT_CONSTEXPR uint64_t str_to_float_mask() FT_NOEXCEPT { return  ~((uint64_t(1) << 60) - 1); }
-      static inline FT_CONSTEXPR uint64_t str_to_float_top_bit_in_mask() FT_NOEXCEPT { return uint64_t(1) << 63; }
-      static inline FT_CONSTEXPR int str_to_float_expanded_length() FT_NOEXCEPT { return 10; }
-      static inline FT_CONSTEXPR bool conversion_type_has_mask(const str_to_float_conversion_type& a) FT_NOEXCEPT { return a & str_to_float_mask(); }
-      static inline FT_CONSTEXPR bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) FT_NOEXCEPT { return a & str_to_float_top_bit_in_mask(); }
-      static inline FT_CONSTEXPR bool conversion_type_is_null(const str_to_float_conversion_type& a) FT_NOEXCEPT { return !a; }
+      static inline constexpr int str_to_float_binary_exponen_init() noexcept { return 60; }
+      static inline constexpr uint64_t str_to_float_mask() noexcept { return  ~((uint64_t(1) << 60) - 1); }
+      static inline constexpr uint64_t str_to_float_top_bit_in_mask() noexcept { return uint64_t(1) << 63; }
+      static inline constexpr int str_to_float_expanded_length() noexcept { return 10; }
+      static inline constexpr bool conversion_type_has_mask(const str_to_float_conversion_type& a) noexcept { return a & str_to_float_mask(); }
+      static inline constexpr bool conversion_type_has_top_bit_in_mask(const str_to_float_conversion_type& a) noexcept { return a & str_to_float_top_bit_in_mask(); }
+      static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type& a) noexcept { return !a; }
       static inline void copy_denormal_to_type(const str_to_float_conversion_type& a, int binary_exponent, bool negative, float& to_digit)
       {
         uint64_t q = a;
@@ -4424,7 +4374,7 @@ namespace Internal
     template<typename T, int COUNT, T SUM>
     struct Pow10
     {
-      static inline T get() FT_NOEXCEPT
+      static inline T get() noexcept
       {
         return Pow10<T, COUNT - 1, SUM* T(10)>::get();
       }
@@ -4432,7 +4382,7 @@ namespace Internal
     template<typename T, T SUM>
     struct Pow10<T, 1, SUM>
     {
-      static inline T get() FT_NOEXCEPT
+      static inline T get() noexcept
       {
         return SUM;
       }
@@ -4440,7 +4390,7 @@ namespace Internal
     template<typename T, T SUM>
     struct Pow10<T, 0, SUM>
     {
-      static inline T get() FT_NOEXCEPT
+      static inline T get() noexcept
       {
         return 1;
       }
@@ -4449,7 +4399,7 @@ namespace Internal
     template<typename T, T VALUE, int SUM, T ABORT_VALUE, bool CONTINUE>
     struct StaticLog10
     {
-      FT_CONSTEXPR static int get() FT_NOEXCEPT
+      constexpr static int get() noexcept
       {
         return StaticLog10<T, VALUE / 10, SUM + 1, ABORT_VALUE, VALUE / 10 != ABORT_VALUE>::get();
       }
@@ -4458,7 +4408,7 @@ namespace Internal
     template<typename T, T VALUE, T ABORT_VALUE, int SUM>
     struct StaticLog10<T, VALUE, SUM, ABORT_VALUE, false>
     {
-      FT_CONSTEXPR static int get() FT_NOEXCEPT
+      constexpr static int get() noexcept
       {
         return SUM;
       }
@@ -4467,7 +4417,7 @@ namespace Internal
     template<typename T, int WIDTH, int CURRENT>
     struct CharsInDigit
     {
-      static int lower_bounds(T t) FT_NOEXCEPT
+      static int lower_bounds(T t) noexcept
       {
         if (Pow10<T, CURRENT + WIDTH / 2, 1>::get() - 1 < t)
         {
@@ -4479,7 +4429,7 @@ namespace Internal
     template<typename T, int CURRENT>
     struct CharsInDigit<T, 0, CURRENT>
     {
-      static int lower_bounds(T) FT_NOEXCEPT
+      static int lower_bounds(T) noexcept
       {
         return CURRENT;
       }
@@ -4487,7 +4437,7 @@ namespace Internal
     template<typename T, int CURRENT>
     struct CharsInDigit<T, -1, CURRENT>
     {
-      static int lower_bounds(T) FT_NOEXCEPT
+      static int lower_bounds(T) noexcept
       {
         return CURRENT;
       }
@@ -4506,11 +4456,11 @@ namespace Internal
     }
 
     template<typename T>
-    int count_chars(T t) FT_NOEXCEPT
+    int count_chars(T t) noexcept
     {
       if (iabs<T>(t) < T(10))
         return 1;
-      FT_CONSTEXPR int maxChars = StaticLog10<T, std::numeric_limits<T>::max(), 0, 0, true>::get() + 1;
+      constexpr int maxChars = StaticLog10<T, std::numeric_limits<T>::max(), 0, 0, true>::get() + 1;
       return CharsInDigit<T, maxChars, 0>::lower_bounds(iabs<T>(t)) - 1;
     }
 
@@ -4524,8 +4474,8 @@ namespace Internal
       template<>
       struct cache_values<double>
       {
-        FT_CONSTEXPR static const int b0 = 124;
-        FT_CONSTEXPR static const int b1 = 124;
+        constexpr static const int b0 = 124;
+        constexpr static const int b1 = 124;
 
         static const uint64_t* less_than(int index)
         {
@@ -4856,8 +4806,8 @@ namespace Internal
       template<>
       struct cache_values<float>
       {
-        FT_CONSTEXPR static const int b0 = 59;
-        FT_CONSTEXPR static const int b1 = 61;
+        constexpr static const int b0 = 59;
+        constexpr static const int b1 = 61;
 
         static const uint64_t* less_than(int index)
         {
@@ -4916,9 +4866,9 @@ namespace Internal
       };
 
 
-      FT_CONSTEXPR static const double log_10_2 = 0.30102999566398114;
-      FT_CONSTEXPR static const double log_10_5 = 0.6989700043360189;
-      FT_CONSTEXPR static const double log_2_5 = 2.321928094887362;
+      constexpr static const double log_10_2 = 0.30102999566398114;
+      constexpr static const double log_10_5 = 0.6989700043360189;
+      constexpr static const double log_2_5 = 2.321928094887362;
 
       template<typename T>
       inline void normalize(int& exp, uint64_t& mentissa)
