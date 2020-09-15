@@ -42,9 +42,6 @@ add_executable(json-string-with-nullterminator-test json-string-with-nulltermina
 add_executable(multi-compilation-units multi-compilation-units-1.cpp multi-compilation-units-2.cpp multi-compilation-units-main.cpp)
 target_link_libraries(json-reformat PRIVATE external_json::rc)
 
-#add_executable(json-test-macros json-test-macros.cpp)
-#target_compile_options(json-test-macros PRIVATE /E)
-
 target_include_directories(json-struct-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
 add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
