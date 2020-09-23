@@ -47,7 +47,8 @@ TEST_CASE("test_optional", "[json_struct]")
     context.parseTo(data);
     REQUIRE(context.error == JS::Error::NoError);
     REQUIRE(data.a == 1);
-    REQUIRE(data.b.value() > 2.199 && data.b.value() < 2.201);
+    REQUIRE(data.b.value() > 2.199);
+    REQUIRE(data.b.value() < 2.201);
   }
 #endif
 }

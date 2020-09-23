@@ -9,9 +9,6 @@ cmrc_add_resource_library(
     generated.json
     )
 
-add_executable(json-struct-performance json-struct-performance.cpp
-                include/json/0.6/jsoncpp.cpp)
-
 add_library(catch_main STATIC catch-main.cpp)
 set(catch_test_sources 
                            json-struct-test.cpp
@@ -59,10 +56,12 @@ target_link_libraries(catch-tests PRIVATE catch_main external_json::rc)
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
 target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h catch2/catch.hpp)
 endif()
+add_test(NAME catch-tests COMMAND catch-tests)
 
+add_executable(json-struct-performance json-struct-performance.cpp
+                include/json/0.6/jsoncpp.cpp)
 target_include_directories(json-struct-performance PRIVATE include/json/0.6)
 #add_test(NAME json-struct-performance COMMAND json-struct-performance)
-add_test(NAME catch-tests COMMAND catch-tests)
 
 # Tests for zero value floating points (both negative and positive zeros).
 # The tests are run with different compiler options for floating point math.
@@ -84,7 +83,7 @@ endif()
 
 
 add_custom_target(clangformat_tests
-  COMMAND clang-format -i ${catch_test_sources}
+  COMMAND clang-format -i ${catch_test_sources} json-struct-performance.cpp
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
   SOURCES ${catch_test_sources}
   )

@@ -2029,12 +2029,12 @@ struct GenSequence
 template <size_t index, typename T>
 struct Element
 {
-  Element()
+  constexpr Element()
     : data()
   {
   }
 
-  Element(const T &t)
+  constexpr Element(const T &t)
     : data(t)
   {
   }
@@ -2048,12 +2048,12 @@ struct TupleImpl;
 template <size_t... indices, typename... Ts>
 struct TupleImpl<Sequence<indices...>, Ts...> : public Element<indices, Ts>...
 {
-  TupleImpl()
+  constexpr TupleImpl()
     : Element<indices, Ts>()...
   {
   }
 
-  TupleImpl(Ts... args)
+  constexpr TupleImpl(Ts... args)
     : Element<indices, Ts>(args)...
   {
   }
@@ -2074,12 +2074,12 @@ struct TypeAt
 template <typename... Ts>
 struct Tuple
 {
-  Tuple()
+  constexpr Tuple()
     : impl()
   {
   }
 
-  Tuple(Ts... args)
+  constexpr Tuple(Ts... args)
     : impl(args...)
   {
   }
@@ -2089,7 +2089,7 @@ struct Tuple
   static constexpr const size_t size = sizeof...(Ts);
 
   template <size_t Index>
-  const typename TypeAt<Index, Ts...>::type &get() const
+  constexpr const typename TypeAt<Index, Ts...>::type &get() const
   {
     return static_cast<const typename TypeAt<Index, Ts...>::element &>(impl).data;
   }
@@ -2134,7 +2134,7 @@ struct Tuple<>
 };
 
 template <typename... Ts>
-Tuple<Ts...> makeTuple(Ts... args)
+constexpr Tuple<Ts...> makeTuple(Ts... args)
 {
   return Tuple<Ts...>(args...);
 }
@@ -2571,12 +2571,12 @@ struct JsonStructBaseDummy
     JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_data_info())>::type;
   using ST = typename std::remove_reference<decltype(
     JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_super_info())>::type;
-  static const TT &js_static_meta_data_info()
+  static constexpr const TT &js_static_meta_data_info()
   {
     return JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_data_info();
   }
 
-  static const ST &js_static_meta_super_info()
+  static constexpr const ST &js_static_meta_super_info()
   {
     return JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_super_info();
   }
@@ -2897,8 +2897,8 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &membe
 }
 
 template <typename MI_T, typename MI_M, size_t MI_NC>
-inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_t index, bool *assigned_members, bool track_missing_members,
-                          std::vector<std::string> &missing_members, const char *super_name)
+inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_t index, bool *assigned_members,
+                          bool track_missing_members, std::vector<std::string> &missing_members, const char *super_name)
 {
   if (assigned_members[index])
     return Error::NoError;
@@ -2930,7 +2930,8 @@ template <typename T, size_t PAGE, size_t INDEX>
 struct SuperClassHandler
 {
   static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members);
-  static Error verifyMembers(bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members);
+  static Error verifyMembers(bool *assigned_members, bool track_missing_members,
+                             std::vector<std::string> &missing_members);
   static constexpr size_t membersInSuperClasses();
   static void serializeMembers(const T &from_type, Token &token, Serializer &serializer);
 };
@@ -2943,9 +2944,11 @@ struct StartSuperRecursion
     return SuperClassHandler<T, PAGE, SIZE - 1>::handleSuperClasses(to_type, context, primary, assigned);
   }
 
-  static Error verifyMembers(bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members)
+  static Error verifyMembers(bool *assigned_members, bool track_missing_members,
+                             std::vector<std::string> &missing_members)
   {
-    return SuperClassHandler<T, PAGE, SIZE - 1>::verifyMembers(assigned_members, track_missing_members, missing_members);
+    return SuperClassHandler<T, PAGE, SIZE - 1>::verifyMembers(assigned_members, track_missing_members,
+                                                               missing_members);
   }
 
   static constexpr size_t membersInSuperClasses()
@@ -2981,7 +2984,8 @@ struct StartSuperRecursion<T, PAGE, 0>
     return Error::MissingPropertyMember;
   }
 
-  static Error verifyMembers(bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members)
+  static Error verifyMembers(bool *assigned_members, bool track_missing_members,
+                             std::vector<std::string> &missing_members)
   {
     JS_UNUSED(assigned_members);
     JS_UNUSED(track_missing_members);
@@ -3006,7 +3010,7 @@ template <typename T, typename Members, size_t PAGE, size_t INDEX>
 struct MemberChecker
 {
   inline static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool primary,
-                             bool *assigned_members)
+                                    bool *assigned_members)
   {
     Error error =
       unpackMember(to_type, members.template get<INDEX>(), context, PAGE + INDEX, primary, assigned_members);
@@ -3017,19 +3021,19 @@ struct MemberChecker
                                                                      assigned_members);
   }
 
-  inline static Error verifyMembers(const Members &members, bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members,
-                             const char *super_name)
+  inline static Error verifyMembers(const Members &members, bool *assigned_members, bool track_missing_members,
+                                    std::vector<std::string> &missing_members, const char *super_name)
   {
-    Error memberError =
-      verifyMember(members.template get<INDEX>(), PAGE + INDEX, assigned_members, track_missing_members, missing_members, super_name);
-    Error error =
-      MemberChecker<T, Members, PAGE, INDEX - 1>::verifyMembers(members, assigned_members, track_missing_members, missing_members, super_name);
+    Error memberError = verifyMember(members.template get<INDEX>(), PAGE + INDEX, assigned_members,
+                                     track_missing_members, missing_members, super_name);
+    Error error = MemberChecker<T, Members, PAGE, INDEX - 1>::verifyMembers(
+      members, assigned_members, track_missing_members, missing_members, super_name);
     if (memberError != Error::NoError)
       return memberError;
     return error;
   }
   inline static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer,
-                               const char *super_name)
+                                      const char *super_name)
   {
     serializeMember(from_type, members.template get<Members::size - INDEX - 1>(), token, serializer, super_name);
     MemberChecker<T, Members, PAGE, INDEX - 1>::serializeMembers(from_type, members, token, serializer, super_name);
@@ -3040,7 +3044,7 @@ template <typename T, typename Members, size_t PAGE>
 struct MemberChecker<T, Members, PAGE, 0>
 {
   inline static Error unpackMembers(T &to_type, const Members &members, ParseContext &context, bool primary,
-                             bool *assigned_members)
+                                    bool *assigned_members)
   {
     Error error = unpackMember(to_type, members.template get<0>(), context, PAGE, primary, assigned_members);
     if (error != Error::MissingPropertyMember)
@@ -3052,21 +3056,22 @@ struct MemberChecker<T, Members, PAGE, 0>
                                                                             assigned_members);
   }
 
-  inline static Error verifyMembers(const Members &members, bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members,
-                             const char *super_name)
+  inline static Error verifyMembers(const Members &members, bool *assigned_members, bool track_missing_members,
+                                    std::vector<std::string> &missing_members, const char *super_name)
   {
-    Error memberError = verifyMember(members.template get<0>(), PAGE, assigned_members, track_missing_members, missing_members, super_name);
+    Error memberError = verifyMember(members.template get<0>(), PAGE, assigned_members, track_missing_members,
+                                     missing_members, super_name);
     using Super = typename std::remove_reference<decltype(
       Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
-    Error superError =
-      StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(assigned_members, track_missing_members, missing_members);
+    Error superError = StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(
+      assigned_members, track_missing_members, missing_members);
     if (memberError != Error::NoError)
       return memberError;
     return superError;
   }
 
   inline static void serializeMembers(const T &from_type, const Members &members, Token &token, Serializer &serializer,
-                               const char *super_name)
+                                      const char *super_name)
   {
     serializeMember(from_type, members.template get<Members::size - 1>(), token, serializer, super_name);
     using Super = typename std::remove_reference<decltype(
@@ -3105,10 +3110,10 @@ Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, b
   auto &members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
   const char *super_name =
     Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info().template get<INDEX>().name.data;
-  Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, track_missing_members,
-                                                                                      missing_members, super_name);
-  Error superError =
-    SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(assigned_members, track_missing_members, missing_members);
+  Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(
+    members, assigned_members, track_missing_members, missing_members, super_name);
+  Error superError = SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::verifyMembers(
+    assigned_members, track_missing_members, missing_members);
   if (error != Error::NoError)
     return error;
   return superError;
@@ -3151,7 +3156,8 @@ struct SuperClassHandler<T, PAGE, 0>
     return MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members,
                                                                                  context, primary, assigned_members);
   }
-  static Error verifyMembers(bool *assigned_members, bool track_missing_members, std::vector<std::string> &missing_members)
+  static Error verifyMembers(bool *assigned_members, bool track_missing_members,
+                             std::vector<std::string> &missing_members)
   {
     using SuperMeta = typename std::remove_reference<decltype(
       Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
@@ -3161,8 +3167,8 @@ struct SuperClassHandler<T, PAGE, 0>
     auto &members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
     const char *super_name =
       Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info().template get<0>().name.data;
-    return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(members, assigned_members, track_missing_members,
-                                                                                 missing_members, super_name);
+    return MemberChecker<Super, Members, PAGE, Members::size - 1>::verifyMembers(
+      members, assigned_members, track_missing_members, missing_members, super_name);
   }
   constexpr static size_t membersInSuperClasses()
   {
@@ -4366,7 +4372,7 @@ inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
   bool assigned_members[Internal::memberCount<T, 0>()];
   memset(assigned_members, 0, sizeof(assigned_members));
   while (context.token.value_type != JS::Type::ObjectEnd)
-  
+
   {
     DataRef token_name = context.token.name;
     error = Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::unpackMembers(to_type, members, context,
@@ -4378,7 +4384,7 @@ inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
     {
 
       if (context.track_member_assignement_state)
-          context.missing_members.emplace_back(token_name.data, token_name.data + token_name.size);
+        context.missing_members.emplace_back(token_name.data, token_name.data + token_name.size);
       if (context.allow_missing_members)
       {
         Internal::skipArrayOrObject(context);

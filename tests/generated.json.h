@@ -1,4 +1,5 @@
 #pragma once
+#include <json_struct.h>
 
 struct Friends
 {
