@@ -3901,55 +3901,49 @@ namespace Internal {
 
 namespace Internal
 {
+  static void push_back_escape(char current_char, std::string& to_type)
+  {
+    static const char escaped_table[] = { 'b', 'f', 'n', 'r', 't', '\"', '\\' };
+    static const char replace_table[] = { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
+    static_assert(sizeof(escaped_table) == sizeof(replace_table), "Static tables have to be the same.");
+    const char* it = static_cast<const char*>(memchr(escaped_table, current_char, sizeof(escaped_table)));
+    if (it)
+    {
+      to_type.push_back(replace_table[(it - escaped_table)]);
+    }
+    else
+    {
+      to_type.push_back('\\');
+      to_type.push_back(current_char);
+    }
+  }
+
 	static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
 	{
-            static const char escaped_table[7][2] =
-            {
-                { 'b', '\b' },
-                { 'f', '\f' },
-                { 'n', '\n' },
-                { 'r', '\r' },
-                { 't', '\t' },
-                { '\"', '\"' },
-                { '\\', '\\'}
-            };
 		to_type.reserve(ref.size);
-		const char *start = ref.data;
-		bool escaped = false;
-		for (size_t i = 0; i < ref.size; i++)
+    const char *it = ref.data;
+    size_t size = ref.size;
+    while (size)
     {
-      if (escaped)
+      const char* next_it = static_cast<const char*>(memchr(it, '\\', size));
+      if (!next_it)
       {
-        escaped = false;
-        bool found = false;
-        const char current_char = ref.data[i];
-        for (size_t n = 0; n < sizeof(escaped_table) / sizeof(*escaped_table); n++)
-        {
-          if (current_char == escaped_table[n][0])
-          {
-            to_type.push_back(escaped_table[n][1]);
-            found = true;
-            break;
-          }
-        }
-        if (!found)
-        {
-          to_type.push_back('\\');
-          to_type.push_back(current_char);
-        }
+        to_type.insert(to_type.end(), it, it + size);
+        break;
       }
-      else if (ref.data[i] == '\\')
+      to_type.insert(to_type.end(), it, next_it);
+      size -= next_it - it;
+      if (!size)
       {
-        auto diff = &ref.data[i] - start;
-        to_type.insert(to_type.end(), start, start + diff);
-        start = &ref.data[i + 2];
-        escaped = true;
+        break;
       }
-    }
-    if (start < ref.data + ref.size) //This isn't strictly needed since the tokenizer will enforce a char after '\' 
-    {
-      auto diff = ref.data + ref.size - start;
-      to_type.insert(to_type.end(), start, start + diff);
+      size--;
+      const char current_char = *(next_it + 1);
+      push_back_escape(current_char, to_type);
+      it = next_it + 2;
+      if (!size)
+        break;
+      size--;
     }
 	}
 
