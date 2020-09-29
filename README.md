@@ -1,16 +1,16 @@
-# **Structurize your JSON!!!**
+# **Structurize your JSON**
 
 [![Build Status](https://travis-ci.org/jorgen/json_struct.svg?branch=master)](https://travis-ci.org/jorgen/json_struct)
 
 json_struct is a single header only library that parses JSON to C++ structs/classes
 and serializing structs/classes to JSON.
 
-It is intented to be used by copying the json_struct.h file from the include
+It is intended to be used by copying the json_struct.h file from the include
 folder into the include path for the project. It is only the json_struct.h file
 that is needed to serialize and deserialize json from structures.
 
 It is dependent on some C++11 features and is tested on newer versions of gcc
-and clang. It is also tested on VS 2013 and VS 2015.
+and clang. It is also tested on VS 2015 and newer.
 
 json_struct can parse json and automatically populate structures with content
 by adding some metadata to the C++ structs.
@@ -32,9 +32,7 @@ struct JsonObject
     std::string Two;
     double Three;
 
-    JS_OBJECT(JS_MEMBER(One),
-              JS_MEMBER(Two),
-              JS_MEMBER(Three));
+    JS_OBJ(One, Two, Three);
 };
 ```
 
@@ -47,10 +45,7 @@ struct JsonObject
     std::string Two;
     double Three;
 };
-JS_OBJECT_EXTERNAL(JsonObject,
-                   JS_MEMBER(One),
-                   JS_MEMBER(Two),
-                   JS_MEMBER(Three));
+JS_OBJ_EXT(JsonObject, One, Two, Three);
 ```
 
 Populating the struct would look like this:
@@ -70,12 +65,53 @@ std::string compact_json = JS::serializeStruct(obj, JS::SerializerOptions(JS::Se
 ```
 
 
-The JS_OBJECT macro adds a static metaobject to the struct/class, and the
-JS_MEMBER adds member pointer with a string representation for the name. So for
-objects the meta information is generated with JS_OBJECT, but there might be
-types like that doesn't fit the meta information interface, like ie. a matrix
-or a vector class. Then its possible to define how these specific classes are
-serialized and deserialized with the TypeHandler interface.
+The JS_OBJ macro adds a static meta object to the struct/class. It automatically
+applies another macro to the member arguments, getting the name and member
+pointer. There are other macros that are more verbose, but that gives more flexibility.
+
+The JS_OBJECT macro requires that all the members are passed in a JS_MEMBER
+macro. An example of these macros being applied would look like this:
+```c++
+struct JsonObject
+{
+    int One;
+    std::string Two;
+    double Three;
+
+    JS_OBJECT(JS_MEMBER(One)
+            , JS_MEMBER(Two)
+            , JS_MEMBER(Three));
+};
+```
+
+This doesn't add any value, but say you want to have a different json key for a
+member than the name, or maybe you want to add some alias keys, then this
+could be done like this:
+```c++
+struct JsonObject
+{
+    int One;
+    std::string Two;
+    double Three;
+
+    JS_OBJECT(JS_MEMBER(One)
+            , JS_MEMBER_WITH_NAME(Two, "TheTwo")
+            , JS_MEMBER_ALIASES(Three, "TheThree", "the_three"));
+};
+```
+
+The difference between the _WITH_NAME and _ALIASES macros is that the
+_WITH_NAME macro ignores the member name and uses the supplied name, while the
+aliases adds a list of names to be checked after the name of the member is
+checked.
+
+Its not possible to use the JS_MEMBER macros with the JS_OBJ macro, since then
+it tries to apply the JS_MEMBER macro twice on member.
+
+For objects the meta information is generated with JS_OBJ and JS_OBJECT macros,
+but there might be types that doesn't fit the meta information interface. Then
+its possible to define how these specific classes are serialized and
+deserialized with the TypeHandler interface.
 
 When the JS::ParseContext tries to parse a type it will look for a template
 specialisation of the type:
