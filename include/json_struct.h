@@ -3573,6 +3573,33 @@ struct JsonStructFunctionContainerDummy
 #define JS_FUNCTION_WITH_NAME(member, name) JS::makeFunctionInfo(name, &JS_CONTAINER_STRUCT_T::member)
 #define JS_FUNCTION_WITH_NAME_ALIASES(member, name, ...)                                                               \
   JS::makeFunctionInfo(name, &JS_CONTAINER_STRUCT_T::member, __VA_ARGS__)
+
+#define JS_INTERNAL_MAP_FUNCTION(m, first, ...)                                                                        \
+  m(#first, &JS_CONTAINER_STRUCT_T::first) JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_ARGS(__VA_ARGS__))(                     \
+    , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_FUNCTION)()(m, __VA_ARGS__))(/* Do nothing, just terminate */                \
+  )
+#define JS_INTERNAL__MAP_FUNCTION() JS_INTERNAL_MAP_FUNCTION
+
+#define JS_INTERNAL_MAKE_FUNCTIONS(...)                                                                                \
+  JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_FUNCTION(JS::makeFunctionInfo, __VA_ARGS__)))
+
+#define JS_FUNC_OBJ(...)                                                                                               \
+  template <typename JS_CONTAINER_STRUCT_T>                                                                            \
+  struct JsonStructFunctionContainer                                                                                   \
+  {                                                                                                                    \
+    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)));                                       \
+    static const TT &js_static_meta_functions_info()                                                                   \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple();                                                                               \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+  }
+
 #define JS_FUNCTION_CONTAINER(...)                                                                                     \
   template <typename JS_CONTAINER_STRUCT_T>                                                                            \
   struct JsonStructFunctionContainer                                                                                   \
@@ -3586,6 +3613,23 @@ struct JsonStructFunctionContainerDummy
     static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
     {                                                                                                                  \
       static auto ret = JS::makeTuple();                                                                               \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+  }
+
+#define JS_FUNC_OBJ_SUPER(super_list, ...)                                                                             \
+  template <typename JS_CONTAINER_STRUCT_T>                                                                            \
+  struct JsonStructFunctionContainer                                                                                   \
+  {                                                                                                                    \
+    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)));                                       \
+    static const TT &js_static_meta_functions_info()                                                                   \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    {                                                                                                                  \
+      static auto ret = super_list;                                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
   }
@@ -3607,6 +3651,29 @@ struct JsonStructFunctionContainerDummy
     }                                                                                                                  \
   }
 
+#define JS_FUNC_OBJ_EXTERNAL(Type, ...)                                                                                \
+  namespace JS                                                                                                         \
+  {                                                                                                                    \
+  namespace Internal                                                                                                   \
+  {                                                                                                                    \
+  template <typename JS_CONTAINER_STRUCT_T>                                                                            \
+  struct JsonStructFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T>                                                 \
+  {                                                                                                                    \
+    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)));                                       \
+    static const TT &js_static_meta_functions_info()                                                                   \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple();                                                                               \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+  };                                                                                                                   \
+  }                                                                                                                    \
+  }
+
 #define JS_FUNCTION_CONTAINER_EXTERNAL(Type, ...)                                                                      \
   namespace JS                                                                                                         \
   {                                                                                                                    \
@@ -3624,6 +3691,29 @@ struct JsonStructFunctionContainerDummy
     static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
     {                                                                                                                  \
       static auto ret = JS::makeTuple();                                                                               \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+  };                                                                                                                   \
+  }                                                                                                                    \
+  }
+
+#define JS_FUNC_OBJ_EXTERNAL_SUPER(Type, super_list, ...)                                                              \
+  namespace JS                                                                                                         \
+  {                                                                                                                    \
+  namespace Internal                                                                                                   \
+  {                                                                                                                    \
+  template <typename JS_CONTAINER_STRUCT_T>                                                                            \
+  struct JsonStructFunctionContainerDummy<Type, JS_CONTAINER_STRUCT_T>                                                 \
+  {                                                                                                                    \
+    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)));                                       \
+    static const TT &js_static_meta_functions_info()                                                                   \
+    {                                                                                                                  \
+      static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
+      return ret;                                                                                                      \
+    }                                                                                                                  \
+    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    {                                                                                                                  \
+      static auto ret = super_list;                                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
   };                                                                                                                   \
