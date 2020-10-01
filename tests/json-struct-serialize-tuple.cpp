@@ -1,12 +1,15 @@
 #include "json_struct.h"
-#include "assert.h"
+#include "catch2/catch.hpp"
 
 #include <stdio.h>
 
+namespace json_struct_serialize_tuple
+{
+
 struct Foo
 {
-    JS::Tuple<int, std::string, float> data;
-    JS_OBJECT(JS_MEMBER(data));
+  JS::Tuple<int, std::string, float> data;
+  JS_OBJECT(JS_MEMBER(data));
 };
 
 const char json[] = R"json(
@@ -19,24 +22,23 @@ const char json[] = R"json(
     }
 )json";
 
-int main()
+TEST_CASE("serialize_tuple", "[json_struct][tuple]")
 {
 
-    Foo out;
-    out.data.get<0>() = 12345;
-    out.data.get<1>() = "Hello world";
-    out.data.get<2>() = 44.50;
-    std::string bar = JS::serializeStruct(out);
+  Foo out;
+  out.data.get<0>() = 12345;
+  out.data.get<1>() = "Hello world";
+  out.data.get<2>() = 44.50;
+  std::string bar = JS::serializeStruct(out);
 
-    fprintf(stderr, "Out is:\n%s\n", bar.c_str());
-
-    Foo in;
-    JS::ParseContext context(json);
-    context.parseTo(in);
-    JS_ASSERT(context.error == JS::Error::NoError);
-    JS_ASSERT(in.data.get<0>() == 9876);
-    JS_ASSERT(std::string("Tuples are cool") == in.data.get<1>());
-    JS_ASSERT(in.data.get<2>() > 3.14);
-    JS_ASSERT(in.data.get<2>() < 3.15);
-    return 0;
+  Foo in;
+  JS::ParseContext context(json);
+  context.parseTo(in);
+  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(in.data.get<0>() == 9876);
+  REQUIRE(std::string("Tuples are cool") == in.data.get<1>());
+  REQUIRE(in.data.get<2>() > 3.14);
+  REQUIRE(in.data.get<2>() < 3.15);
 }
+
+} // namespace json_struct_serialize_tuple

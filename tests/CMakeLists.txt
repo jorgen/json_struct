@@ -12,10 +12,6 @@ cmrc_add_resource_library(
 add_executable(json-tokenizer-fail-test json-tokenizer-fail-test.cpp)
 add_executable(json-tokenizer-partial-test json-tokenizer-partial-test.cpp)
 add_executable(json-tokenizer-test json-tokenizer-test.cpp)
-add_executable(json-struct-test json-struct-test.cpp)
-add_executable(json-struct-test-new json-struct-test-new.cpp)
-add_executable(json-struct-verify json-struct-verify.cpp)
-add_executable(json-struct-serialize-tuple json-struct-serialize-tuple.cpp)
 add_executable(json-function-test json-function-test.cpp)
 add_executable(json-function-test-new json-function-test-new.cpp)
 add_executable(json-function-external-test json-function-external-test.cpp)
@@ -27,7 +23,6 @@ target_link_libraries(json-struct-serialize-test PRIVATE external_json::rc)
 add_executable(members-size-test members-size-test.cpp)
 add_executable(compiler-test compiler-test.cpp)
 add_executable(meta-for-tokens meta-for-tokens.cpp)
-add_executable(json-struct-big-test json-struct-big-test.cpp)
 add_executable(json-struct-aliases-test json-struct-aliases-test.cpp)
 add_executable(json-enum-test json-enum-test.cpp)
 add_executable(json-meta-test json-meta-test.cpp)
@@ -42,16 +37,23 @@ add_executable(json-reformat json-reformat.cpp)
 add_executable(json-nullable-test json-nullable-test.cpp)
 add_executable(json-string-with-nullterminator-test json-string-with-nullterminator-test.cpp)
 add_executable(multi-compilation-units multi-compilation-units-1.cpp multi-compilation-units-2.cpp multi-compilation-units-main.cpp)
+
+add_executable(catch-tests catch-main.cpp
+                           json-struct-test.cpp
+                           json-struct-test-new.cpp
+                           json-struct-big-test.cpp
+                           json-struct-verify.cpp
+                           json-struct-serialize-tuple.cpp
+              )
+
+target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h)
+
 target_link_libraries(json-reformat PRIVATE external_json::rc)
 
 target_include_directories(json-struct-performance PRIVATE include/json/0.6)
 add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
 add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
 add_test(NAME json-tokenizer-test COMMAND json-tokenizer-test)
-add_test(NAME json-struct-test COMMAND json-struct-test)
-add_test(NAME json-struct-test-new COMMAND json-struct-test-new)
-add_test(NAME json-struct-verify COMMAND json-struct-verify)
-add_test(NAME json-struct-serialize-tuple COMMAND json-struct-serialize-tuple)
 add_test(NAME json-function-test COMMAND json-function-test)
 add_test(NAME json-function-test-new COMMAND json-function-test-new)
 add_test(NAME json-function-external-test COMMAND json-function-external-test)
@@ -62,7 +64,6 @@ add_test(NAME json-struct-serialize-test COMMAND json-struct-serialize-test)
 add_test(NAME members-size-test COMMAND members-size-test)
 add_test(NAME compiler-test COMMAND compiler-test)
 add_test(NAME meta-for-tokens COMMAND meta-for-tokens)
-add_test(NAME json-struct-big-test COMMAND json-struct-big-test)
 add_test(NAME json-struct-aliases-test COMMAND json-struct-aliases-test)
 add_test(NAME json-enum-test COMMAND json-enum-test)
 add_test(NAME json-meta-test COMMAND json-meta-test)
@@ -75,6 +76,7 @@ add_test(NAME json-reformat COMMAND json-reformat)
 add_test(NAME json-nullable-teste COMMAND json-nullable-test)
 add_test(NAME json-string-with-nullterminator-test COMMAND json-string-with-nullterminator-test)
 add_test(NAME multi-compilation-units COMMAND multi-compilation-units)
+add_test(NAME catch-tests COMMAND catch-tests)
 
 if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
     add_executable(json-optional json-optional.cpp)

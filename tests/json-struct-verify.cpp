@@ -22,9 +22,12 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
 
-const char json_data1[] = "{\n"
+namespace json_struct_verify
+{
+
+static const char json_data1[] = "{\n"
     "\"StringNode\" : \"Some test data\",\n"
     "\"NumberNode\" : 4676\n"
     "}\n";
@@ -36,7 +39,7 @@ struct ContainsStringNode
     JS_OBJECT(JS_MEMBER(StringNode));
 };
 
-struct SubStruct : public ContainsStringNode
+struct SubStructVerify : public ContainsStringNode
 {
     int NumberNode;
 
@@ -45,33 +48,33 @@ struct SubStruct : public ContainsStringNode
                          JS_MEMBER(NumberNode));
 };
 
-void testSimpleOneMember()
+TEST_CASE("testSimpleOneMember", "[json_struct][json_struct_verify]")
 {
     JS::ParseContext context(json_data1);
-    SubStruct substruct;
+    SubStructVerify substruct;
     context.parseTo(substruct);
 
-    JS_ASSERT(substruct.StringNode == "Some test data");
-    JS_ASSERT(substruct.NumberNode == 4676);
+    REQUIRE(substruct.StringNode == "Some test data");
+    REQUIRE(substruct.NumberNode == 4676);
 }
 
-const char json_data2[] = "{\n"
+static const char json_data2[] = "{\n"
     "\"ThisWillBeUnassigned\" : \"Some data\",\n"
     "\"StringNode\" : \"Some test data\",\n"
     "}\n";
 
-void testSimpleVerifyMissingMemberInStruct()
+TEST_CASE("testSimpleVerifyMissingMemberInStruct", "[json_struct][json_struct_verify]")
 {
     JS::ParseContext context(json_data2);
     ContainsStringNode containsString;
     context.parseTo(containsString);
 
-    JS_ASSERT(containsString.StringNode == "Some test data");
-    JS_ASSERT(context.missing_members.size() == 1);
-    JS_ASSERT(context.missing_members.front() == "ThisWillBeUnassigned");
+    REQUIRE(containsString.StringNode == "Some test data");
+    REQUIRE(context.missing_members.size() == 1);
+    REQUIRE(context.missing_members.front() == "ThisWillBeUnassigned");
 }
 
-const char json_data3[] = "{\n"
+static const char json_data3[] = "{\n"
     "\"Field1\" : 1\n,"
     "\"Field3\" : 3\n"
     "}\n";
@@ -87,18 +90,18 @@ struct RequiredMemberStruct
               JS_MEMBER(Field3));
 };
 
-void testSimpleVerifyMissingRequiredMemberInStruct()
+TEST_CASE("testSimpleVerifyMissingRequiredMemberInStruct", "[json_struct][json_strut_verify]")
 {
     JS::ParseContext context(json_data3);
     RequiredMemberStruct requiredMemberStruct;
     context.parseTo(requiredMemberStruct);
 
-    JS_ASSERT(requiredMemberStruct.Field3 == 3);
-    JS_ASSERT(context.unassigned_required_members.size() == 1);
-    JS_ASSERT(context.unassigned_required_members.front() == "Field2");
+    REQUIRE(requiredMemberStruct.Field3 == 3);
+    REQUIRE(context.unassigned_required_members.size() == 1);
+    REQUIRE(context.unassigned_required_members.front() == "Field2");
 }
 
-const char json_data4[] = "{\n"
+static const char json_data4[] = "{\n"
     "\"StringNode\" : \"Some test data\",\n"
     "\"NumberNode\" : 342,\n"
     "\"SubNode\" : \"This should be in subclass\"\n"
@@ -122,16 +125,16 @@ struct SubClass : public SuperClass
                          JS_MEMBER(SubNode2));
 };
 
-void testClassHirarchyVerifyMissingMemberInStruct()
+TEST_CASE("testClassHirarchyVerifyMissingMemberInStruct", "[json_struct][json_strut_verify]")
 {
     JS::ParseContext context(json_data4);
     SubClass subClass;
     context.parseTo(subClass);
 
-    JS_ASSERT(subClass.NumberNode == 342);
-    JS_ASSERT(subClass.SubNode == "This should be in subclass");
-    JS_ASSERT(context.unassigned_required_members.size() == 1);
-    JS_ASSERT(context.unassigned_required_members.front() == "SubNode2");
+    REQUIRE(subClass.NumberNode == 342);
+    REQUIRE(subClass.SubNode == "This should be in subclass");
+    REQUIRE(context.unassigned_required_members.size() == 1);
+    REQUIRE(context.unassigned_required_members.front() == "SubNode2");
 }
 
 struct SuperSuperClass {
@@ -155,36 +158,36 @@ struct RegularClass : public SuperClass2
                          JS_MEMBER(Regular));
 };
 
-const char json_data5[] = "{\n"
+static const char json_data5[] = "{\n"
     "\"SuperSuper\" : 5,\n"
     "\"Regular\": 42\n"
     "}\n";
 
-void testClassHIrarchyVerifyMissingDataForStruct()
+TEST_CASE("testClassHIrarchyVerifyMissingDataForStruct", "[json_struct][json_strut_verify]")
 {
     JS::ParseContext context(json_data5);
     RegularClass regular;
     context.parseTo(regular);
 
-    JS_ASSERT(context.unassigned_required_members.size() == 1);
-    JS_ASSERT(context.unassigned_required_members.front() == "SuperClass2::Super");
+    REQUIRE(context.unassigned_required_members.size() == 1);
+    REQUIRE(context.unassigned_required_members.front() == "SuperClass2::Super");
 }
 
-const char json_data6[] = "{\n"
+static const char json_data6[] = "{\n"
     "\"SuperSuper\" : 5,\n"
     "\"Super\" : \"This is super\",\n"
     "\"SuperSuperSuper\" : 42,\n"
     "\"Regular\": 42\n"
     "}\n";
 
-void testClassHirarchyVerifyMissingMemberInStruct2()
+TEST_CASE("testClassHirarchyVerifyMissingMemberInStruct2", "[json_struct][json_strut_verify]")
 {
     JS::ParseContext context(json_data6);
     RegularClass regular;
     context.parseTo(regular);
 
-    JS_ASSERT(context.missing_members.size() == 1);
-    JS_ASSERT(context.missing_members.front() == "SuperSuperSuper");
+    REQUIRE(context.missing_members.size() == 1);
+    REQUIRE(context.missing_members.front() == "SuperSuperSuper");
 }
 
 struct A
@@ -238,7 +241,7 @@ struct Subclass : public B, public F, public G
                          JS_MEMBER(h));
 };
 
-const char json_data7[] = "{\n"
+static const char json_data7[] = "{\n"
     "\"a\" : 4,\n"
     "\"b\" : 5.5,\n"
     "\"d\" : 127,\n"
@@ -247,26 +250,14 @@ const char json_data7[] = "{\n"
     "\"h\" : 987\n"
     "}\n";
 
-void testClassHirarchyVerifyMissingDataForStructDeep()
+TEST_CASE("testClassHirarchyVerifyMissingDataForStructDeep", "[json_struct][json_strut_verify]")
 {
     JS::ParseContext context(json_data7);
     Subclass subclass;
     context.parseTo(subclass);
 
-    JS_ASSERT(context.unassigned_required_members.size() == 1);
-    JS_ASSERT(context.unassigned_required_members.front() == "E::e");
+    REQUIRE(context.unassigned_required_members.size() == 1);
+    REQUIRE(context.unassigned_required_members.front() == "E::e");
 }
 
-int main()
-{
-    testSimpleOneMember();
-    testSimpleVerifyMissingMemberInStruct();
-#if JS_HAVE_CONSTEXPR
-    testSimpleVerifyMissingRequiredMemberInStruct();
-    testClassHIrarchyVerifyMissingDataForStruct();
-    testClassHirarchyVerifyMissingDataForStructDeep();
-    testClassHirarchyVerifyMissingMemberInStruct();
-#endif
-    testClassHirarchyVerifyMissingMemberInStruct2();
-    return 0;
 }
