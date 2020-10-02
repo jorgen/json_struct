@@ -45,8 +45,9 @@ add_executable(catch-tests catch-main.cpp
                            json-struct-verify.cpp
                            json-struct-serialize-tuple.cpp
               )
-
-target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h)
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+    target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h)
+endif()
 
 target_link_libraries(json-reformat PRIVATE external_json::rc)
 
