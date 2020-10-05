@@ -9,81 +9,60 @@ cmrc_add_resource_library(
     generated.json
     )
 
-add_executable(json-tokenizer-fail-test json-tokenizer-fail-test.cpp)
-add_executable(json-tokenizer-partial-test json-tokenizer-partial-test.cpp)
-add_executable(json-tokenizer-test json-tokenizer-test.cpp)
-add_executable(json-function-test json-function-test.cpp)
-add_executable(json-function-test-new json-function-test-new.cpp)
-add_executable(json-function-external-test json-function-external-test.cpp)
-add_executable(json-function-external-test-new json-function-external-test-new.cpp)
-add_executable(json-function-error-test json-function-error-test.cpp)
-add_executable(json-copy-test json-copy-test.cpp)
-add_executable(json-struct-serialize-test json-struct-serialize-test.cpp)
-target_link_libraries(json-struct-serialize-test PRIVATE external_json::rc)
-add_executable(members-size-test members-size-test.cpp)
-add_executable(compiler-test compiler-test.cpp)
-add_executable(meta-for-tokens meta-for-tokens.cpp)
-add_executable(json-struct-aliases-test json-struct-aliases-test.cpp)
-add_executable(json-enum-test json-enum-test.cpp)
-add_executable(json-meta-test json-meta-test.cpp)
-add_executable(json-scope-test json-scope.cpp)
-add_executable(json-mias-mat-test json-mias-mat.cpp)
 add_executable(json-struct-performance json-struct-performance.cpp
                 include/json/0.6/jsoncpp.cpp)
-add_executable(json-struct-diff json-struct-diff.cpp)
-add_executable(json-struct-external json-struct-external.cpp)
-add_executable(json-struct-fail json-struct-fail.cpp)
-add_executable(json-reformat json-reformat.cpp)
-add_executable(json-nullable-test json-nullable-test.cpp)
-add_executable(json-string-with-nullterminator-test json-string-with-nullterminator-test.cpp)
-add_executable(multi-compilation-units multi-compilation-units-1.cpp multi-compilation-units-2.cpp multi-compilation-units-main.cpp)
 
-add_executable(catch-tests catch-main.cpp
+add_library(catch_main STATIC catch-main.cpp)
+set(catch_test_sources 
                            json-struct-test.cpp
                            json-struct-test-new.cpp
+                           json-struct-external.cpp
                            json-struct-big-test.cpp
                            json-struct-verify.cpp
                            json-struct-serialize-tuple.cpp
+                           json-struct-aliases-test.cpp
+                           json-struct-serialize-test.cpp
+                           json-struct-diff.cpp
+                           json-struct-fail.cpp
+                           json-mias-mat.cpp
+                           json-nullable-test.cpp
+                           json-string-with-nullterminator-test.cpp
+                           json-optional.cpp
+                           json-tokenizer-fail-test.cpp
+                           json-tokenizer-partial-test.cpp
+                           json-tokenizer-test.cpp
+                           json-function-test.cpp
+                           json-function-test-new.cpp
+                           json-function-external-test.cpp
+                           json-function-external-test-new.cpp
+                           json-function-error-test.cpp
+                           json-scope.cpp
+                           members-size-test.cpp
+                           compiler-test.cpp
+                           meta-for-tokens.cpp
+                           json-enum-test.cpp
+                           json-meta-test.cpp
+                           json-copy-test.cpp
+                           multi-compilation-units-1.cpp
+                           multi-compilation-units-2.cpp
+                           multi-compilation-units-main.cpp
+                           json-reformat.cpp
               )
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h)
+add_executable(catch-tests ${catch_test_sources})
+if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
+  target_compile_features(catch-tests PUBLIC cxx_std_17)
+else()
+  set_source_files_properties(json-optional.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
 endif()
 
-target_link_libraries(json-reformat PRIVATE external_json::rc)
+target_link_libraries(catch-tests PRIVATE catch_main external_json::rc)
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h catch2/catch.hpp)
+endif()
 
 target_include_directories(json-struct-performance PRIVATE include/json/0.6)
-add_test(NAME json-tokenizer-fail-test COMMAND json-tokenizer-fail-test)
-add_test(NAME json-tokenizer-partial-test COMMAND json-tokenizer-partial-test)
-add_test(NAME json-tokenizer-test COMMAND json-tokenizer-test)
-add_test(NAME json-function-test COMMAND json-function-test)
-add_test(NAME json-function-test-new COMMAND json-function-test-new)
-add_test(NAME json-function-external-test COMMAND json-function-external-test)
-add_test(NAME json-function-external-test-new COMMAND json-function-external-test-new)
-add_test(NAME json-function-error-test COMMAND json-function-error-test)
-add_test(NAME json-copy-test COMMAND json-copy-test)
-add_test(NAME json-struct-serialize-test COMMAND json-struct-serialize-test)
-add_test(NAME members-size-test COMMAND members-size-test)
-add_test(NAME compiler-test COMMAND compiler-test)
-add_test(NAME meta-for-tokens COMMAND meta-for-tokens)
-add_test(NAME json-struct-aliases-test COMMAND json-struct-aliases-test)
-add_test(NAME json-enum-test COMMAND json-enum-test)
-add_test(NAME json-meta-test COMMAND json-meta-test)
-add_test(NAME json-scope-test COMMAND json-scope-test)
-add_test(NAME json-mias-mat-test COMMAND json-mias-mat-test)
 #add_test(NAME json-struct-performance COMMAND json-struct-performance)
-add_test(NAME json-struct-diff COMMAND json-struct-diff)
-add_test(NAME json-struct-external COMMAND json-struct-external)
-add_test(NAME json-reformat COMMAND json-reformat)
-add_test(NAME json-nullable-teste COMMAND json-nullable-test)
-add_test(NAME json-string-with-nullterminator-test COMMAND json-string-with-nullterminator-test)
-add_test(NAME multi-compilation-units COMMAND multi-compilation-units)
 add_test(NAME catch-tests COMMAND catch-tests)
-
-if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
-    add_executable(json-optional json-optional.cpp)
-    target_compile_features(json-optional PUBLIC cxx_std_17)
-    add_test(NAME json-optional COMMAND json-optional)
-endif()
 
 # Tests for zero value floating points (both negative and positive zeros).
 # The tests are run with different compiler options for floating point math.
@@ -103,3 +82,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
 endif()
 
+
+add_custom_target(clangformat_tests
+  COMMAND clang-format -i ${catch_test_sources}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+  SOURCES ${catch_test_sources}
+  )

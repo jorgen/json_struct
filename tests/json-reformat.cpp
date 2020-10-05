@@ -22,25 +22,24 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
 
 #include <cmrc/cmrc.hpp>
 
 CMRC_DECLARE(external_json);
 
-int main()
+TEST_CASE("test_reformat", "[reformat]")
 {
-    auto fs = cmrc::external_json::get_filesystem();
-    auto generated = fs.open("generated.json");
-    std::string pretty;
-    JS::Error error = JS::reformat(generated.begin(), generated.size(), pretty);
-    JS_ASSERT(error == JS::Error::NoError);
-    fprintf(stderr, "PRETTY:\n%s\n", pretty.c_str());
+  auto fs = cmrc::external_json::get_filesystem();
+  auto generated = fs.open("generated.json");
+  std::string pretty;
+  JS::Error error = JS::reformat(generated.begin(), generated.size(), pretty);
+  REQUIRE(error == JS::Error::NoError);
+  fprintf(stderr, "PRETTY:\n%s\n", pretty.c_str());
 
-    std::string compact;
-    error = JS::reformat(generated.begin(), generated.size(), compact, JS::SerializerOptions(JS::SerializerOptions::Compact));
-    JS_ASSERT(error == JS::Error::NoError);
-    fprintf(stderr, "COMPACT:\n%s\n", compact.c_str());
-
-    return 0;
+  std::string compact;
+  error =
+    JS::reformat(generated.begin(), generated.size(), compact, JS::SerializerOptions(JS::SerializerOptions::Compact));
+  REQUIRE(error == JS::Error::NoError);
+  fprintf(stderr, "COMPACT:\n%s\n", compact.c_str());
 }

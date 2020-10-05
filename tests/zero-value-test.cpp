@@ -21,7 +21,13 @@
  */
 
 #include "json_struct.h"
-#include "assert.h"
+
+#define CATCH_CONFIG_MAIN
+
+#include "catch2/catch.hpp"
+
+namespace
+{
 
 const char json_data[] = R"json(
 {
@@ -52,68 +58,65 @@ const char json_data_scientific[] = R"json(
 
 struct ZeroValueStruct
 {
-	float f_pos_zero;
-	float f_neg_zero;
-	double d_pos_zero;
-	double d_neg_zero;
+  float f_pos_zero;
+  float f_neg_zero;
+  double d_pos_zero;
+  double d_neg_zero;
 
-	JS_OBJECT(
-		JS_MEMBER(f_pos_zero),
-		JS_MEMBER(f_neg_zero),
-		JS_MEMBER(d_pos_zero),
-		JS_MEMBER(d_neg_zero)
-	);
+  JS_OBJECT(JS_MEMBER(f_pos_zero), JS_MEMBER(f_neg_zero), JS_MEMBER(d_pos_zero), JS_MEMBER(d_neg_zero));
 };
 
 // Notes:
 // - This function is not tested on systems where double is 4 bytes.
 // - The data is also cast to integer types for asserting since 0.0 normally is equal to -0.0.
-void test_zero_value_parse(const char * const json)
+void test_zero_value_parse(const char *const json)
 {
-	static float  f_pos_zero =  0.0f;
-	static float  f_neg_zero = -0.0;
-	static double d_pos_zero =  0.0;
-	static double d_neg_zero = -0.0;
+  static float f_pos_zero = 0.0f;
+  static float f_neg_zero = -0.0;
+  static double d_pos_zero = 0.0;
+  static double d_neg_zero = -0.0;
 
-	ZeroValueStruct zero;
-	JS::ParseContext pc(json);
-	pc.parseTo(zero);
-	JS_ASSERT(pc.error == JS::Error::NoError);
+  ZeroValueStruct zero;
+  JS::ParseContext pc(json);
+  pc.parseTo(zero);
+  REQUIRE(pc.error == JS::Error::NoError);
 
-	JS_ASSERT(zero.f_pos_zero == f_pos_zero);
-	JS_ASSERT(zero.f_neg_zero == f_neg_zero);
-	JS_ASSERT(zero.d_pos_zero == d_pos_zero);
-	JS_ASSERT(zero.d_neg_zero == d_neg_zero);
+  REQUIRE(zero.f_pos_zero == f_pos_zero);
+  REQUIRE(zero.f_neg_zero == f_neg_zero);
+  REQUIRE(zero.d_pos_zero == d_pos_zero);
+  REQUIRE(zero.d_neg_zero == d_neg_zero);
 
-	JS_ASSERT(memcmp(&f_pos_zero, &zero.f_pos_zero, sizeof(float))  == 0);
-	JS_ASSERT(memcmp(&f_neg_zero, &zero.f_neg_zero, sizeof(float))  == 0);
-	JS_ASSERT(memcmp(&d_pos_zero, &zero.d_pos_zero, sizeof(double)) == 0);
-	JS_ASSERT(memcmp(&d_neg_zero, &zero.d_neg_zero, sizeof(double)) == 0);
+  REQUIRE(memcmp(&f_pos_zero, &zero.f_pos_zero, sizeof(float)) == 0);
+  REQUIRE(memcmp(&f_neg_zero, &zero.f_neg_zero, sizeof(float)) == 0);
+  REQUIRE(memcmp(&d_pos_zero, &zero.d_pos_zero, sizeof(double)) == 0);
+  REQUIRE(memcmp(&d_neg_zero, &zero.d_neg_zero, sizeof(double)) == 0);
 
-	// --------------------------
-	// Keeping this code to debug on GCC later. foo2 == bar2 fails!
-	//auto foo1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_pos_zero)>::uint_alias*>(&zero.f_pos_zero);
-	//auto foo2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_neg_zero)>::uint_alias*>(&zero.f_neg_zero);
-	//auto foo3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_pos_zero)>::uint_alias*>(&zero.d_pos_zero);
-	//auto foo4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_neg_zero)>::uint_alias*>(&zero.d_neg_zero);
+  // --------------------------
+  // Keeping this code to debug on GCC later. foo2 == bar2 fails!
+  // auto foo1 =
+  // *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_pos_zero)>::uint_alias*>(&zero.f_pos_zero); auto foo2
+  // = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.f_neg_zero)>::uint_alias*>(&zero.f_neg_zero); auto
+  // foo3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_pos_zero)>::uint_alias*>(&zero.d_pos_zero);
+  // auto foo4 =
+  // *reinterpret_cast<JS::Internal::ft::float_info<decltype(zero.d_neg_zero)>::uint_alias*>(&zero.d_neg_zero);
 
-	//auto bar1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_pos_zero)>::uint_alias*>(&f_pos_zero);
-	//auto bar2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_neg_zero)>::uint_alias*>(&f_neg_zero);
-	//auto bar3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_pos_zero)>::uint_alias*>(&d_pos_zero);
-	//auto bar4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_neg_zero)>::uint_alias*>(&d_neg_zero);
+  // auto bar1 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_pos_zero)>::uint_alias*>(&f_pos_zero);
+  // auto bar2 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(f_neg_zero)>::uint_alias*>(&f_neg_zero);
+  // auto bar3 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_pos_zero)>::uint_alias*>(&d_pos_zero);
+  // auto bar4 = *reinterpret_cast<JS::Internal::ft::float_info<decltype(d_neg_zero)>::uint_alias*>(&d_neg_zero);
 
-	//JS_ASSERT(foo1 == bar1);
-	//JS_ASSERT(foo2 == bar2);
-	//JS_ASSERT(foo3 == bar3);
-	//JS_ASSERT(foo4 == bar4);
-	// --------------------------
+  // REQUIRE(foo1 == bar1);
+  // REQUIRE(foo2 == bar2);
+  // REQUIRE(foo3 == bar3);
+  // REQUIRE(foo4 == bar4);
+  // --------------------------
 }
 
-int main()
+TEST_CASE("test_zero_value", "[float conversion]")
 {
-	test_zero_value_parse(json_data);
-	test_zero_value_parse(json_data_decimal);
-	test_zero_value_parse(json_data_scientific);
-	return 0;
+  test_zero_value_parse(json_data);
+  test_zero_value_parse(json_data_decimal);
+  test_zero_value_parse(json_data_scientific);
 }
 
+} // namespace

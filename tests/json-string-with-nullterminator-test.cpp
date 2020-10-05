@@ -22,67 +22,63 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
-#include <string>
+#include "catch2/catch.hpp"
 #include <sstream>
+#include <string>
+
+namespace
+{
 
 struct NullTerminatorStruct
 {
-	std::string data;
+  std::string data;
 
-	JS_OBJECT(
-		JS_MEMBER(data)
-	);
+  JS_OBJECT(JS_MEMBER(data));
 };
 
 std::string create_string_with_nullterminators()
 {
-	std::stringstream content;
-	content.write("Hello", 5);
-	int num = 5;
-	content.write((char*)&num, 4);
-	content.write(" World!", 7);
-	return content.str();
+  std::stringstream content;
+  content.write("Hello", 5);
+  int num = 5;
+  content.write((char *)&num, 4);
+  content.write(" World!", 7);
+  return content.str();
 }
 
 std::string create_json_with_nullterminators()
 {
-	std::stringstream content;
-	content.write("{\"data\":\"Hello", 14);
-	int num = 5;
-	content.write((char*)&num, 4);
-	content.write(" World!\"}", 9);
-	return content.str();
+  std::stringstream content;
+  content.write("{\"data\":\"Hello", 14);
+  int num = 5;
+  content.write((char *)&num, 4);
+  content.write(" World!\"}", 9);
+  return content.str();
 }
 
 void check_parse_nullterminated_string(const std::string jsonWithNullTerminator)
 {
-	NullTerminatorStruct nullStruct;
+  NullTerminatorStruct nullStruct;
 
-	JS::ParseContext pc(jsonWithNullTerminator);
-	pc.parseTo(nullStruct);
+  JS::ParseContext pc(jsonWithNullTerminator);
+  pc.parseTo(nullStruct);
 
-	JS_ASSERT(pc.error == JS::Error::NoError);
-	JS_ASSERT(nullStruct.data.size() == 16);
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(nullStruct.data.size() == 16);
 };
 
-void check_parse_nullterminated_string()
+TEST_CASE("check_parse_nullterminated_string", "[json_struct]")
 {
-	std::string jsonWithNullTerminator = create_json_with_nullterminators();
-	check_parse_nullterminated_string(jsonWithNullTerminator);
+  std::string jsonWithNullTerminator = create_json_with_nullterminators();
+  check_parse_nullterminated_string(jsonWithNullTerminator);
 }
 
-void check_serialize_nullterminated_struct()
+TEST_CASE("check_serialize_nullterminated_struct", "[json_struct]")
 {
-	NullTerminatorStruct nullStruct;
-	nullStruct.data = create_string_with_nullterminators();
-	std::string json = JS::serializeStruct(nullStruct);
-	check_parse_nullterminated_string(json);
+  NullTerminatorStruct nullStruct;
+  nullStruct.data = create_string_with_nullterminators();
+  std::string json = JS::serializeStruct(nullStruct);
+  check_parse_nullterminated_string(json);
 }
 
-int main(int, char **)
-{
-	check_parse_nullterminated_string();
-	check_serialize_nullterminated_struct();
-	return 0;
-}
+} // namespace

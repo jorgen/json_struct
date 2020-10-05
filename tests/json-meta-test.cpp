@@ -1,6 +1,8 @@
+#include "catch2/catch.hpp"
 #include "json_struct.h"
-#include "assert.h"
 
+namespace
+{
 const char first_child_with_data_json[] = R"json([ [], [],  [
 [],
 [],
@@ -10,16 +12,16 @@ const char first_child_with_data_json[] = R"json([ [], [],  [
 []
 ], [], []])json";
 
-void find_first_child_with_data()
+TEST_CASE("find_first_child_with_data", "[json_struct][meta]")
 {
-	JS::ParseContext pc(first_child_with_data_json);
-	JS::JsonTokens tokens;
-	pc.parseTo(tokens);
-	JS_ASSERT(pc.error == JS::Error::NoError);
-	std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
-	size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
-	fprintf(stderr, "%zu\n", first_child);
-        JS_ASSERT(first_child == 2);
+  JS::ParseContext pc(first_child_with_data_json);
+  JS::JsonTokens tokens;
+  pc.parseTo(tokens);
+  REQUIRE(pc.error == JS::Error::NoError);
+  std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
+  size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
+  fprintf(stderr, "%zu\n", first_child);
+  REQUIRE(first_child == 2);
 }
 const char first_child_with_data_json_last[] = R"json([ [], [], [],  [
 [],
@@ -30,20 +32,15 @@ const char first_child_with_data_json_last[] = R"json([ [], [], [],  [
 []
 ]])json";
 
-void find_first_child_with_data_last()
+TEST_CASE("find_first_child_with_data_last", "[json_struct][meta]")
 {
-	JS::ParseContext pc(first_child_with_data_json_last);
-	JS::JsonTokens tokens;
-	pc.parseTo(tokens);
-	JS_ASSERT(pc.error == JS::Error::NoError);
-	std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
-	size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
-	fprintf(stderr, "%zu\n", first_child);
-        JS_ASSERT(first_child == 3);
+  JS::ParseContext pc(first_child_with_data_json_last);
+  JS::JsonTokens tokens;
+  pc.parseTo(tokens);
+  REQUIRE(pc.error == JS::Error::NoError);
+  std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
+  size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
+  fprintf(stderr, "%zu\n", first_child);
+  REQUIRE(first_child == 3);
 }
-int main()
-{
-	find_first_child_with_data();
-	find_first_child_with_data_last();
-	return 0;
-}
+} // namespace

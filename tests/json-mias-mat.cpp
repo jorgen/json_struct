@@ -1,5 +1,8 @@
+#include "catch2/catch.hpp"
 #include "json_struct.h"
-#include "assert.h"
+
+namespace
+{
 
 const char ingredientJsonError[] = R"json(
 {
@@ -55,145 +58,114 @@ const char shoppingListNameSkipJson[] = R"json(
 
 struct RecipeNameIdItem
 {
-    RecipeNameIdItem()
-    {}
+  RecipeNameIdItem()
+  {
+  }
 
-    RecipeNameIdItem(const std::string& recipe_name, int recipe_id)
-        : recipe_name(recipe_name)
-        , recipe_id(recipe_id)
-    {}
+  RecipeNameIdItem(const std::string &recipe_name, int recipe_id)
+    : recipe_name(recipe_name)
+    , recipe_id(recipe_id)
+  {
+  }
 
-    std::string recipe_name;
-    int recipe_id;
+  std::string recipe_name;
+  int recipe_id;
 
-    JS_OBJECT(
-        JS_MEMBER(recipe_name),
-        JS_MEMBER(recipe_id)
-    );
+  JS_OBJECT(JS_MEMBER(recipe_name), JS_MEMBER(recipe_id));
 };
 
 struct RecipeNameIdList
 {
-    std::vector<RecipeNameIdItem> items;
+  std::vector<RecipeNameIdItem> items;
 
-    JS_OBJECT(
-        JS_MEMBER(items));
+  JS_OBJECT(JS_MEMBER(items));
 };
 
 struct ShoppingListItemCPP
 {
-    bool selected;
+  bool selected;
 
-    JS_OBJECT(
-        JS_MEMBER(selected));
+  JS_OBJECT(JS_MEMBER(selected));
 };
 
 struct IngredientCPP : public ShoppingListItemCPP
 {
-    int id;
-    std::string name;
-    std::string base_unit;
-    std::string description;
-    int shop_group_id;
-    float energy_per_unit;
-    bool vegetarian;
-    bool vegan;
-    float grams_per_deciliter;
-    float grams_per_dimensionless;
+  int id;
+  std::string name;
+  std::string base_unit;
+  std::string description;
+  int shop_group_id;
+  float energy_per_unit;
+  bool vegetarian;
+  bool vegan;
+  float grams_per_deciliter;
+  float grams_per_dimensionless;
 
-    std::string unit;
-    float quantity;
-    std::string group_name;
+  std::string unit;
+  float quantity;
+  std::string group_name;
 
-    int recipe_id;
-    std::string recipe_name;
-    bool use_ingredient_groups;
-    float portions;
-    std::string portions_unit;
+  int recipe_id;
+  std::string recipe_name;
+  bool use_ingredient_groups;
+  float portions;
+  std::string portions_unit;
 
-    std::string shop_group_name;
+  std::string shop_group_name;
 
-    std::vector<std::string> allergens;
+  std::vector<std::string> allergens;
 
-    RecipeNameIdList recipe_name_id_list;
+  RecipeNameIdList recipe_name_id_list;
 
-    JS_OBJECT_WITH_SUPER(
-        JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListItemCPP)),
-        JS_MEMBER(id),
-        JS_MEMBER(name),
-        JS_MEMBER(base_unit),
-        JS_MEMBER(description),
-        JS_MEMBER(shop_group_id),
-        JS_MEMBER(energy_per_unit),
-        JS_MEMBER(vegetarian),
-        JS_MEMBER(vegan),
-        JS_MEMBER(grams_per_deciliter),
-        JS_MEMBER(grams_per_dimensionless),
-        JS_MEMBER(unit),
-        JS_MEMBER(quantity),
-        JS_MEMBER(group_name),
-        JS_MEMBER(recipe_id),
-        JS_MEMBER(recipe_name),
-        JS_MEMBER(use_ingredient_groups),
-        JS_MEMBER(portions),
-        JS_MEMBER(portions_unit),
-        JS_MEMBER(shop_group_name),
-        JS_MEMBER(allergens),
-        JS_MEMBER(recipe_name_id_list)
-    );
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListItemCPP)), JS_MEMBER(id), JS_MEMBER(name),
+                       JS_MEMBER(base_unit), JS_MEMBER(description), JS_MEMBER(shop_group_id),
+                       JS_MEMBER(energy_per_unit), JS_MEMBER(vegetarian), JS_MEMBER(vegan),
+                       JS_MEMBER(grams_per_deciliter), JS_MEMBER(grams_per_dimensionless), JS_MEMBER(unit),
+                       JS_MEMBER(quantity), JS_MEMBER(group_name), JS_MEMBER(recipe_id), JS_MEMBER(recipe_name),
+                       JS_MEMBER(use_ingredient_groups), JS_MEMBER(portions), JS_MEMBER(portions_unit),
+                       JS_MEMBER(shop_group_name), JS_MEMBER(allergens), JS_MEMBER(recipe_name_id_list));
 };
 
 struct UserDefinedItemCPP : public ShoppingListItemCPP
 {
-    std::string text;
+  std::string text;
 
-    JS_OBJECT_WITH_SUPER(
-        JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListItemCPP)),
-        JS_MEMBER(text)
-    );
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListItemCPP)), JS_MEMBER(text));
 };
 
 struct ShoppingListFileBase
 {
-    int fileVersion;
-    int sortOrder;
-    std::string name;
-    std::string dateExplicit;
-    std::string timestamp;
-    bool isAutomaticSave;
+  int fileVersion;
+  int sortOrder;
+  std::string name;
+  std::string dateExplicit;
+  std::string timestamp;
+  bool isAutomaticSave;
 
-    JS_OBJECT(
-        JS_MEMBER(fileVersion),
-        JS_MEMBER(sortOrder),
-        JS_MEMBER(name),
-        JS_MEMBER(dateExplicit),
-        JS_MEMBER(timestamp),
-        JS_MEMBER(isAutomaticSave)
-    );
+  JS_OBJECT(JS_MEMBER(fileVersion), JS_MEMBER(sortOrder), JS_MEMBER(name), JS_MEMBER(dateExplicit),
+            JS_MEMBER(timestamp), JS_MEMBER(isAutomaticSave));
 };
 
 struct ShoppingListFileVersion02 : public ShoppingListFileBase
 {
-    std::vector<IngredientCPP> ingredients;
-    std::vector<UserDefinedItemCPP> userDefinedItems;
-    std::string notes;
+  std::vector<IngredientCPP> ingredients;
+  std::vector<UserDefinedItemCPP> userDefinedItems;
+  std::string notes;
 
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListFileBase)),
-        JS_MEMBER(ingredients),
-        JS_MEMBER(userDefinedItems),
-        JS_MEMBER(notes)
-    );
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(ShoppingListFileBase)), JS_MEMBER(ingredients),
+                       JS_MEMBER(userDefinedItems), JS_MEMBER(notes));
 };
 
-int main()
+TEST_CASE("mias_mat_special_unit_test", "[json_struct]")
 {
-    IngredientCPP ingredient;
-    JS::ParseContext pc(ingredientJsonError);
-    pc.parseTo(ingredient);
-    JS_ASSERT(pc.error == JS::Error::ExpectedDelimiter);
+  IngredientCPP ingredient;
+  JS::ParseContext pc(ingredientJsonError);
+  pc.parseTo(ingredient);
+  REQUIRE(pc.error == JS::Error::ExpectedDelimiter);
 
-    ShoppingListFileBase fileBase;
-    JS::ParseContext nameContext(shoppingListNameSkipJson);
-    nameContext.parseTo(fileBase);
-    JS_ASSERT(fileBase.name == "Handleliste");
+  ShoppingListFileBase fileBase;
+  JS::ParseContext nameContext(shoppingListNameSkipJson);
+  nameContext.parseTo(fileBase);
+  REQUIRE(fileBase.name == "Handleliste");
 }
+} // namespace

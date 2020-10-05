@@ -1,5 +1,5 @@
-#include "json_struct.h"
 #include "catch2/catch.hpp"
+#include "json_struct.h"
 
 #include <stdio.h>
 

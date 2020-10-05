@@ -1,6 +1,6 @@
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
 
 const char json_data[] = R"json(
 {
@@ -17,71 +17,57 @@ const char json_data[] = R"json(
 
 struct ExecuteOneData
 {
-    int prop1;
-    std::string prop2;
-    std::string prop3;
-    JS_OBJECT(JS_MEMBER(prop1),
-              JS_MEMBER(prop2),
-              JS_MEMBER(prop3));
+  int prop1;
+  std::string prop2;
+  std::string prop3;
+  JS_OBJECT(JS_MEMBER(prop1), JS_MEMBER(prop2), JS_MEMBER(prop3));
 };
 struct ExecuteTwoData
 {
-    std::string first_prop;
-    JS_OBJECT(JS_MEMBER(first_prop));
+  std::string first_prop;
+  JS_OBJECT(JS_MEMBER(first_prop));
 };
 struct ExecuterTwoReturn
 {
-    std::string string_data;
-    int value;
-    std::vector<int> values;
-    JS_OBJECT(JS_MEMBER(string_data),
-              JS_MEMBER(value),
-              JS_MEMBER(values));
+  std::string string_data;
+  int value;
+  std::vector<int> values;
+  JS_OBJECT(JS_MEMBER(string_data), JS_MEMBER(value), JS_MEMBER(values));
 };
 struct Executor
 {
-    void execute_one(const ExecuteOneData &data)
-    {
-        execute_one_called = true;
-    }
-    ExecuterTwoReturn execute_two(const ExecuteTwoData &data)
-    {
-        execute_two_called = true;
-        ExecuterTwoReturn ret;
-        ret.string_data = "Ret data";
-        ret.value = 999;
-        ret.values = { 3, 4, 5, 7, 8 };
-        return ret;
-    }
-    bool execute_one_called = false;
-    bool execute_two_called = false;
+  void execute_one(const ExecuteOneData &data)
+  {
+    execute_one_called = true;
+  }
+  ExecuterTwoReturn execute_two(const ExecuteTwoData &data)
+  {
+    execute_two_called = true;
+    ExecuterTwoReturn ret;
+    ret.string_data = "Ret data";
+    ret.value = 999;
+    ret.values = {3, 4, 5, 7, 8};
+    return ret;
+  }
+  bool execute_one_called = false;
+  bool execute_two_called = false;
 
-    JS_FUNCTION_CONTAINER(JS_FUNCTION(execute_one),
-                          JS_FUNCTION(execute_two));
+  JS_FUNCTION_CONTAINER(JS_FUNCTION(execute_one), JS_FUNCTION(execute_two));
 };
-void test_simple()
+
+TEST_CASE("test_function_error_simple", "[function][error]")
 {
-    Executor executor;
-    std::string json_out;
-    JS::DefaultCallFunctionContext context(json_data, json_out);
-    context.callFunctions(executor);
+  Executor executor;
+  std::string json_out;
+  JS::DefaultCallFunctionContext context(json_data, json_out);
+  context.callFunctions(executor);
 
-    JS_ASSERT(context.execution_list.size() == 2);
-#if JS_HAVE_CONSTEXPR
-    JS_ASSERT(context.execution_list[0].unassigned_required_members.data.size() == 1);
-    JS_ASSERT(context.execution_list[0].unassigned_required_members.data[0] == "prop3");
-#endif
-    JS_ASSERT(context.execution_list[0].missing_members.data.size() == 0);
+  REQUIRE(context.execution_list.size() == 2);
+  REQUIRE(context.execution_list[0].unassigned_required_members.data.size() == 1);
+  REQUIRE(context.execution_list[0].unassigned_required_members.data[0] == "prop3");
+  REQUIRE(context.execution_list[0].missing_members.data.size() == 0);
 
-#if JS_HAVE_CONSTEXPR
-    JS_ASSERT(context.execution_list[1].missing_members.data.size() == 1);
-    JS_ASSERT(context.execution_list[1].missing_members.data[0] == "second_prop");
-#endif
-    JS_ASSERT(context.execution_list[1].unassigned_required_members.data.size() == 0);
-}
-
-int main()
-{
-   test_simple();
-    return 0;
+  REQUIRE(context.execution_list[1].missing_members.data.size() == 1);
+  REQUIRE(context.execution_list[1].missing_members.data[0] == "second_prop");
+  REQUIRE(context.execution_list[1].unassigned_required_members.data.size() == 0);
 }

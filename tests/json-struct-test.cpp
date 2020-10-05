@@ -841,7 +841,8 @@ struct OutsideMeta
 
 JS_OBJECT_EXTERNAL(json_struct_test::OutsideMeta, JS_MEMBER(data), JS_MEMBER(a));
 
-namespace json_struct_test {
+namespace json_struct_test
+{
 
 static const char outside_json[] = R"json({
     "data" : "this is some text",

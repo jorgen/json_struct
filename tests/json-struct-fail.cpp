@@ -22,7 +22,10 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
+
+namespace
+{
 
 const char json_data[] = R"json(
 {
@@ -32,41 +35,34 @@ const char json_data[] = R"json(
 
 struct JsonMissingMeta
 {
-    float missing_meta;
+  float missing_meta;
 };
 
 struct JsonMissingTypeHandler
 {
-    double vec[3];
+  double vec[3];
 };
 
 struct JsonContainingStructMissingTypeHandler
 {
-    JsonMissingTypeHandler data;
+  JsonMissingTypeHandler data;
 
-    JS_OBJECT(JS_MEMBER(data));
+  JS_OBJECT(JS_MEMBER(data));
 };
 
-static void check_missing_meta()
+TEST_CASE("json_struct_error_check_missing_meta", "[json_struct][error]")
 {
-    JS::ParseContext context(json_data);
-    JsonMissingMeta missing;
-    //context.parseTo(missing);
-    //std::string out = JS::serializeStruct(missing);
+  JS::ParseContext context(json_data);
+  JsonMissingMeta missing;
+  // context.parseTo(missing);
+  // std::string out = JS::serializeStruct(missing);
 }
 
-static void check_missing_typehandler()
+TEST_CASE("json_struct_error_check_missing_typehandler", "[json_struct][error]")
 {
-    JS::ParseContext context(json_data);
-    JsonContainingStructMissingTypeHandler missing;
-    //context.parseTo(missing);
-    //std::string out = JS::serializeStruct(missing);
+  JS::ParseContext context(json_data);
+  JsonContainingStructMissingTypeHandler missing;
+  // context.parseTo(missing);
+  // std::string out = JS::serializeStruct(missing);
 }
-
-int main()
-{
-    check_missing_meta();
-    check_missing_typehandler();
-
-    return 0;
-}
+} // namespace

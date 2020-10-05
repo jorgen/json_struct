@@ -20,32 +20,32 @@
  * OF THIS SOFTWARE.
  */
 
+#include "catch2/catch.hpp"
 #include "json_struct.h"
-#include "assert.h"
 #include <string>
 
+namespace multiple_compilation_units
+{
 struct Json2
 {
-	float num1;
-	double num2;
+  float num1;
+  double num2;
 
-	JS_OBJECT(
-		JS_MEMBER(num1),
-		JS_MEMBER(num2)
-	);
+  JS_OBJECT(JS_MEMBER(num1), JS_MEMBER(num2));
 };
 
 std::string serialize_json2(float num1, double num2)
 {
-	Json2 json2{ num1, num2 };
-	return JS::serializeStruct(json2);
+  Json2 json2{num1, num2};
+  return JS::serializeStruct(json2);
 }
 
 bool deserialize_json2(const std::string &json)
 {
-	JS::ParseContext pc(json);
-	Json2 json2;
-	pc.parseTo(json2);
-	JS_ASSERT(pc.error == JS::Error::NoError);
-	return pc.error == JS::Error::NoError;
+  JS::ParseContext pc(json);
+  Json2 json2;
+  pc.parseTo(json2);
+  REQUIRE(pc.error == JS::Error::NoError);
+  return pc.error == JS::Error::NoError;
 }
+} // namespace multiple_compilation_units

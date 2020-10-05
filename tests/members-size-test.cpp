@@ -22,74 +22,63 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
 
-#if JS_HAVE_CONSTEXPR
+namespace
+{
+
 struct A
 {
-    int a;
-    JS_OBJECT(JS_MEMBER(a));
+  int a;
+  JS_OBJECT(JS_MEMBER(a));
 };
 
 struct B : public A
 {
-    float b;
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
-                           JS_SUPER_CLASS(A)),
-                         JS_MEMBER(b));
+  float b;
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(A)), JS_MEMBER(b));
 };
 
 struct D
 {
-    unsigned char d;
-    JS_OBJECT(JS_MEMBER(d));
+  unsigned char d;
+  JS_OBJECT(JS_MEMBER(d));
 };
 
 struct E : public D
 {
-    double e;
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
-                           JS_SUPER_CLASS(D)),
-                         JS_MEMBER(e));
+  double e;
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(D)), JS_MEMBER(e));
 };
 
 struct F : public E
 {
-    short f;
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
-                           JS_SUPER_CLASS(E)),
-                         JS_MEMBER(f));
+  short f;
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(E)), JS_MEMBER(f));
 };
 struct G
 {
-    char g;
-    JS_OBJECT(JS_MEMBER(g));
+  char g;
+  JS_OBJECT(JS_MEMBER(g));
 };
 
 struct Subclass : public B, public F, public G
 {
-    unsigned int h;
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(
-                           JS_SUPER_CLASS(B),
-                           JS_SUPER_CLASS(F),
-                           JS_SUPER_CLASS(G)),
-                         JS_MEMBER(h));
+  unsigned int h;
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(B), JS_SUPER_CLASS(F), JS_SUPER_CLASS(G)), JS_MEMBER(h));
 };
 
-#endif
-
-int main()
+TEST_CASE("members_size", "[json_struct]")
 {
-#if JS_HAVE_CONSTEXPR
-    size_t member_count = JS::Internal::memberCount<Subclass, 0>();
-    JS_ASSERT( member_count == 7);
-    int array[JS::Internal::memberCount<Subclass,0 >()];
-    for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++) {
-        array[i] = static_cast<int>(i);
-    }
+  size_t member_count = JS::Internal::memberCount<Subclass, 0>();
+  REQUIRE(member_count == 7);
+  int array[JS::Internal::memberCount<Subclass, 0>()];
+  for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)
+  {
+    array[i] = static_cast<int>(i);
+  }
 
-    for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)
-        fprintf(stderr, "array %d\n", array[i]);
-#endif
-    return 0;
+  for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)
+    fprintf(stderr, "array %d\n", array[i]);
 }
+} // namespace

@@ -22,7 +22,10 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
+
+namespace
+{
 
 const char json_data1[] = R"json(
 {
@@ -44,56 +47,52 @@ const char json_data1[] = R"json(
 )json";
 struct TestStructT
 {
-    std::string SubString;
-    int SubNumber;
+  std::string SubString;
+  int SubNumber;
 };
-JS_OBJECT_EXTERNAL(TestStructT,
-	JS_MEMBER(SubString),
-	JS_MEMBER(SubNumber));
+} // namespace
+JS_OBJECT_EXTERNAL(TestStructT, JS_MEMBER(SubString), JS_MEMBER(SubNumber));
 
+namespace
+{
 struct TestStructSub : public TestStructT
 {
-    std::vector<int> Array;
+  std::vector<int> Array;
 };
-JS_OBJECT_EXTERNAL_WITH_SUPER(TestStructSub,
-        JS_SUPER_CLASSES(JS_SUPER_CLASS(TestStructT)),
-        JS_MEMBER(Array));
+} // namespace
+JS_OBJECT_EXTERNAL_WITH_SUPER(TestStructSub, JS_SUPER_CLASSES(JS_SUPER_CLASS(TestStructT)), JS_MEMBER(Array));
 
+namespace
+{
 struct JsonData1
 {
-    std::string StringNode;
-    double NumberNode;
-    bool BooleanTrue;
-    bool BooleanFalse;
-    TestStructSub TestStruct;
+  std::string StringNode;
+  double NumberNode;
+  bool BooleanTrue;
+  bool BooleanFalse;
+  TestStructSub TestStruct;
 };
-JS_OBJECT_EXTERNAL(JsonData1,
-        JS_MEMBER(StringNode),
-        JS_MEMBER(NumberNode),
-        JS_MEMBER(BooleanTrue),
-        JS_MEMBER(BooleanFalse),
-        JS_MEMBER(TestStruct));
+} // namespace
+JS_OBJECT_EXTERNAL(JsonData1, JS_MEMBER(StringNode), JS_MEMBER(NumberNode), JS_MEMBER(BooleanTrue),
+                   JS_MEMBER(BooleanFalse), JS_MEMBER(TestStruct));
 
-static int check_json_tree_nodes()
+namespace
 {
-    JS::ParseContext context(json_data1);
-    JsonData1 data;
-    context.parseTo(data);
+TEST_CASE("json_struct_external", "[json_struct]")
+{
+  JS::ParseContext context(json_data1);
+  JsonData1 data;
+  context.parseTo(data);
 
-	JS_ASSERT(context.error == JS::Error::NoError);
-    JS_ASSERT(data.StringNode == "Some test data");
-	JS_ASSERT(data.TestStruct.SubNumber == 500);
-	JS_ASSERT(data.TestStruct.Array.size() == 4);
-	JS_ASSERT(data.TestStruct.Array[2] == 3);
-    JS_ASSERT(context.error == JS::Error::NoError);
+  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(data.StringNode == "Some test data");
+  REQUIRE(data.TestStruct.SubNumber == 500);
+  REQUIRE(data.TestStruct.Array.size() == 4);
+  REQUIRE(data.TestStruct.Array[2] == 3);
+  REQUIRE(context.error == JS::Error::NoError);
 
-    std::string json = JS::serializeStruct(data);
-    fprintf(stderr, "%s\n", json.c_str());
-    return 0;
+  std::string json = JS::serializeStruct(data);
+  fprintf(stderr, "%s\n", json.c_str());
 }
 
-int main(int, char **)
-{
-    check_json_tree_nodes();
-    return 0;
-}
+} // namespace

@@ -832,7 +832,8 @@ struct OutsideMeta
 
 JS_OBJ_EXT(json_struct_short_notation::OutsideMeta, data, a);
 
-namespace json_struct_short_notation {
+namespace json_struct_short_notation
+{
 
 static const char outside_json[] = R"json({
     "data" : "this is some text",
@@ -841,20 +842,20 @@ static const char outside_json[] = R"json({
 
 TEST_CASE("short_check_json_meta_outside", "json_struct")
 {
-    JS::ParseContext context(outside_json);
-    OutsideMeta data;
-    context.parseTo(data);
-    REQUIRE(context.error == JS::Error::NoError);
-    REQUIRE(data.data == "this is some text");
-    REQUIRE(data.a == 44.5);
+  JS::ParseContext context(outside_json);
+  OutsideMeta data;
+  context.parseTo(data);
+  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(data.data == "this is some text");
+  REQUIRE(data.a == 44.5);
 }
 
 struct FloatingPointAtTheEnd
 {
-    bool enabled;
-    float value;
+  bool enabled;
+  float value;
 
-    JS_OBJ(enabled, value);
+  JS_OBJ(enabled, value);
 };
 
 static const char short_floating_at_the_end[] = R"json({
@@ -864,17 +865,17 @@ static const char short_floating_at_the_end[] = R"json({
 
 TEST_CASE("short_check_short_floating_point", "json_struct")
 {
-    JS::ParseContext context(short_floating_at_the_end);
-    FloatingPointAtTheEnd data;
-    context.parseTo(data);
-    REQUIRE(context.error == JS::Error::NoError);
+  JS::ParseContext context(short_floating_at_the_end);
+  FloatingPointAtTheEnd data;
+  context.parseTo(data);
+  REQUIRE(context.error == JS::Error::NoError);
 }
 
 struct InvalidFloating
 {
-    bool enabled;
-    float value;
-    JS_OBJ(enabled, value);
+  bool enabled;
+  float value;
+  JS_OBJ(enabled, value);
 };
 
 static const char invalid_floating[] = R"json({
@@ -884,12 +885,11 @@ static const char invalid_floating[] = R"json({
 
 TEST_CASE("short_check_invalid_floating_point", "json_struct")
 {
-    JS::ParseContext context(invalid_floating);
-    FloatingPointAtTheEnd data;
-    context.parseTo(data);
-    REQUIRE(context.error == JS::Error::FailedToParseFloat);
+  JS::ParseContext context(invalid_floating);
+  FloatingPointAtTheEnd data;
+  context.parseTo(data);
+  REQUIRE(context.error == JS::Error::FailedToParseFloat);
 }
-
 
 static const char moreEscapedJsonAtEnd[] = R"json({
     "some_text" : "more\n",
@@ -903,20 +903,13 @@ static const char moreEscapedJsonAtEnd[] = R"json({
 
 struct MoreEscapedStruct
 {
-    std::string some_text;
-    std::string some_other;
-    std::string pure_escape;
-    std::string strange_escape;
-    std::string pure_strange_escape;
-    std::string empty_string;
-    JS_OBJ(
-      some_text,
-      some_other,
-      pure_escape,
-      strange_escape,
-      pure_strange_escape,
-      empty_string
-    );
+  std::string some_text;
+  std::string some_other;
+  std::string pure_escape;
+  std::string strange_escape;
+  std::string pure_strange_escape;
+  std::string empty_string;
+  JS_OBJ(some_text, some_other, pure_escape, strange_escape, pure_strange_escape, empty_string);
 };
 
 TEST_CASE("short_check_json_escaped_end", "json_struct")
@@ -931,8 +924,7 @@ TEST_CASE("short_check_json_escaped_end", "json_struct")
   REQUIRE(data.strange_escape == std::string("foo\\s"));
   REQUIRE(data.pure_strange_escape == std::string("\\k"));
   std::string json = JS::serializeStruct(data);
-  //fprintf(stderr, "%s\n", json.c_str());
-  
+  // fprintf(stderr, "%s\n", json.c_str());
 };
 
 } // namespace json_struct_short_notation

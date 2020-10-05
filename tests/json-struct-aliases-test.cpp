@@ -22,7 +22,10 @@
 
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
+
+namespace
+{
 
 const char json_data1[] = R"json(
     {
@@ -33,42 +36,38 @@ const char json_data1[] = R"json(
 
 struct FirstAlias
 {
-    int ThePrimary = 0;
-    int SomeOtherValue = 0;
+  int ThePrimary = 0;
+  int SomeOtherValue = 0;
 
-    JS_OBJECT(
-              JS_MEMBER_ALIASES(ThePrimary, "TheAlias"),
-              JS_MEMBER(SomeOtherValue));
+  JS_OBJECT(JS_MEMBER_ALIASES(ThePrimary, "TheAlias"), JS_MEMBER(SomeOtherValue));
 };
 
-void checkPlain()
+TEST_CASE("struct_aliases_checkPlain", "[json_struct][aliases]")
 {
-    JS::ParseContext context(json_data1);
-    FirstAlias fa;
-    context.parseTo(fa);
+  JS::ParseContext context(json_data1);
+  FirstAlias fa;
+  context.parseTo(fa);
 
-    JS_ASSERT(fa.ThePrimary == 55);
-    JS_ASSERT(fa.SomeOtherValue == 44);
+  REQUIRE(fa.ThePrimary == 55);
+  REQUIRE(fa.SomeOtherValue == 44);
 }
 
 struct ShadowAlias
 {
-    int TheAlias = 0;
-    int SomeOtherValue = 0; 
+  int TheAlias = 0;
+  int SomeOtherValue = 0;
 
-    JS_OBJECT(
-              JS_MEMBER_ALIASES(TheAlias, "SomeOtherValue"),
-              JS_MEMBER(SomeOtherValue));
+  JS_OBJECT(JS_MEMBER_ALIASES(TheAlias, "SomeOtherValue"), JS_MEMBER(SomeOtherValue));
 };
 
-void checkPlainShadow()
+TEST_CASE("struct_aliases_checkPlainShadow", "[json_struct][aliases]")
 {
-    JS::ParseContext context(json_data1);
-    ShadowAlias sa;
-    context.parseTo(sa);
+  JS::ParseContext context(json_data1);
+  ShadowAlias sa;
+  context.parseTo(sa);
 
-    JS_ASSERT(sa.TheAlias == 55);
-    JS_ASSERT(sa.SomeOtherValue == 44);
+  REQUIRE(sa.TheAlias == 55);
+  REQUIRE(sa.SomeOtherValue == 44);
 }
 
 const char json_data2[] = R"json(
@@ -80,32 +79,31 @@ const char json_data2[] = R"json(
 
 struct TheSuper
 {
-    int TheAlias = 0;
-    JS_OBJECT(JS_MEMBER(TheAlias));
+  int TheAlias = 0;
+  JS_OBJECT(JS_MEMBER(TheAlias));
 };
 
 struct TheSub : public TheSuper
 {
-    int SomeOtherValue = 0;
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(TheSuper)),
-                         JS_MEMBER_ALIASES(SomeOtherValue, "TheAlias"));
+  int SomeOtherValue = 0;
+  JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(TheSuper)), JS_MEMBER_ALIASES(SomeOtherValue, "TheAlias"));
 };
 
-void checkSuperShadow()
+TEST_CASE("struct_aliases_checkSuperShadow", "[json_struct][aliases]")
 {
-    JS::ParseContext context(json_data1);
-    TheSub sa;
-    context.parseTo(sa);
+  JS::ParseContext context(json_data1);
+  TheSub sa;
+  context.parseTo(sa);
 
-    JS_ASSERT(sa.TheAlias == 55);
-    JS_ASSERT(sa.SomeOtherValue == 44);
+  REQUIRE(sa.TheAlias == 55);
+  REQUIRE(sa.SomeOtherValue == 44);
 
-    context = JS::ParseContext(json_data2);
-    sa = TheSub();
-    context.parseTo(sa);
+  context = JS::ParseContext(json_data2);
+  sa = TheSub();
+  context.parseTo(sa);
 
-    JS_ASSERT(sa.TheAlias == 55);
-    JS_ASSERT(sa.SomeOtherValue == 44);
+  REQUIRE(sa.TheAlias == 55);
+  REQUIRE(sa.SomeOtherValue == 44);
 }
 
 const char recursive_alias[] = R"json(
@@ -122,41 +120,30 @@ const char recursive_alias[] = R"json(
 
 struct Second
 {
-    std::string one;
-    std::string two_primary;
-    std::string three;
+  std::string one;
+  std::string two_primary;
+  std::string three;
 
-    JS_OBJECT(JS_MEMBER(one),
-              JS_MEMBER_ALIASES(two_primary, "two"),
-              JS_MEMBER(three));
+  JS_OBJECT(JS_MEMBER(one), JS_MEMBER_ALIASES(two_primary, "two"), JS_MEMBER(three));
 };
 struct First
 {
-    std::string first;
-    Second second;
-    std::string third;
-    JS_OBJECT(JS_MEMBER(first),
-              JS_MEMBER(second),
-              JS_MEMBER(third));
+  std::string first;
+  Second second;
+  std::string third;
+  JS_OBJECT(JS_MEMBER(first), JS_MEMBER(second), JS_MEMBER(third));
 };
 
-void checkRecursiveShadow()
+TEST_CASE("struct_aliases_checkRecursiveShadow", "[json_struct][aliases]")
 {
-    JS::ParseContext context(recursive_alias);
-    First f;
-    context.parseTo(f);
+  JS::ParseContext context(recursive_alias);
+  First f;
+  context.parseTo(f);
 
-    JS_ASSERT(f.first == "first");
-    JS_ASSERT(f.second.two_primary == "two");
-    JS_ASSERT(f.second.three == "three");
-    JS_ASSERT(f.third == "third");
+  REQUIRE(f.first == "first");
+  REQUIRE(f.second.two_primary == "two");
+  REQUIRE(f.second.three == "three");
+  REQUIRE(f.third == "third");
 }
 
-int main()
-{
-    checkPlain();
-    checkPlainShadow();
-    checkSuperShadow();
-    checkRecursiveShadow();
-    return 0;
-}
+} // namespace

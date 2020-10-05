@@ -1,6 +1,9 @@
 #include "json_struct.h"
 
-#include "assert.h"
+#include "catch2/catch.hpp"
+
+namespace
+{
 
 const char json_string[] = R"json(
     [
@@ -26,26 +29,23 @@ const char json_string[] = R"json(
     ]
 )json";
 
-void testMetaForTokens()
+TEST_CASE("testMetaForTokens", "[meta]")
 {
-    JS::ParseContext context(json_string);
-    JS::JsonTokens tokens;
-    context.parseTo(tokens);
-    JS_ASSERT(context.error == JS::Error::NoError);
+  JS::ParseContext context(json_string);
+  JS::JsonTokens tokens;
+  context.parseTo(tokens);
+  REQUIRE(context.error == JS::Error::NoError);
 
-    std::vector<JS::JsonMeta> metaInfo = JS::metaForTokens(tokens);
-    JS_ASSERT(metaInfo.size());
-    JS_ASSERT(!metaInfo[3].is_array);
-    JS::Token token = tokens.data.at(metaInfo.at(3).position);
-    JS_ASSERT(std::string("member_three") == std::string(token.name.data, token.name.size));
-    token = tokens.data.at(metaInfo.at(3).position + metaInfo.at(3).size);
-    JS_ASSERT(std::string("member_four") == std::string(token.name.data, token.name.size));
-    token = tokens.data.at(metaInfo.at(6).position);
-    JS_ASSERT(std::string("fourth_member") == std::string(token.name.data, token.name.size));
-    JS_ASSERT((1 + metaInfo.at(1).skip + metaInfo.at(1 + metaInfo.at(1).skip).skip) == 7);
+  std::vector<JS::JsonMeta> metaInfo = JS::metaForTokens(tokens);
+  REQUIRE(metaInfo.size());
+  REQUIRE(!metaInfo[3].is_array);
+  JS::Token token = tokens.data.at(metaInfo.at(3).position);
+  REQUIRE(std::string("member_three") == std::string(token.name.data, token.name.size));
+  token = tokens.data.at(metaInfo.at(3).position + metaInfo.at(3).size);
+  REQUIRE(std::string("member_four") == std::string(token.name.data, token.name.size));
+  token = tokens.data.at(metaInfo.at(6).position);
+  REQUIRE(std::string("fourth_member") == std::string(token.name.data, token.name.size));
+  REQUIRE((1 + metaInfo.at(1).skip + metaInfo.at(1 + metaInfo.at(1).skip).skip) == 7);
 }
 
-int main()
-{
-    testMetaForTokens();
-}
+} // namespace

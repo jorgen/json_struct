@@ -20,10 +20,12 @@
  * OF THIS SOFTWARE.
  */
 
+#include "catch2/catch.hpp"
 #include "json_struct.h"
-#include "assert.h"
 #include <string>
 
+namespace multiple_compilation_units
+{
 const char json_data1[] = R"json(
 	{
 		"num1": 1.234,
@@ -43,16 +45,15 @@ extern bool deserialize_json1(const std::string &json);
 extern std::string serialize_json2(float num1, double num2);
 extern bool deserialize_json2(const std::string &json);
 
-int main()
+TEST_CASE("test_multiple_compilation_units", "[json_struct]")
 {
-	std::string json1 = serialize_json1(1.111f, 2.222);
-	std::string json2 = serialize_json2(1.111f, 2.222);
-	JS_ASSERT(json1 == json2);
+  std::string json1 = serialize_json1(1.111f, 2.222);
+  std::string json2 = serialize_json2(1.111f, 2.222);
+  REQUIRE(json1 == json2);
 
-	bool ok1 = deserialize_json1(json_data1);
-	bool ok2 = deserialize_json2(json_data2);
-	JS_ASSERT(ok1);
-	JS_ASSERT(ok2);
-
-	return 0;
+  bool ok1 = deserialize_json1(json_data1);
+  bool ok2 = deserialize_json2(json_data2);
+  REQUIRE(ok1);
+  REQUIRE(ok2);
 }
+} // namespace multiple_compilation_units
