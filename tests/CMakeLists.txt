@@ -10,7 +10,7 @@ cmrc_add_resource_library(
     )
 
 add_library(catch_main STATIC catch-main.cpp)
-set(catch_test_sources 
+set(unit_test_sources
                            json-struct-test.cpp
                            json-struct-test-new.cpp
                            json-struct-external.cpp
@@ -45,23 +45,18 @@ set(catch_test_sources
                            multi-compilation-units-main.cpp
                            json-reformat.cpp
               )
-add_executable(catch-tests ${catch_test_sources})
+add_executable(unit-tests ${unit_test_sources})
 if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
-  target_compile_features(catch-tests PUBLIC cxx_std_17)
+  target_compile_features(unit-tests PUBLIC cxx_std_17)
 else()
   set_source_files_properties(json-optional.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
 endif()
 
-target_link_libraries(catch-tests PRIVATE catch_main external_json::rc)
+target_link_libraries(unit-tests PRIVATE catch_main external_json::rc)
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-target_precompile_headers(catch-tests PRIVATE ../include/json_struct.h catch2/catch.hpp)
+target_precompile_headers(unit-tests PRIVATE ../include/json_struct.h catch2/catch.hpp)
 endif()
-add_test(NAME catch-tests COMMAND catch-tests)
-
-add_executable(json-struct-performance json-struct-performance.cpp
-                include/json/0.6/jsoncpp.cpp)
-target_include_directories(json-struct-performance PRIVATE include/json/0.6)
-#add_test(NAME json-struct-performance COMMAND json-struct-performance)
+add_test(NAME unit-tests COMMAND unit-tests)
 
 # Tests for zero value floating points (both negative and positive zeros).
 # The tests are run with different compiler options for floating point math.
@@ -83,7 +78,7 @@ endif()
 
 
 add_custom_target(clangformat_tests
-  COMMAND clang-format -i ${catch_test_sources} json-struct-performance.cpp
+  COMMAND clang-format -i ${unit_test_sources}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
-  SOURCES ${catch_test_sources}
+  SOURCES ${unit_test_sources}
   )
