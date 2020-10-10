@@ -54,6 +54,8 @@ TEST_CASE("json_struct_error_check_missing_meta", "[json_struct][error]")
 {
   JS::ParseContext context(json_data);
   JsonMissingMeta missing;
+  JS_UNUSED(context);
+  JS_UNUSED(missing);
   // context.parseTo(missing);
   // std::string out = JS::serializeStruct(missing);
 }
@@ -62,6 +64,8 @@ TEST_CASE("json_struct_error_check_missing_typehandler", "[json_struct][error]")
 {
   JS::ParseContext context(json_data);
   JsonContainingStructMissingTypeHandler missing;
+  JS_UNUSED(context);
+  JS_UNUSED(missing);
   // context.parseTo(missing);
   // std::string out = JS::serializeStruct(missing);
 }

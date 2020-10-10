@@ -52,11 +52,13 @@ struct FunctionCont
 
   void func2(const Func2Arg &arg)
   {
+    JS_UNUSED(arg);
     func2_called = true;
   }
 
   void func3(const Func3Arg &arg)
   {
+    JS_UNUSED(arg);
     func3_called = true;
   }
 

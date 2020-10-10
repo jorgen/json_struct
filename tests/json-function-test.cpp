@@ -56,6 +56,7 @@ struct CallFunction
 
   int execute_two(const double &data, JS::CallFunctionContext &context)
   {
+    JS_UNUSED(context);
     fprintf(stderr, "execute two executed %f\n", data);
     called_two = true;
     return 2;
@@ -63,6 +64,7 @@ struct CallFunction
 
   void execute_three(const std::vector<double> &data, JS::CallFunctionContext &context)
   {
+    JS_UNUSED(context);
     fprintf(stderr, "execute three\n");
     for (auto x : data)
       fprintf(stderr, "\t%f\n", x);
