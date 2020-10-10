@@ -145,6 +145,22 @@
 #include <optional>
 #endif
 
+#ifndef JS_IF_CONSTEXPR(exp)
+#ifdef __cpp_if_constexpr
+#define JS_IF_CONSTEXPR(exp) if constexpr (exp)
+#else
+#if defined(__MSC_VER)
+#define JS_IF_CONSTEXPR(exp)
+__pragma(warning(push)) \
+__pragma(warning(disable : 4127)) \
+if (exp) \
+__pragma(warning(pop))
+#else
+#define JS_IF_CONSTEXPR(exp) if (exp)
+#endif
+#endif
+#endif
+
 #if defined(min) || defined(max)
 
 #error min or max macro is defined. Make sure these are not defined before including json_struct.h.\
@@ -2821,18 +2837,30 @@ struct JsonStructBaseDummy
 /*!
  * \private
  */
-template <typename T, typename U, size_t NAME_COUNT>
+template <typename T, typename U, typename NAMETUPLE>
 struct MI
 {
-  DataRef name[NAME_COUNT];
+  NAMETUPLE names;
   T U::*member;
   typedef T type;
 };
 
 namespace Internal
 {
-template <typename T, typename U, size_t NAME_COUNT>
-using MemberInfo = MI<T, U, NAME_COUNT>;
+template<size_t SIZE>
+struct StringLiteral
+{
+  const char *data;
+  static constexpr const size_t size = SIZE;
+};
+template<size_t SIZE>
+constexpr StringLiteral<SIZE - 1> makeStringLiteral(const char (&literal)[SIZE])
+{
+  return {literal};
+}
+
+template <typename T, typename U, typename NAMETUPLE>
+using MemberInfo = MI<T, U, NAMETUPLE>;
 
 template <typename T>
 struct SuperInfo
@@ -2847,10 +2875,9 @@ struct SuperInfo
 } // namespace Internal
 
 template <typename T, typename U, size_t NAME_SIZE, typename... Aliases>
-constexpr const MI<T, U, sizeof...(Aliases) + 1> makeMemberInfo(const char (&name)[NAME_SIZE], T U::*member,
-                                                                Aliases... aliases)
+constexpr auto makeMemberInfo(const char (&name)[NAME_SIZE], T U::*member, Aliases &... aliases) -> MI<T, U, decltype(makeTuple(JS::Internal::makeStringLiteral(name), JS::Internal::makeStringLiteral(aliases)...))> 
 {
-  return {{DataRef(name), DataRef(aliases)...}, member};
+  return {makeTuple(JS::Internal::makeStringLiteral(name), JS::Internal::makeStringLiteral(aliases)...), member};
 }
 
 template <typename T, size_t NAME_SIZE>
@@ -2868,14 +2895,45 @@ struct TypeHandler
 
 namespace Internal
 {
-template <typename T, typename MI_T, typename MI_M, size_t MI_NC>
+template<size_t STRINGSIZE>
+inline bool compareDataRefWithStringLiteral(const StringLiteral<STRINGSIZE> &memberName, const DataRef &jsonName)
+{
+  return jsonName.size == STRINGSIZE && memcmp(memberName.data, jsonName.data, STRINGSIZE) == 0;
+}
+
+template<typename NameTuple, size_t index>
+struct NameChecker
+{
+  static bool compare(const NameTuple &tuple, const DataRef &name)
+  {
+
+    JS_IF_CONSTEXPR (index != tuple.size)
+    {
+      auto &stringLiteral = tuple.template get<tuple.size - index>();
+      if (compareDataRefWithStringLiteral(stringLiteral, name))
+        return true;
+    }
+    return NameChecker<NameTuple, index - 1>::compare(tuple, name);
+  }
+};
+template<typename NameTuple>
+struct NameChecker<NameTuple, 0>
+{
+  static bool compare(const NameTuple &tuple, const DataRef &name)
+  {
+    JS_UNUSED(tuple);
+    JS_UNUSED(name);
+    return false;
+  }
+};
+
+template <typename T, typename MI_T, typename MI_M, typename MI_NC>
 inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context,
                           size_t index, bool primary, bool *assigned_members)
 {
   if (primary)
   {
-    if (memberInfo.name[0].size == context.token.name.size &&
-        memcmp(memberInfo.name[0].data, context.token.name.data, context.token.name.size) == 0)
+    if (compareDataRefWithStringLiteral(memberInfo.names.template get<0>(), context.token.name))
     {
       assigned_members[index] = true;
       return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
@@ -2883,20 +2941,16 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &membe
   }
   else
   {
-    for (size_t start = 1; start < MI_NC; start++)
+    if (NameChecker<MI_NC, MI_NC::size>::compare(memberInfo.names, context.token.name))
     {
-      if (memberInfo.name[start].size == context.token.name.size &&
-          memcmp(memberInfo.name[start].data, context.token.name.data, context.token.name.size) == 0)
-      {
         assigned_members[index] = true;
         return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
-      }
     }
   }
   return Error::MissingPropertyMember;
 }
 
-template <typename MI_T, typename MI_M, size_t MI_NC>
+template <typename MI_T, typename MI_M, typename MI_NC>
 inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_t index, bool *assigned_members,
                           bool track_missing_members, std::vector<std::string> &missing_members, const char *super_name)
 {
@@ -2908,19 +2962,19 @@ inline Error verifyMember(const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, size_
   if (track_missing_members)
   {
     std::string to_push = strlen(super_name) ? std::string(super_name) + "::" : std::string();
-    to_push += std::string(memberInfo.name[0].data, memberInfo.name[0].size);
+    to_push += std::string(memberInfo.names.template get<0>().data, memberInfo.names.template get<0>().size);
     missing_members.push_back(to_push);
   }
   return Error::UnassignedRequiredMember;
 }
 
-template <typename T, typename MI_T, typename MI_M, size_t MI_NC>
+template <typename T, typename MI_T, typename MI_M, typename MI_NC>
 inline void serializeMember(const T &from_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, Token &token,
                             Serializer &serializer, const char *super_name)
 {
   JS_UNUSED(super_name);
-  token.name.data = memberInfo.name[0].data;
-  token.name.size = memberInfo.name[0].size;
+  token.name.data = memberInfo.names.template get<0>().data;
+  token.name.size = memberInfo.names.template get<0>().size;
   token.name_type = Type::Ascii;
 
   TypeHandler<MI_T>::from(from_type.*memberInfo.member, token, serializer);
@@ -7845,7 +7899,7 @@ struct StdTupleTypeHandler
 template <typename... Ts>
 struct StdTupleTypeHandler<0, Ts...>
 {
-  static inline Error to(std::tuple<Ts...>, ParseContext &context)
+  static inline Error to(std::tuple<Ts...> &, ParseContext &context)
   {
     JS_UNUSED(context);
     return Error::NoError;
