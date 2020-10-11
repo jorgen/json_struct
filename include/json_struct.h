@@ -151,10 +151,7 @@
 #else
 #if defined(__MSC_VER)
 #define JS_IF_CONSTEXPR(exp)
-__pragma(warning(push)) \
-__pragma(warning(disable : 4127)) \
-if (exp) \
-__pragma(warning(pop))
+__pragma(warning(push)) __pragma(warning(disable : 4127)) if (exp) __pragma(warning(pop))
 #else
 #define JS_IF_CONSTEXPR(exp) if (exp)
 #endif
@@ -2583,16 +2580,14 @@ struct JsonStructBaseDummy
   static_assert(sizeof(HasJsonStructBase<JS_OBJECT_T>::template test_in_base<JS_OBJECT_T>(nullptr)) ==
                   sizeof(typename HasJsonStructBase<JS_OBJECT_T>::yes),
                 "Missing JS_OBJECT JS_OBJECT_EXTERNAL or TypeHandler specialisation\n");
-  using TT = typename std::remove_reference<decltype(
-    JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_data_info())>::type;
-  using ST = typename std::remove_reference<decltype(
-    JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_super_info())>::type;
-  static constexpr const TT js_static_meta_data_info()
+  using TT = decltype(JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_data_info());
+  using ST = decltype(JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_super_info());
+  static inline constexpr const TT js_static_meta_data_info()
   {
     return JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_data_info();
   }
 
-  static constexpr const ST js_static_meta_super_info()
+  static inline constexpr const ST js_static_meta_super_info()
   {
     return JS_OBJECT_T::template JsonStructBase<JS_OBJECT_T>::js_static_meta_super_info();
   }
@@ -2615,15 +2610,13 @@ struct JsonStructBaseDummy
   struct JsonStructBase                                                                                                \
   {                                                                                                                    \
     using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
-    static constexpr const TT js_static_meta_data_info()                                                               \
+    static inline constexpr const TT js_static_meta_data_info()                                                        \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(__VA_ARGS__);                                                                           \
-      return ret;                                                                                                      \
+      return JS::makeTuple(__VA_ARGS__);                                                                               \
     }                                                                                                                  \
-    static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
+    static inline constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                \
     {                                                                                                                  \
-      auto ret = JS::makeTuple();                                                                                      \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   }
 
@@ -2634,13 +2627,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(__VA_ARGS__);                                                                           \
-      return ret;                                                                                                      \
+      return JS::makeTuple(__VA_ARGS__);                                                                               \
     }                                                                                                                  \
     static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
     {                                                                                                                  \
-      auto ret = super_list;                                                                                           \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   }
 
@@ -2655,13 +2646,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(__VA_ARGS__);                                                                           \
-      return ret;                                                                                                      \
+      return JS::makeTuple(__VA_ARGS__);                                                                               \
     }                                                                                                                  \
     static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
     {                                                                                                                  \
-      auto ret = JS::makeTuple();                                                                                      \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -2678,13 +2667,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(__VA_ARGS__);                                                                           \
-      return ret;                                                                                                      \
+      return JS::makeTuple(__VA_ARGS__);                                                                               \
     }                                                                                                                  \
     static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
     {                                                                                                                  \
-      auto ret = super_list;                                                                                           \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -2751,13 +2738,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                         \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                 \
-      return ret;                                                                                                      \
+      return JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                     \
     }                                                                                                                  \
     static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
     {                                                                                                                  \
-      auto ret = JS::makeTuple();                                                                                      \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   }
 
@@ -2778,13 +2763,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__))));                     \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                             \
-      return ret;                                                                                                      \
+      return JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                 \
     }                                                                                                                  \
     static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
     {                                                                                                                  \
-      auto ret = super_list;                                                                                           \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   }
 
@@ -2799,13 +2782,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                         \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                 \
-      return ret;                                                                                                      \
+      return JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                     \
     }                                                                                                                  \
     static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
     {                                                                                                                  \
-      auto ret = JS::makeTuple();                                                                                      \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -2822,13 +2803,11 @@ struct JsonStructBaseDummy
     using TT = decltype(JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__))));                     \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      auto ret = JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                             \
-      return ret;                                                                                                      \
+      return JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                 \
     }                                                                                                                  \
     static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
     {                                                                                                                  \
-      auto ret = super_list;                                                                                           \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -2847,13 +2826,13 @@ struct MI
 
 namespace Internal
 {
-template<size_t SIZE>
+template <size_t SIZE>
 struct StringLiteral
 {
   const char *data;
   static constexpr const size_t size = SIZE;
 };
-template<size_t SIZE>
+template <size_t SIZE>
 constexpr StringLiteral<SIZE - 1> makeStringLiteral(const char (&literal)[SIZE])
 {
   return {literal};
@@ -2865,6 +2844,10 @@ using MemberInfo = MI<T, U, NAMETUPLE>;
 template <typename T>
 struct SuperInfo
 {
+  constexpr explicit SuperInfo()
+    : name()
+  {
+  }
   constexpr explicit SuperInfo(const DataRef &name)
     : name(name)
   {
@@ -2875,7 +2858,8 @@ struct SuperInfo
 } // namespace Internal
 
 template <typename T, typename U, size_t NAME_SIZE, typename... Aliases>
-constexpr auto makeMemberInfo(const char (&name)[NAME_SIZE], T U::*member, Aliases &... aliases) -> MI<T, U, decltype(makeTuple(JS::Internal::makeStringLiteral(name), JS::Internal::makeStringLiteral(aliases)...))> 
+constexpr auto makeMemberInfo(const char (&name)[NAME_SIZE], T U::*member, Aliases &... aliases)
+  -> MI<T, U, decltype(makeTuple(JS::Internal::makeStringLiteral(name), JS::Internal::makeStringLiteral(aliases)...))>
 {
   return {makeTuple(JS::Internal::makeStringLiteral(name), JS::Internal::makeStringLiteral(aliases)...), member};
 }
@@ -2895,19 +2879,19 @@ struct TypeHandler
 
 namespace Internal
 {
-template<size_t STRINGSIZE>
+template <size_t STRINGSIZE>
 inline bool compareDataRefWithStringLiteral(const StringLiteral<STRINGSIZE> &memberName, const DataRef &jsonName)
 {
   return jsonName.size == STRINGSIZE && memcmp(memberName.data, jsonName.data, STRINGSIZE) == 0;
 }
 
-template<typename NameTuple, size_t index>
+template <typename NameTuple, size_t index>
 struct NameChecker
 {
   static bool compare(const NameTuple &tuple, const DataRef &name)
   {
 
-    JS_IF_CONSTEXPR (index != tuple.size)
+    JS_IF_CONSTEXPR(index != tuple.size)
     {
       auto &stringLiteral = tuple.template get<tuple.size - index>();
       if (compareDataRefWithStringLiteral(stringLiteral, name))
@@ -2916,7 +2900,7 @@ struct NameChecker
     return NameChecker<NameTuple, index - 1>::compare(tuple, name);
   }
 };
-template<typename NameTuple>
+template <typename NameTuple>
 struct NameChecker<NameTuple, 0>
 {
   static bool compare(const NameTuple &tuple, const DataRef &name)
@@ -2943,8 +2927,8 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &membe
   {
     if (NameChecker<MI_NC, MI_NC::size>::compare(memberInfo.names, context.token.name))
     {
-        assigned_members[index] = true;
-        return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
+      assigned_members[index] = true;
+      return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
     }
   }
   return Error::MissingPropertyMember;
@@ -3019,10 +3003,8 @@ struct StartSuperRecursion
 template <typename T, size_t PAGE>
 constexpr size_t memberCount()
 {
-  using Members = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_data_info())>::type;
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+  using Members = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_data_info());
+  using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
   return Members::size + StartSuperRecursion<T, PAGE + Members::size, SuperMeta::size>::membersInSuperClasses();
 }
 
@@ -3104,8 +3086,7 @@ struct MemberChecker<T, Members, PAGE, 0>
     if (error != Error::MissingPropertyMember)
       return error;
 
-    using Super = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using Super = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     return StartSuperRecursion<T, PAGE + Members::size, Super::size>::start(to_type, context, primary,
                                                                             assigned_members);
   }
@@ -3115,8 +3096,7 @@ struct MemberChecker<T, Members, PAGE, 0>
   {
     Error memberError = verifyMember(members.template get<0>(), PAGE, assigned_members, track_missing_members,
                                      missing_members, super_name);
-    using Super = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using Super = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     Error superError = StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(
       assigned_members, track_missing_members, missing_members);
     if (memberError != Error::NoError)
@@ -3128,8 +3108,7 @@ struct MemberChecker<T, Members, PAGE, 0>
                                       const char *super_name)
   {
     serializeMember(from_type, members.template get<Members::size - 1>(), token, serializer, super_name);
-    using Super = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using Super = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     StartSuperRecursion<T, PAGE + Members::size, Super::size>::serializeMembers(from_type, token, serializer);
   }
 };
@@ -3138,11 +3117,9 @@ template <typename T, size_t PAGE, size_t INDEX>
 Error SuperClassHandler<T, PAGE, INDEX>::handleSuperClasses(T &to_type, ParseContext &context, bool primary,
                                                             bool *assigned_members)
 {
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+  using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
   using Super = typename JS::TypeAt<INDEX, SuperMeta>::type::type;
-  using Members = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+  using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
   auto members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
   Error error = MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(
     static_cast<Super &>(to_type), members, context, primary, assigned_members);
@@ -3156,11 +3133,9 @@ template <typename T, size_t PAGE, size_t INDEX>
 Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, bool track_missing_members,
                                                        std::vector<std::string> &missing_members)
 {
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+  using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
   using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-  using Members = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+  using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
   auto members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
   const char *super_name =
     Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info().template get<INDEX>().name.data;
@@ -3176,8 +3151,7 @@ Error SuperClassHandler<T, PAGE, INDEX>::verifyMembers(bool *assigned_members, b
 template <typename T, size_t PAGE, size_t INDEX>
 size_t constexpr SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
 {
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+  using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
   using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
   return memberCount<Super, PAGE>() +
          SuperClassHandler<T, PAGE + memberCount<Super, PAGE>(), INDEX - 1>::membersInSuperClasses();
@@ -3186,11 +3160,9 @@ size_t constexpr SuperClassHandler<T, PAGE, INDEX>::membersInSuperClasses()
 template <typename T, size_t PAGE, size_t INDEX>
 void SuperClassHandler<T, PAGE, INDEX>::serializeMembers(const T &from_type, Token &token, Serializer &serializer)
 {
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+  using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
   using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
-  using Members = typename std::remove_reference<decltype(
-    Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+  using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
   auto members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
   MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
   SuperClassHandler<T, PAGE + memberCount<Super, 0>(), INDEX - 1>::serializeMembers(from_type, token, serializer);
@@ -3201,11 +3173,9 @@ struct SuperClassHandler<T, PAGE, 0>
 {
   static Error handleSuperClasses(T &to_type, ParseContext &context, bool primary, bool *assigned_members)
   {
-    using Meta = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using Meta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     using Super = typename TypeAt<0, Meta>::type::type;
-    using Members = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+    using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
     auto members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
     return MemberChecker<Super, Members, PAGE, Members::size - 1>::unpackMembers(static_cast<Super &>(to_type), members,
                                                                                  context, primary, assigned_members);
@@ -3213,11 +3183,9 @@ struct SuperClassHandler<T, PAGE, 0>
   static Error verifyMembers(bool *assigned_members, bool track_missing_members,
                              std::vector<std::string> &missing_members)
   {
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     using Super = typename TypeAt<0, SuperMeta>::type::type;
-    using Members = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+    using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
     auto members = Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
     const char *super_name =
       Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info().template get<0>().name.data;
@@ -3226,18 +3194,15 @@ struct SuperClassHandler<T, PAGE, 0>
   }
   constexpr static size_t membersInSuperClasses()
   {
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     using Super = typename TypeAt<0, SuperMeta>::type::type;
     return memberCount<Super, PAGE>();
   }
   static void serializeMembers(const T &from_type, Token &token, Serializer &serializer)
   {
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     using Super = typename TypeAt<0, SuperMeta>::type::type;
-    using Members = typename std::remove_reference<decltype(
-      Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info())>::type;
+    using Members = decltype(Internal::template JsonStructBaseDummy<Super, Super>::js_static_meta_data_info());
     auto members = Internal::JsonStructBaseDummy<Super, Super>::js_static_meta_data_info();
     MemberChecker<Super, Members, PAGE, Members::size - 1>::serializeMembers(from_type, members, token, serializer, "");
   }
@@ -3616,17 +3581,17 @@ struct HasJsonStructFunctionContainer
 template <typename JS_BASE_CONTAINER_STRUCT_T, typename JS_CONTAINER_STRUCT_T>
 struct JsonStructFunctionContainerDummy
 {
-  using TT = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<
-                                                     JS_CONTAINER_STRUCT_T>::js_static_meta_functions_info())>::type;
-  using ST = typename std::remove_reference<decltype(JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<
-                                                     JS_CONTAINER_STRUCT_T>::js_static_meta_super_info())>::type;
+  using TT = decltype(JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<
+                      JS_CONTAINER_STRUCT_T>::js_static_meta_functions_info());
+  using ST = decltype(
+    JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<JS_CONTAINER_STRUCT_T>::js_static_meta_super_info());
   static const TT &js_static_meta_functions_info()
   {
     return JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<
       JS_CONTAINER_STRUCT_T>::js_static_meta_functions_info();
   }
 
-  static const ST &js_static_meta_super_info()
+  static const ST js_static_meta_super_info()
   {
     return JS_CONTAINER_STRUCT_T::template JsonStructFunctionContainer<
       JS_CONTAINER_STRUCT_T>::js_static_meta_super_info();
@@ -3660,10 +3625,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    static const decltype(JS::makeTuple()) js_static_meta_super_info()                                                 \
     {                                                                                                                  \
-      static auto ret = JS::makeTuple();                                                                               \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   }
 
@@ -3677,10 +3641,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(__VA_ARGS__);                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    static const decltype(JS::makeTuple()) js_static_meta_super_info()                                                 \
     {                                                                                                                  \
-      static auto ret = JS::makeTuple();                                                                               \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   }
 
@@ -3694,10 +3657,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    static const decltype(super_list) js_static_meta_super_info()                                                      \
     {                                                                                                                  \
-      static auto ret = super_list;                                                                                    \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   }
 
@@ -3711,10 +3673,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(__VA_ARGS__);                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    static const decltype(super_list) js_static_meta_super_info()                                                      \
     {                                                                                                                  \
-      static auto ret = super_list;                                                                                    \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   }
 
@@ -3732,10 +3693,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    static const decltype(JS::makeTuple()) js_static_meta_super_info()                                                 \
     {                                                                                                                  \
-      static auto ret = JS::makeTuple();                                                                               \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -3755,10 +3715,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(__VA_ARGS__);                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(JS::makeTuple()) &js_static_meta_super_info()                                                \
+    static const decltype(JS::makeTuple()) js_static_meta_super_info()                                                 \
     {                                                                                                                  \
-      static auto ret = JS::makeTuple();                                                                               \
-      return ret;                                                                                                      \
+      return JS::makeTuple();                                                                                          \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -3778,10 +3737,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__));                                        \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    static const decltype(super_list) js_static_meta_super_info()                                                      \
     {                                                                                                                  \
-      static auto ret = super_list;                                                                                    \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -3801,10 +3759,9 @@ struct JsonStructFunctionContainerDummy
       static auto ret = JS::makeTuple(__VA_ARGS__);                                                                    \
       return ret;                                                                                                      \
     }                                                                                                                  \
-    static const decltype(super_list) &js_static_meta_super_info()                                                     \
+    static const decltype(super_list) js_static_meta_super_info()                                                      \
     {                                                                                                                  \
-      static auto ret = super_list;                                                                                    \
-      return ret;                                                                                                      \
+      return super_list;                                                                                               \
     }                                                                                                                  \
   };                                                                                                                   \
   }                                                                                                                    \
@@ -4118,8 +4075,7 @@ struct FunctionObjectTraverser<T, Functions, 0>
       return Error::NoError;
     if (error != Error::MissingFunction)
       return error;
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info());
     return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
   }
 };
@@ -4129,8 +4085,7 @@ struct FunctionObjectTraverser<T, Functions, size_t(-1)>
 {
   static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
   {
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info());
     return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
   }
 };
@@ -4284,8 +4239,7 @@ namespace Internal
 template <typename T, size_t INDEX>
 Error FunctionalSuperRecursion<T, INDEX>::callFunction(T &container, CallFunctionContext &context, bool primary)
 {
-  using SuperMeta = typename std::remove_reference<decltype(
-    Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info())>::type;
+  using SuperMeta = decltype(Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info());
   using Super = typename TypeAt<INDEX, SuperMeta>::type::type;
   auto &functions = Internal::template JsonStructFunctionContainerDummy<Super, Super>::js_static_meta_functions_info();
   using FunctionsType = typename std::remove_reference<decltype(functions)>::type;
@@ -4302,8 +4256,7 @@ struct FunctionalSuperRecursion<T, 0>
 {
   static Error callFunction(T &container, CallFunctionContext &context, bool primary)
   {
-    using SuperMeta = typename std::remove_reference<decltype(
-      Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info())>::type;
+    using SuperMeta = decltype(Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info());
     using Super = typename TypeAt<0, SuperMeta>::type::type;
     auto &functions =
       Internal::template JsonStructFunctionContainerDummy<Super, Super>::js_static_meta_functions_info();
@@ -4422,7 +4375,7 @@ inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
   if (error != JS::Error::NoError)
     return error;
   auto members = Internal::JsonStructBaseDummy<T, T>::js_static_meta_data_info();
-  using MembersType = typename std::remove_reference<decltype(members)>::type;
+  using MembersType = decltype(members);
   bool assigned_members[Internal::memberCount<T, 0>()];
   memset(assigned_members, 0, sizeof(assigned_members));
   while (context.token.value_type != JS::Type::ObjectEnd)
@@ -4482,7 +4435,7 @@ void TypeHandler<T>::from(const T &from_type, Token &token, Serializer &serializ
   token.value = DataRef(objectStart);
   serializer.write(token);
   auto members = Internal::JsonStructBaseDummy<T, T>::js_static_meta_data_info();
-  using MembersType = typename std::remove_reference<decltype(members)>::type;
+  using MembersType = decltype(members);
   Internal::MemberChecker<T, MembersType, 0, MembersType::size - 1>::serializeMembers(from_type, members, token,
                                                                                       serializer, "");
   token.name.size = 0;
