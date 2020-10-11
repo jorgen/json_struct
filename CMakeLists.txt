@@ -20,7 +20,10 @@ set(JSON_STRUCT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_subdirectory(examples)
 enable_testing()
 add_subdirectory(tests)
-add_subdirectory(performance)
+
+if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+  add_subdirectory(performance)
+endif()
 
 add_custom_target(clangformat
   COMMAND clang-format -i include/json_struct.h
