@@ -21,7 +21,11 @@ add_subdirectory(examples)
 enable_testing()
 add_subdirectory(tests)
 
-if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+set(BUILD_PERFORMANCE ON)
+if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+  set(BUILD_PERFORMANCE OFF)
+endif()
+if(BUILD_PERFORMANCE)
   add_subdirectory(performance)
 endif()
 
