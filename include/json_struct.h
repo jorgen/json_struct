@@ -2891,9 +2891,9 @@ struct NameChecker
   static bool compare(const NameTuple &tuple, const DataRef &name)
   {
 
-    JS_IF_CONSTEXPR(index != tuple.size)
+    JS_IF_CONSTEXPR(index != NameTuple::size)
     {
-      auto &stringLiteral = tuple.template get<tuple.size - index>();
+      auto &stringLiteral = tuple.template get<NameTuple::size - index>();
       if (compareDataRefWithStringLiteral(stringLiteral, name))
         return true;
     }
