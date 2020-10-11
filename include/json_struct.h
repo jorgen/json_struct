@@ -145,7 +145,7 @@
 #include <optional>
 #endif
 
-#ifndef JS_IF_CONSTEXPR(exp)
+#ifndef JS_IF_CONSTEXPR
 #ifdef __cpp_if_constexpr
 #define JS_IF_CONSTEXPR(exp) if constexpr (exp)
 #else
