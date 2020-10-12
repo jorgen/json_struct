@@ -74,7 +74,7 @@ TEST_CASE("Benchmarks", "[performance]")
     const char *json = generatedJsonObject;
     SmallPerson smallPerson;
     simdjson::dom::element document = parser.parse(json, sizeof(generatedJsonObject)-1);
-    smallPerson.name = document["name"].get_string().first.to_string();
+    smallPerson.name = std::string(document["name"].get_string().first);
     return smallPerson;
   };
   
@@ -152,29 +152,29 @@ TEST_CASE("Benchmarks", "[performance]")
     const char *json = generatedJsonObject;
     JPerson person;
     simdjson::dom::element d = parser.parse(json, sizeof(generatedJsonObject)-1);
-    person._id = d["_id"].get_string().first.to_string();
+    person._id = std::string(d["_id"].get_string().first);
     person.index = d["index"].get_int64();
-    person.guid = d["guid"].get_string().first.to_string();
+    person.guid = std::string(d["guid"].get_string().first);
     person.isActive = d["isActive"].get_bool();
-    person.balance = d["balance"].get_string().first.to_string();
-    person.picture = d["picture"].get_string().first.to_string();
+    person.balance = std::string(d["balance"].get_string().first);
+    person.picture = std::string(d["picture"].get_string().first);
     person.age = d["age"].get_int64();
-    person.eyeColor = d["eyeColor"].get_string().first.to_string();
-    person.name = d["name"].get_string().first.to_string();
-    person.gender = d["gender"].get_string().first.to_string();
-    person.company = d["company"].get_string().first.to_string();
-    person.email = d["email"].get_string().first.to_string();
-    person.phone = d["phone"].get_string().first.to_string();
-    person.address = d["address"].get_string().first.to_string();
-    person.about = d["about"].get_string().first.to_string();
-    person.registered = d["registered"].get_string().first.to_string();
+    person.eyeColor = std::string(d["eyeColor"].get_string().first);
+    person.name = std::string(d["name"].get_string().first);
+    person.gender = std::string(d["gender"].get_string().first);
+    person.company = std::string(d["company"].get_string().first);
+    person.email = std::string(d["email"].get_string().first);
+    person.phone = std::string(d["phone"].get_string().first);
+    person.address = std::string(d["address"].get_string().first);
+    person.about = std::string(d["about"].get_string().first);
+    person.registered = std::string(d["registered"].get_string().first);
     person.latitude = d["latitude"].get_double();
     person.longitude = d["longitude"].get_double();
     auto tags = d["tags"].get_array().first;
     person.tags.reserve(tags.size());
     for (auto it = tags.begin(); it != tags.end(); ++it)
     {
-      person.tags.push_back((*it).get_string().first.to_string());
+      person.tags.emplace_back((*it).get_string().first);
     }
     auto friends = d["friends"].get_array().first;
     person.friends.reserve(friends.size());
@@ -182,11 +182,11 @@ TEST_CASE("Benchmarks", "[performance]")
     {
       Friends f;
       f.id = (*it)["id"].get_int64().first;
-      f.name = (*it)["name"].get_string().first.to_string();
+      f.name = std::string((*it)["name"].get_string().first);
       person.friends.push_back(std::move(f));
     }
-    person.greeting = d["greeting"].get_string().first.to_string();
-    person.favoriteFruit = d["favoriteFruit"].get_string().first.to_string();
+    person.greeting = std::string(d["greeting"].get_string().first);
+    person.favoriteFruit = std::string(d["favoriteFruit"].get_string().first);
     return person;
   };
 
@@ -264,7 +264,7 @@ TEST_CASE("Benchmarks", "[performance]")
     const char *json = generatedJsonArray;
     SmallPerson smallPerson;
     simdjson::dom::element document = parser.parse(json, sizeof(generatedJsonArray)-1);
-    smallPerson.name = document.at(1)["name"].get_string().first.to_string();
+    smallPerson.name = std::string(document.at(1)["name"].get_string().first);
     return smallPerson;
   };
 
@@ -341,29 +341,29 @@ TEST_CASE("Benchmarks", "[performance]")
     const char *json = generatedJsonArray;
     JPerson person;
     simdjson::dom::element d = parser.parse(json, sizeof(generatedJsonArray)-1);
-    person._id = d.at(1)["_id"].get_string().first.to_string();
+    person._id = std::string(d.at(1)["_id"].get_string().first);
     person.index = d.at(1)["index"].get_int64();
-    person.guid = d.at(1)["guid"].get_string().first.to_string();
+    person.guid = std::string(d.at(1)["guid"].get_string().first);
     person.isActive = d.at(1)["isActive"].get_bool();
-    person.balance = d.at(1)["balance"].get_string().first.to_string();
-    person.picture = d.at(1)["picture"].get_string().first.to_string();
+    person.balance = std::string(d.at(1)["balance"].get_string().first);
+    person.picture = std::string(d.at(1)["picture"].get_string().first);
     person.age = d.at(1)["age"].get_int64();
-    person.eyeColor = d.at(1)["eyeColor"].get_string().first.to_string();
-    person.name = d.at(1)["name"].get_string().first.to_string();
-    person.gender = d.at(1)["gender"].get_string().first.to_string();
-    person.company = d.at(1)["company"].get_string().first.to_string();
-    person.email = d.at(1)["email"].get_string().first.to_string();
-    person.phone = d.at(1)["phone"].get_string().first.to_string();
-    person.address = d.at(1)["address"].get_string().first.to_string();
-    person.about = d.at(1)["about"].get_string().first.to_string();
-    person.registered = d.at(1)["registered"].get_string().first.to_string();
+    person.eyeColor = std::string(d.at(1)["eyeColor"].get_string().first);
+    person.name = std::string(d.at(1)["name"].get_string().first);
+    person.gender = std::string(d.at(1)["gender"].get_string().first);
+    person.company = std::string(d.at(1)["company"].get_string().first);
+    person.email = std::string(d.at(1)["email"].get_string().first);
+    person.phone = std::string(d.at(1)["phone"].get_string().first);
+    person.address = std::string(d.at(1)["address"].get_string().first);
+    person.about = std::string(d.at(1)["about"].get_string().first);
+    person.registered = std::string(d.at(1)["registered"].get_string().first);
     person.latitude = d.at(1)["latitude"].get_double();
     person.longitude = d.at(1)["longitude"].get_double();
     auto tags = d.at(1)["tags"].get_array().first;
     person.tags.reserve(tags.size());
     for (auto it = tags.begin(); it != tags.end(); ++it)
     {
-      person.tags.push_back((*it).get_string().first.to_string());
+      person.tags.emplace_back((*it).get_string().first);
     }
     auto friends = d.at(1)["friends"].get_array().first;
     person.friends.reserve(friends.size());
@@ -371,11 +371,11 @@ TEST_CASE("Benchmarks", "[performance]")
     {
       Friends f;
       f.id = (*it)["id"].get_int64().first;
-      f.name = (*it)["name"].get_string().first.to_string();
+      f.name = std::string((*it)["name"].get_string().first);
       person.friends.push_back(std::move(f));
     }
-    person.greeting = d.at(1)["greeting"].get_string().first.to_string();
-    person.favoriteFruit = d.at(1)["favoriteFruit"].get_string().first.to_string();
+    person.greeting = std::string(d.at(1)["greeting"].get_string().first);
+    person.favoriteFruit = std::string(d.at(1)["favoriteFruit"].get_string().first);
     return person;
   };
 
