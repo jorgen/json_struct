@@ -2595,96 +2595,11 @@ struct JsonStructBaseDummy
 } // namespace Internal
 
 #define JS_INTERNAL_EXPAND(x) x
-#define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_OBJECT_T::member)
-#define JS_MEMBER_ALIASES(member, ...)                                                                                 \
-  JS_INTERNAL_EXPAND(JS::makeMemberInfo(#member, &JS_OBJECT_T::member, __VA_ARGS__))
-#define JS_MEMBER_WITH_NAME(member, name) JS::makeMemberInfo(name, &JS_OBJECT_T::member)
-#define JS_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JS::makeMemberInfo(name, &JS_OBJECT_T::member, __VA_ARGS__)
-
-#define JS_SUPER_CLASS(super) JS::makeSuperInfo<super>(#super)
-
-#define JS_SUPER_CLASSES(...) JS::makeTuple(__VA_ARGS__)
-
-#define JS_OBJECT(...)                                                                                                 \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBase                                                                                                \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
-    static inline constexpr const TT js_static_meta_data_info()                                                        \
-    {                                                                                                                  \
-      return JS::makeTuple(__VA_ARGS__);                                                                               \
-    }                                                                                                                  \
-    static inline constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                \
-    {                                                                                                                  \
-      return JS::makeTuple();                                                                                          \
-    }                                                                                                                  \
-  }
-
-#define JS_OBJECT_WITH_SUPER(super_list, ...)                                                                          \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBase                                                                                                \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(__VA_ARGS__);                                                                               \
-    }                                                                                                                  \
-    static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
-    {                                                                                                                  \
-      return super_list;                                                                                               \
-    }                                                                                                                  \
-  }
-
-#define JS_OBJECT_EXTERNAL(Type, ...)                                                                                  \
-  namespace JS                                                                                                         \
-  {                                                                                                                    \
-  namespace Internal                                                                                                   \
-  {                                                                                                                    \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBaseDummy<Type, JS_OBJECT_T>                                                                        \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(__VA_ARGS__);                                                                               \
-    }                                                                                                                  \
-    static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
-    {                                                                                                                  \
-      return JS::makeTuple();                                                                                          \
-    }                                                                                                                  \
-  };                                                                                                                   \
-  }                                                                                                                    \
-  }
-
-#define JS_OBJECT_EXTERNAL_WITH_SUPER(Type, super_list, ...)                                                           \
-  namespace JS                                                                                                         \
-  {                                                                                                                    \
-  namespace Internal                                                                                                   \
-  {                                                                                                                    \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBaseDummy<Type, JS_OBJECT_T>                                                                        \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(__VA_ARGS__));                                                                   \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(__VA_ARGS__);                                                                               \
-    }                                                                                                                  \
-    static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
-    {                                                                                                                  \
-      return super_list;                                                                                               \
-    }                                                                                                                  \
-  };                                                                                                                   \
-  }                                                                                                                    \
-  }
-
 #define JS_INTERNAL_FIRST_(a, ...) a
 #define JS_INTERNAL_SECOND_(a, b, ...) b
-
 #define JS_INTERNAL_FIRST(...) JS_INTERNAL_EXPAND(JS_INTERNAL_FIRST_(__VA_ARGS__))
 #define JS_INTERNAL_SECOND(...) JS_INTERNAL_EXPAND(JS_INTERNAL_SECOND_(__VA_ARGS__))
-
 #define JS_INTERNAL_EMPTY()
-
 #define JS_INTERNAL_EVAL(...) JS_INTERNAL_EVAL1024(__VA_ARGS__)
 #define JS_INTERNAL_EVAL1024(...) JS_INTERNAL_EVAL512(JS_INTERNAL_EVAL512(__VA_ARGS__))
 #define JS_INTERNAL_EVAL512(...) JS_INTERNAL_EVAL256(JS_INTERNAL_EVAL256(__VA_ARGS__))
@@ -2723,29 +2638,24 @@ struct JsonStructBaseDummy
 #define JS_INTERNAL_HAS_ARGS(...) JS_INTERNAL_BOOL(JS_INTERNAL_FIRST(JS_INTERNAL__END_OF_ARGUMENTS_ __VA_ARGS__)())
 #define JS_INTERNAL__END_OF_ARGUMENTS_() 0
 
-#define JS_INTERNAL_MAP_MEMBER(m, first, ...)                                                                          \
-  m(#first, &JS_OBJECT_T::first) JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_ARGS(__VA_ARGS__))(                               \
-    , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_MEMBER)()(m, __VA_ARGS__))(/* Do nothing, just terminate */                  \
-  )
+#define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_OBJECT_T::member)
+#define JS_MEMBER_ALIASES(member, ...)                                                                                 \
+  JS_INTERNAL_EXPAND(JS::makeMemberInfo(#member, &JS_OBJECT_T::member, __VA_ARGS__))
+#define JS_MEMBER_WITH_NAME(member, name) JS::makeMemberInfo(name, &JS_OBJECT_T::member)
+#define JS_MEMBER_WITH_NAME_AND_ALIASES(member, name, ...) JS::makeMemberInfo(name, &JS_OBJECT_T::member, __VA_ARGS__)
+
+#define JS_SUPER_CLASS(super) JS::makeSuperInfo<super>(#super)
+
+#define JS_SUPER_CLASSES(...) JS::makeTuple(__VA_ARGS__)
 #define JS_INTERNAL__MAP_MEMBER() JS_INTERNAL_MAP_MEMBER
 
 #define JS_INTERNAL_MAKE_MEMBERS(...)                                                                                  \
   JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_MEMBER(JS::makeMemberInfo, __VA_ARGS__)))
-#define JS_OBJ(...)                                                                                                    \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBase                                                                                                \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                         \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                     \
-    }                                                                                                                  \
-    static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
-    {                                                                                                                  \
-      return JS::makeTuple();                                                                                          \
-    }                                                                                                                  \
-  }
 
+#define JS_INTERNAL_MAP_MEMBER(m, first, ...)                                                                          \
+  m(#first, &JS_OBJECT_T::first) JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_ARGS(__VA_ARGS__))(                               \
+    , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_MEMBER)()(m, __VA_ARGS__))(/* Do nothing, just terminate */                  \
+  )
 #define JS_INTERNAL_MAP_SUPER(m, first, ...)                                                                           \
   m<first>(#first) JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_ARGS(__VA_ARGS__))(                                             \
     , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_SUPER)()(m, __VA_ARGS__))(/* Do nothing, just terminate */                   \
@@ -2756,62 +2666,58 @@ struct JsonStructBaseDummy
   JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_SUPER(JS::makeSuperInfo, __VA_ARGS__)))
 #define JS_SUPER(...) JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_SUPER_CLASSES(__VA_ARGS__)))
 
-#define JS_OBJ_SUPER(super_list, ...)                                                                                  \
+#define JS_OBJECT_INTERNAL_IMPL(super_list, member_list)                                                               \
   template <typename JS_OBJECT_T>                                                                                      \
   struct JsonStructBase                                                                                                \
   {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__))));                     \
+    using TT = decltype(member_list);                                                                                  \
+    static inline constexpr const TT js_static_meta_data_info()                                                        \
+    {                                                                                                                  \
+      return member_list;                                                                                              \
+    }                                                                                                                  \
+    static inline constexpr const decltype(super_list) js_static_meta_super_info()                                     \
+    {                                                                                                                  \
+      return super_list;                                                                                               \
+    }                                                                                                                  \
+  }
+
+#define JS_OBJECT_EXTERNAL_INTERNAL_IMPL(Type, super_list, member_list)                                                \
+  namespace JS                                                                                                         \
+  {                                                                                                                    \
+  namespace Internal                                                                                                   \
+  {                                                                                                                    \
+  template <typename JS_OBJECT_T>                                                                                      \
+  struct JsonStructBaseDummy<Type, JS_OBJECT_T>                                                                        \
+  {                                                                                                                    \
+    using TT = decltype(member_list);                                                                                  \
     static constexpr const TT js_static_meta_data_info()                                                               \
     {                                                                                                                  \
-      return JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                 \
+      return member_list;                                                                                              \
     }                                                                                                                  \
     static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
     {                                                                                                                  \
       return super_list;                                                                                               \
     }                                                                                                                  \
+  };                                                                                                                   \
+  }                                                                                                                    \
   }
+
+#define JS_OBJECT(...) JS_OBJECT_INTERNAL_IMPL(JS::makeTuple(), JS::makeTuple(__VA_ARGS__))
+#define JS_OBJECT_WITH_SUPER(super_list, ...) JS_OBJECT_INTERNAL_IMPL(super_list, JS::makeTuple(__VA_ARGS__))
+
+#define JS_OBJECT_EXTERNAL(Type, ...)                                                                                  \
+  JS_OBJECT_EXTERNAL_INTERNAL_IMPL(Type, JS::makeTuple(), JS::makeTuple(__VA_ARGS__))
+#define JS_OBJECT_EXTERNAL_WITH_SUPER(Type, super_list, ...)                                                           \
+  JS_OBJECT_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple(__VA_ARGS__))
+
+#define JS_OBJ(...) JS_OBJECT_INTERNAL_IMPL(JS::makeTuple(), JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)))
+#define JS_OBJ_SUPER(super_list, ...)                                                                                  \
+  JS_OBJECT_INTERNAL_IMPL(super_list, JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)))
 
 #define JS_OBJ_EXT(Type, ...)                                                                                          \
-  namespace JS                                                                                                         \
-  {                                                                                                                    \
-  namespace Internal                                                                                                   \
-  {                                                                                                                    \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBaseDummy<Type, JS_OBJECT_T>                                                                        \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                         \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__));                                                     \
-    }                                                                                                                  \
-    static constexpr const decltype(JS::makeTuple()) js_static_meta_super_info()                                       \
-    {                                                                                                                  \
-      return JS::makeTuple();                                                                                          \
-    }                                                                                                                  \
-  };                                                                                                                   \
-  }                                                                                                                    \
-  }
-
+  JS_OBJECT_EXTERNAL_INTERNAL_IMPL(Type, JS::makeTuple(), JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)))
 #define JS_OBJ_EXT_SUPER(Type, super_list, ...)                                                                        \
-  namespace JS                                                                                                         \
-  {                                                                                                                    \
-  namespace Internal                                                                                                   \
-  {                                                                                                                    \
-  template <typename JS_OBJECT_T>                                                                                      \
-  struct JsonStructBaseDummy<Type, JS_OBJECT_T>                                                                        \
-  {                                                                                                                    \
-    using TT = decltype(JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__))));                     \
-    static constexpr const TT js_static_meta_data_info()                                                               \
-    {                                                                                                                  \
-      return JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)));                                 \
-    }                                                                                                                  \
-    static constexpr const decltype(super_list) js_static_meta_super_info()                                            \
-    {                                                                                                                  \
-      return super_list;                                                                                               \
-    }                                                                                                                  \
-  };                                                                                                                   \
-  }                                                                                                                    \
-  }
+  JS_OBJECT_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple(JS_INTERNAL_MAKE_MEMBERS(__VA_ARGS__)))
 
 /*!
  * \private
