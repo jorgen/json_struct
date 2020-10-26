@@ -9,9 +9,9 @@
 #include "include/simdjson/simdjson.h"
 #include "include/nlohmann/json.hpp"
 
-TEST_CASE("Benchmarks", "[performance]")
+TEST_CASE("BenchmarkPartialStruct", "[performance]")
 {
-  BENCHMARK("Tokenizer_SmallObject")
+  BENCHMARK("Tokenizer_PartialStruct")
   {
     JS::Tokenizer tokenizer;
     SmallPerson smallPerson;
@@ -42,7 +42,8 @@ TEST_CASE("Benchmarks", "[performance]")
       fprintf(stderr, "Failed to parse document\n");
     return smallPerson;
   };
-  BENCHMARK("JsonStruct_SmallStruct_Object")
+
+  BENCHMARK("JsonStruct_PartialStruct")
   {
     JS::ParseContext context(generatedJsonObject, sizeof(generatedJsonObject)-1);
     SmallPerson person;
@@ -50,7 +51,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("RapidJson_SmallStruct_Object")
+  BENCHMARK("RapidJson_PartialStruct")
   {
     rapidjson::Document d;
     d.Parse(generatedJsonObject);
@@ -59,16 +60,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return smallPerson;
   };
 
-  BENCHMARK("RapidJson_WithSizeOfJson_SmallStruct_Object")
-  {
-    rapidjson::Document d;
-    d.Parse(generatedJsonObject, sizeof(generatedJsonObject) -1);
-    SmallPerson smallPerson;
-    smallPerson.name = d["name"].GetString();
-    return smallPerson;
-  };
-  
-  BENCHMARK("SimdJson_SmallStruct_Object")
+  BENCHMARK("SimdJson_PartialStruct")
   {
     simdjson::dom::parser parser;
     const char *json = generatedJsonObject;
@@ -77,8 +69,18 @@ TEST_CASE("Benchmarks", "[performance]")
     smallPerson.name = std::string(document["name"].get_string().first);
     return smallPerson;
   };
-  
-  BENCHMARK("Nlohmann_JsonForModernC++_Dom_SmallStruct_Object")
+
+  BENCHMARK("SimdJsonOnDemand_PartialStruct")
+  {
+    simdjson::ondemand::parser parser;
+    const char *json = generatedJsonObject;
+    SmallPerson smallPerson;
+    auto document = parser.iterate(json, sizeof(generatedJsonObject)-1);
+    smallPerson.name = std::string(document["name"].get_string().first);
+    return smallPerson;
+  };
+
+  BENCHMARK("Nlohmann_JsonForModernC++_Dom_PartialStruct")
   {
     auto dom = nlohmann::json::parse(generatedJsonObject, generatedJsonObject + sizeof(generatedJsonObject) - 1);
     int max_size = dom.size();
@@ -86,16 +88,18 @@ TEST_CASE("Benchmarks", "[performance]")
     smallPerson.name = dom["name"];
     return smallPerson;
   };
-  
-  BENCHMARK("Nlohmann_JsonForModernC++_SmallStructObject")
+
+  BENCHMARK("Nlohmann_JsonForModernC++_PartialStruct")
   {
     auto d = nlohmann::json::parse(generatedJsonObject, generatedJsonObject + sizeof(generatedJsonObject) - 1);
     auto person = d.get<SmallPerson>();
     return person;
   };
+}
 
-
-  BENCHMARK("JsonStruct_FullStruct_Object")
+TEST_CASE("BenchmarkFullStruct", "[performance]")
+{
+  BENCHMARK("JsonStruct_FullStruct")
   {
     JS::ParseContext context(generatedJsonObject, sizeof(generatedJsonObject)-1);
     JPerson person;
@@ -103,7 +107,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("RapidJson_FullStruct_Object")
+  BENCHMARK("RapidJson_FullStruct")
   {
     rapidjson::Document d;
     d.Parse(generatedJsonObject);
@@ -146,7 +150,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("SimdJson_FullStruct_Object")
+  BENCHMARK("SimdJson_FullStruct")
   {
     simdjson::dom::parser parser;
     const char *json = generatedJsonObject;
@@ -190,14 +194,17 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("Nlohmann_JsonForModernC++_FullStruct_Object")
+  BENCHMARK("Nlohmann_JsonForModernC++_FullStruct")
   {
     auto d = nlohmann::json::parse(generatedJsonObject, generatedJsonObject + sizeof(generatedJsonObject) - 1);
     auto person = d.get<JPerson>();
     return person;
   };
+}
 
-  BENCHMARK("Tokenizer_SmallStruct_Array")
+TEST_CASE("BenchmarkArrayPartialStruct", "[performance]")
+{
+  BENCHMARK("Tokenizer_ArrayPartialStruct")
   {
     JS::Tokenizer tokenizer;
     SmallPerson smallPerson;
@@ -234,14 +241,15 @@ TEST_CASE("Benchmarks", "[performance]")
     return smallPerson;
   };
 
-  BENCHMARK("JsonStruct_SmallStruct_Array")
+  BENCHMARK("JsonStruct_ArrayPartialStruct")
   {
     JS::ParseContext context(generatedJsonArray, sizeof(generatedJsonArray)-1);
     std::vector<SmallPerson> people;
     context.parseTo(people);
     return people;
   };
-  BENCHMARK("RapidJson_SmallStruct_Array")
+
+  BENCHMARK("RapidJson_ArrayPartialStruct")
   {
     rapidjson::Document d;
     d.Parse(generatedJsonArray);
@@ -249,16 +257,8 @@ TEST_CASE("Benchmarks", "[performance]")
     smallPerson.name = d[1]["name"].GetString();
     return smallPerson;
   };
-  BENCHMARK("RapidJson_WithSizeOfJson_SmallStruct_Array")
-  {
-    rapidjson::Document d;
-    d.Parse(generatedJsonArray, sizeof(generatedJsonArray) -1);
-    SmallPerson smallPerson;
-    smallPerson.name = d[1]["name"].GetString();
-    return smallPerson;
-  };
-  
-  BENCHMARK("SimdJson_SmallStruct_Array")
+
+  BENCHMARK("SimdJson_ArrayPartialStruct")
   {
     simdjson::dom::parser parser;
     const char *json = generatedJsonArray;
@@ -268,7 +268,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return smallPerson;
   };
 
-  BENCHMARK("Nlohmann_JsonForModernC++_DOM_SmallStruct_Array")
+  BENCHMARK("Nlohmann_JsonForModernC++_DOM_ArrayPartialStruct")
   {
     auto dom = nlohmann::json::parse(generatedJsonArray, generatedJsonArray + sizeof(generatedJsonArray) - 1);
     int max_size = dom.size();
@@ -276,15 +276,19 @@ TEST_CASE("Benchmarks", "[performance]")
     smallPerson.name = dom.at(1)["name"];
     return smallPerson;
   };
- 
-  BENCHMARK("Nlohmann_JsonForModernC++_SmallStruct_Array")
+
+  BENCHMARK("Nlohmann_JsonForModernC++_ArrayPartialStruct")
   {
     auto d = nlohmann::json::parse(generatedJsonArray, generatedJsonArray + sizeof(generatedJsonArray) - 1);
     auto people = d.get<std::vector<SmallPerson>>();
     return people;
   };
-  
-  BENCHMARK("JsonStruct_FullStruct_Array")
+
+}
+
+TEST_CASE("BenchmarkArrayFullStruct", "[performance]")
+{
+  BENCHMARK("JsonStruct_ArrayFullStruct")
   {
     JS::ParseContext context(generatedJsonArray, sizeof(generatedJsonArray)-1);
     std::vector<JPerson> people;
@@ -292,7 +296,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return people;
   };
 
-  BENCHMARK("RapidJson_FullStruct_Array")
+  BENCHMARK("RapidJson_ArrayFullStruct")
   {
     rapidjson::Document d;
     d.Parse(generatedJsonArray);
@@ -335,7 +339,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("SimdJson_FullStruct_Array")
+  BENCHMARK("SimdJson_ArrayFullStruct")
   {
     simdjson::dom::parser parser;
     const char *json = generatedJsonArray;
@@ -379,7 +383,7 @@ TEST_CASE("Benchmarks", "[performance]")
     return person;
   };
 
-  BENCHMARK("Nlohmann_JsonForModernC++_FullStruct_Array")
+  BENCHMARK("Nlohmann_JsonForModernC++_ArrayFullStruct")
   {
     auto d = nlohmann::json::parse(generatedJsonArray, generatedJsonArray + sizeof(generatedJsonArray) - 1);
     auto people = d.get<std::vector<JPerson>>();
