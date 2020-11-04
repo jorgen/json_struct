@@ -7160,7 +7160,7 @@ struct TypeHandler<SilentVector<T>>
 public:
   static inline Error to(SilentVector<T> &to_type, ParseContext &context)
   {
-    return TypeHandler<std::vector<T>>::to(to_type, context);
+    return TypeHandler<std::vector<T>>::to(to_type.data, context);
   }
 
   static inline void from(const SilentVector<T> &vec, Token &token, Serializer &serializer)
