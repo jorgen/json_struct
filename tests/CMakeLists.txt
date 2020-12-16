@@ -24,7 +24,6 @@ set(unit_test_sources
                            json-mias-mat.cpp
                            json-nullable-test.cpp
                            json-string-with-nullterminator-test.cpp
-                           json-optional.cpp
                            json-tokenizer-fail-test.cpp
                            json-tokenizer-partial-test.cpp
                            json-tokenizer-test.cpp
@@ -45,12 +44,8 @@ set(unit_test_sources
                            multi-compilation-units-main.cpp
                            json-reformat.cpp
               )
+
 add_executable(unit-tests ${unit_test_sources})
-if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
-  target_compile_features(unit-tests PUBLIC cxx_std_17)
-else()
-  set_source_files_properties(json-optional.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
-endif()
 
 target_link_libraries(unit-tests PRIVATE catch_main external_json::rc)
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
@@ -76,6 +71,12 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
 endif()
 
+
+if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
+  add_executable(unit-tests-cxx17 json-optional.cpp)
+  target_compile_features(unit-tests-cxx17 PUBLIC cxx_std_17)
+  target_link_libraries(unit-tests-cxx17 PRIVATE catch_main)
+endif()
 
 add_custom_target(clangformat_tests
   COMMAND clang-format -i ${unit_test_sources}

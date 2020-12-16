@@ -136,6 +136,8 @@
 #if __clang_major__ > 9 && __cplusplus >= 201703L
 #define JS_STD_OPTIONAL 1
 #endif
+#elif defined(_MSC_VER) && _MSC_VER >= 1910 && _HAS_CXX17
+#define JS_STD_OPTIONAL 1
 #elif __cplusplus >= 201703L
 #define JS_STD_OPTIONAL 1
 #endif
@@ -6957,7 +6959,7 @@ struct TypeHandler<std::optional<T>>
 public:
   static inline Error to(std::optional<T> &to_type, ParseContext &context)
   {
-    to_type = {};
+    to_type.emplace();
     return TypeHandler<T>::to(to_type.value(), context);
   }
 
