@@ -21,6 +21,7 @@ set(unit_test_sources
                            json-struct-serialize-test.cpp
                            json-struct-diff.cpp
                            json-struct-fail.cpp
+                           json-struct-float.cpp
                            json-mias-mat.cpp
                            json-nullable-test.cpp
                            json-string-with-nullterminator-test.cpp

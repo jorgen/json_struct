@@ -4454,12 +4454,40 @@ constexpr static inline uint64_t low(uint64_t x)
 template <int shift = 1>
 inline void left_shift(uint64_t (&a)[2])
 {
-  a[1] = a[1] << shift | (a[0] >> ((sizeof(uint64_t) * 8) - shift));
+  static_assert(shift < sizeof(*a) * 8,
+                "This functions does only supprot shifting by sizes smaller than sizeof(*a) * 8");
+  a[1] = a[1] << shift | (a[0] >> (int(sizeof(uint64_t) * 8) - shift));
   a[0] = a[0] << shift;
 }
 
 template <int shift = 1>
 inline void left_shift(uint64_t &a)
+{
+  static_assert(shift < sizeof(a) * 8,
+                "This functions does only supprot shifting by sizes smaller than sizeof(*a) * 8");
+  a = a << shift;
+}
+
+inline void left_shift(uint64_t (&a)[2], int shift)
+{
+  if (shift > sizeof(*a) * 8)
+  {
+    auto shift_0 = (int(sizeof(uint64_t) * 8) - shift);
+    if (shift_0 > 0)
+      a[1] = a[0] >> shift_0;
+    else
+      a[1] = a[0] << -shift_0;
+
+    a[0] = 0;
+  }
+  else
+  {
+    a[1] = a[1] << shift | (a[0] >> (int(sizeof(uint64_t) * 8) - shift));
+    a[0] = a[0] << shift;
+  }
+}
+
+inline void left_shift(uint64_t &a, int shift)
 {
   a = a << shift;
 }
@@ -4523,6 +4551,19 @@ struct float_info
 {
 };
 
+static inline int bit_scan_reverse(uint64_t a)
+{
+  assert(a);
+#ifdef _MSC_VER
+  unsigned long index;
+  _BitScanReverse64(&index, a);
+  return int(index);
+#else
+  static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "Wrong size for builtin_clzll");
+  return 63 - __builtin_clzll(a);
+#endif
+}
+
 template <>
 struct float_info<double>
 {
@@ -4557,7 +4598,7 @@ struct float_info<double>
 
   using str_to_float_conversion_type = uint64_t[2];
   using uint_alias = uint64_t;
-  static inline constexpr int str_to_float_binary_exponen_init() noexcept
+  static inline constexpr int str_to_float_binary_exponent_init() noexcept
   {
     return 64 + 60;
   }
@@ -4584,6 +4625,28 @@ struct float_info<double>
   static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type &a) noexcept
   {
     return !a[0] && !a[1];
+  }
+  static inline int shift_left_msb_to_index(str_to_float_conversion_type &a, int index)
+  {
+    if (a[1])
+    {
+      int msb = bit_scan_reverse(a[1]);
+      int shift_count = index - (msb + 64);
+      if (shift_count < 0)
+        return 0;
+      left_shift(a, shift_count);
+      return shift_count;
+    }
+    else if (a[0])
+    {
+      int msb = bit_scan_reverse(a[0]);
+      int shift_count = index - msb;
+      if (shift_count < 0)
+        return 0;
+      left_shift(a, shift_count);
+      return shift_count;
+    }
+    return 0;
   }
   static inline void copy_denormal_to_type(const str_to_float_conversion_type &a, int binary_exponent, bool negative,
                                            double &to_digit)
@@ -4675,7 +4738,7 @@ struct float_info<float>
 
   using str_to_float_conversion_type = uint64_t;
   using uint_alias = uint32_t;
-  static inline constexpr int str_to_float_binary_exponen_init() noexcept
+  static inline constexpr int str_to_float_binary_exponent_init() noexcept
   {
     return 60;
   }
@@ -4702,6 +4765,19 @@ struct float_info<float>
   static inline constexpr bool conversion_type_is_null(const str_to_float_conversion_type &a) noexcept
   {
     return !a;
+  }
+  static inline int shift_left_msb_to_index(str_to_float_conversion_type &a, int index)
+  {
+    if (a)
+    {
+      int msb = bit_scan_reverse(a);
+      int shift_count = index - msb;
+      if (shift_count < 0)
+        return 0;
+      left_shift(a, shift_count);
+      return shift_count;
+    }
+    return 0;
   }
   static inline void copy_denormal_to_type(const str_to_float_conversion_type &a, int binary_exponent, bool negative,
                                            float &to_digit)
@@ -6138,6 +6214,7 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
   const char *current;
   set_end_ptr setendptr(parsedString, current);
   int32_t desimal_position = -1;
+  bool increase_significand = true;
 
   parsedString.negative = false;
   parsedString.inf = 0;
@@ -6170,9 +6247,23 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
     }
     else
     {
-      if (parsedString.significand_digit_count < 20)
+      if (parsedString.significand_digit_count < 19)
+      {
         parsedString.significand = parsedString.significand * uint64_t(10) + uint64_t(*current - '0');
-      parsedString.significand_digit_count++;
+        parsedString.significand_digit_count++;
+      }
+      else if (increase_significand && parsedString.significand_digit_count < 20)
+      {
+        increase_significand = false;
+        uint64_t digit(*current - '0');
+        auto biggest_multiplier = (std::numeric_limits<uint64_t>::max() - digit) / parsedString.significand;
+
+        if (biggest_multiplier >= 10)
+        {
+          parsedString.significand = parsedString.significand * uint64_t(10) + digit;
+          parsedString.significand_digit_count++;
+        }
+      }
     }
     current++;
   }
@@ -6286,7 +6377,7 @@ inline T convertToNumber(const parsed_string &parsed)
   uint_conversion_type b;
   assign_significand_to_float_conversion_type(parsed, a);
   int desimal_exponent = parsed.exp;
-  auto binary_exponent = float_info<T>::str_to_float_binary_exponen_init();
+  auto binary_exponent = float_info<T>::str_to_float_binary_exponent_init();
   for (; desimal_exponent > 0; desimal_exponent--)
   {
     left_shift(a);
@@ -6303,23 +6394,12 @@ inline T convertToNumber(const parsed_string &parsed)
 
   for (; desimal_exponent < 0; desimal_exponent++)
   {
-    while (!float_info<T>::conversion_type_has_top_bit_in_mask(a))
-    {
-      left_shift(a);
-      binary_exponent--;
-    }
+    binary_exponent -= float_info<T>::shift_left_msb_to_index(a, float_info<T>::str_to_float_binary_exponent_init());
 
     divide_by_10(a);
   }
 
-  if (!float_info<T>::conversion_type_is_null(a))
-  {
-    while (!float_info<T>::conversion_type_has_mask(a))
-    {
-      left_shift(a);
-      binary_exponent--;
-    }
-  }
+  binary_exponent -= float_info<T>::shift_left_msb_to_index(a, float_info<T>::str_to_float_binary_exponent_init());
 
   binary_exponent += float_info<T>::bias();
   T to_digit;
