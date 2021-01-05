@@ -124,6 +124,10 @@
 #include <string>
 #include <vector>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 #if __cplusplus > 199711L || (defined(__MSC_VER) && __MSC_VER > 1800)
 #define JS_STD_UNORDERED_MAP 1
 #endif
