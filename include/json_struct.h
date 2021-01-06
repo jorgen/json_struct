@@ -4560,7 +4560,14 @@ static inline int bit_scan_reverse(uint64_t a)
   assert(a);
 #ifdef _MSC_VER
   unsigned long index;
+#  ifdef _WIN64
   _BitScanReverse64(&index, a);
+#  else
+  if  (_BitScanReverse(&index, a >> 32))
+    index += 32;
+  else
+    _BitScanReverse(&index, a & (~uint32_t(0)));
+#  endif
   return int(index);
 #else
   static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "Wrong size for builtin_clzll");
