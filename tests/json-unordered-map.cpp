@@ -6,12 +6,8 @@ namespace
 
 const char json[] = R"json({
     "unordered_map" : {
-        "foo" : [
-            1.0
-        ],
-        "bar" : [
-            2.0
-        ]
+        "foo" : [ 1.0 ],
+        "bar" : [ 2.0 ]
     }
 })json";
 
@@ -40,6 +36,12 @@ TEST_CASE("unordered_map_complex_value", "json_struct")
   REQUIRE(dataStruct.unordered_map["bar"] == two);
 
   std::string genjson = JS::serializeStruct(dataStruct);
-  REQUIRE(json == genjson);
+
+  JsonData dataStruct2;
+  REQUIRE(dataStruct2.unordered_map != dataStruct.unordered_map);
+  JS::ParseContext parseContext2(genjson);
+  REQUIRE(parseContext2.parseTo(dataStruct2) == JS::Error::NoError);
+
+  REQUIRE(dataStruct2.unordered_map == dataStruct.unordered_map);
 }
 } // namespace
