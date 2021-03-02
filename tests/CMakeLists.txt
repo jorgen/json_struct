@@ -44,6 +44,7 @@ set(unit_test_sources
                            multi-compilation-units-2.cpp
                            multi-compilation-units-main.cpp
                            json-reformat.cpp
+                           json-unordered-map.cpp
               )
 
 add_executable(unit-tests ${unit_test_sources})

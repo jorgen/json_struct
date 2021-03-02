@@ -128,7 +128,7 @@
 #include <intrin.h>
 #endif
 
-#if __cplusplus > 199711L || (defined(__MSC_VER) && __MSC_VER > 1800)
+#if __cplusplus > 199711L || (defined(_MSC_VER) && _MSC_VER > 1800)
 #define JS_STD_UNORDERED_MAP 1
 #endif
 #ifdef JS_STD_UNORDERED_MAP
@@ -7890,9 +7890,10 @@ public:
       return error;
     while (context.token.value_type != Type::ObjectEnd)
     {
+      Key k(context.token.name.data, context.token.name.size);
       Value v;
       error = TypeHandler<Value>::to(v, context);
-      to_type[Key(context.token.name.data, context.token.name.size)] = v;
+      to_type[k] = v;
       if (error != JS::Error::NoError)
         return error;
       error = context.nextToken();
