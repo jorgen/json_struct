@@ -4325,8 +4325,9 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
     {
       break;
     }
-    size--;
+    size -= 2;
     const char current_char = *(next_it + 1);
+    //we assume utf-8 encoding when this notation is used and parsing into std::string
     if (current_char == 'u') // hexadecimal escaped unicode character
     {
       // first convert hex ascii digits to values between 0 and 15, then create
@@ -4383,7 +4384,6 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
     }
     if (!size)
       break;
-    size--;
   }
 }
 
