@@ -52,10 +52,10 @@ TEST_CASE("test_simple_utf8", "[json_struct][utf-8]")
   context.parseTo(substruct);
 
   REQUIRE(context.error == JS::Error::NoError);
-  REQUIRE(substruct.One == u8"jørgen");
-  REQUIRE(substruct.Two == u8"jørgenø");
-  REQUIRE(substruct.Three == u8"jørgen\\u012");
-  REQUIRE(substruct.Four == u8"jørgen\\u01");
-  REQUIRE(substruct.Five == u8"jørgen\\u0");
+  REQUIRE(substruct.One == u8"j\u00f8rgen");
+  REQUIRE(substruct.Two == u8"j\u00f8rgen\u00f8");
+  REQUIRE(substruct.Three == u8"j\u00f8rgen\\u012");
+  REQUIRE(substruct.Four == u8"j\u00f8rgen\\u01");
+  REQUIRE(substruct.Five == u8"j\u00f8rgen\\u0");
 }
 } // namespace
