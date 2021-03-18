@@ -4327,8 +4327,60 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
     }
     size--;
     const char current_char = *(next_it + 1);
-    push_back_escape(current_char, to_type);
-    it = next_it + 2;
+    if (current_char == 'u') // hexadecimal escaped unicode character
+    {
+      // first convert hex ascii digits to values between 0 and 15, then create
+      // UTF-8 bit patterns according to https://en.wikipedia.org/wiki/UTF-8
+      bool ok = (size >= 4);
+      unsigned char hex[4];
+      for (int k = 0; ok && k < 4; k++)
+      {
+        const char d = *(next_it + k + 2);
+        if (d >= '0' && d <= '9')
+          hex[k] = (d - '0');
+        else if (d >= 'A' && d <= 'F')
+          hex[k] = (d - 'A') + 10;
+        else if (d >= 'a' && d <= 'f')
+          hex[k] = (d - 'a') + 10;
+        else
+          ok = false; // stop parsing and revert to fallback
+      }
+      if (ok)
+      {
+        if (hex[0] || hex[1] & 0x08)
+        {
+          // code points: 0x0800 .. 0xffff
+          to_type.push_back(0xd0 | hex[0]);
+          to_type.push_back(0x80 | (hex[1] << 2) | ((hex[2] & 0x0c) >> 2));
+          to_type.push_back(0x80 | ((hex[2] & 0x03) << 4) | hex[3]);
+        }
+        else if (hex[1] || hex[2] & 0x08)
+        {
+          // code points: 0x0080 .. 0x07ff
+          to_type.push_back(0xc0 | (hex[1] << 2) | ((hex[2] & 0x0c) >> 2));
+          to_type.push_back(0x80 | ((hex[2] & 0x03) << 4) | hex[3]);
+        }
+        else
+        {
+          // code points: 0x0000 .. 0x007f
+          to_type.push_back((hex[2] << 4) | hex[3]);
+        }
+        it = next_it + 6; // advance past hex digits
+        size -= 4;
+      }
+      else
+      {
+        // fallback is to simply push characters as is
+        to_type.push_back('\\');
+        to_type.push_back(current_char);
+        it = next_it + 2;
+      }
+    }
+    else
+    {
+      push_back_escape(current_char, to_type);
+      it = next_it + 2;
+    }
     if (!size)
       break;
     size--;
