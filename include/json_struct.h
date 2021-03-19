@@ -4291,8 +4291,8 @@ namespace Internal
 {
 static void push_back_escape(char current_char, std::string &to_type)
 {
-  static const char escaped_table[] = {'b', 'f', 'n', 'r', 't', '\"', '\\'};
-  static const char replace_table[] = {'\b', '\f', '\n', '\r', '\t', '\"', '\\'};
+  static const char escaped_table[] = {'b', 'f', 'n', 'r', 't', '\"', '\\', '/'};
+  static const char replace_table[] = {'\b', '\f', '\n', '\r', '\t', '\"', '\\', '/'};
   static_assert(sizeof(escaped_table) == sizeof(replace_table), "Static tables have to be the same.");
   const char *it = static_cast<const char *>(memchr(escaped_table, current_char, sizeof(escaped_table)));
   if (it)
