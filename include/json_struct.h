@@ -1899,23 +1899,16 @@ inline void Serializer::markCurrentSerializerBufferFull()
 inline bool Serializer::writeAsString(const DataRef &data)
 {
   bool written;
-  if (*data.data != '"')
-  {
-    written = write("\"", 1);
-    if (!written)
-      return false;
-  }
+  written = write("\"", 1);
+  if (!written)
+    return false;
 
   written = write(data.data, data.size);
   if (!written)
     return false;
 
-  if (*data.data != '"')
-  {
-    if (!written)
-      return false;
-    written = write("\"", 1);
-  }
+  written = write("\"", 1);
+
   return written;
 }
 

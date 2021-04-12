@@ -177,4 +177,38 @@ TEST_CASE("test_serialize_big", "[json_struct][serialize]")
     REQUIRE(pc.error == JS::Error::NoError);
   }
 }
+
+const char empty_string_json[] = R"json({
+    "key1" : "value1",
+    "key2" : "",
+    "key3" : "value3"
+})json";
+
+struct empty_string_struct
+{
+  std::string key1;
+  std::string key2;
+  std::string key3;
+
+  JS_OBJ(key1, key2, key3);
+};
+TEST_CASE("test_serialize_empty_string", "[json_struct][serialize]")
+{
+  JS::JsonTokens tokens;
+  JS::ParseContext context(empty_string_json);
+  context.parseTo(tokens);
+  REQUIRE(context.error == JS::Error::NoError);
+
+  empty_string_struct empty_struct;
+  JS::ParseContext context2(empty_string_json);
+  context2.parseTo(empty_struct);
+  REQUIRE(context2.error == JS::Error::NoError);
+
+  std::string out = JS::serializeStruct(tokens);
+
+  std::string out2 = JS::serializeStruct(empty_struct);
+  REQUIRE(out == out2);
+  REQUIRE(out == empty_string_json);
+}
+
 } // namespace
