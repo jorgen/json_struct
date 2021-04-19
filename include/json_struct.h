@@ -7116,7 +7116,8 @@ public:
   {
     if (context.token.value_type != Type::Null)
     {
-      to_type.reset(new T());
+      if (!to_type)
+        to_type.reset(new T());
       return TypeHandler<T>::to(*to_type.get(), context);
     }
     to_type.reset(nullptr);
