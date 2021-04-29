@@ -126,18 +126,14 @@ TEST_CASE("check_json_tree_nodes"
   context.parseTo(data);
 
   for (double x : data.TestStruct.Array)
-    fprintf(stderr, "x is %f\n", x);
 
-  fprintf(stderr, "optional with default value %f\n", data.TestStruct.optional_with_value());
   data.TestStruct.optional_with_value = 5;
-  fprintf(stderr, "optional with default value second %f\n", data.TestStruct.optional_with_value());
   REQUIRE(data.StringNode == "Some test data");
   REQUIRE(context.error == JS::Error::NoError);
 
   REQUIRE(data.Field3 == 243);
 
   std::string json = JS::serializeStruct(data);
-  fprintf(stderr, "%s\n", json.c_str());
 }
 
 static const char json_data2[] = "{\n"
@@ -174,7 +170,6 @@ TEST_CASE("check_json_tree_template", "json_struct")
   context.parseTo(data);
   REQUIRE(data.sub_object.more_data == "some text");
   std::string json = JS::serializeStruct(data);
-  fprintf(stderr, "%s\n", json.c_str());
 };
 
 TEST_CASE("check_json_tree_subclass", "json_struct")
@@ -828,7 +823,6 @@ TEST_CASE("check_json_escaped", "json_struct")
   std::string equals("more\"_te\\xt");
   REQUIRE(data.some_text == equals);
   std::string json = JS::serializeStruct(data);
-  fprintf(stderr, "%s\n", json.c_str());
 };
 
 struct OutsideMeta
@@ -934,7 +928,6 @@ TEST_CASE("check_json_escaped_end", "json_struct")
   REQUIRE(data.strange_escape == std::string("foo\\s"));
   REQUIRE(data.pure_strange_escape == std::string("\\k"));
   std::string json = JS::serializeStruct(data);
-  // fprintf(stderr, "%s\n", json.c_str());
 };
 
 } // namespace json_struct_test

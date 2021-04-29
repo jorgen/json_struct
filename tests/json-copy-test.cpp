@@ -79,7 +79,6 @@ void js_validate_json(JS::Tokenizer &tokenizer)
     error = tokenizer.nextToken(token);
 
   JS::ParseContext context(buffer.c_str(), buffer.size());
-  fprintf(stderr, "buffer %s\n", buffer.c_str());
   SubObject subObj;
   context.parseTo(subObj);
 

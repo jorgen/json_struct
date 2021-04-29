@@ -50,22 +50,18 @@ struct CallFunction
 {
   virtual void execute_one(const SimpleData &data)
   {
-    fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
     called_one = true;
   }
 
   int execute_two(const double &data, JS::CallFunctionContext &context)
   {
-    fprintf(stderr, "execute two executed %f\n", data);
     called_two = true;
     return 2;
   }
 
   void execute_three(const std::vector<double> &data, JS::CallFunctionContext &context)
   {
-    fprintf(stderr, "execute three\n");
     for (auto x : data)
-      fprintf(stderr, "\t%f\n", x);
     called_three = true;
   }
   bool called_one = false;
@@ -90,7 +86,6 @@ TEST_CASE("simpleTestExternalRegular", "[function]")
   REQUIRE(cont.called_three);
 
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 
@@ -98,7 +93,6 @@ struct CallFunctionSuperSuper
 {
   void execute_one(const SimpleData &data)
   {
-    fprintf(stderr, "execute one executed %f : %d\n", data.number, data.valid);
     called_one = true;
   }
 
@@ -113,7 +107,6 @@ struct CallFunctionSuper
 {
   void execute_two(const double &data)
   {
-    fprintf(stderr, "execute two executed %f\n", data);
     called_two = true;
   }
 
@@ -135,9 +128,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 {
   ExecuteThreeReturn execute_three(const std::vector<double> &data)
   {
-    fprintf(stderr, "execute three\n");
     for (auto x : data)
-      fprintf(stderr, "\t%f\n", x);
     called_three = true;
     return ExecuteThreeReturn();
   }
@@ -163,7 +154,6 @@ TEST_CASE("inheritanceFunctionTestExternalRegular", "[function]")
   REQUIRE(cont.called_three);
 
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 
@@ -193,9 +183,7 @@ TEST_CASE("virtualFunctionTestExternalRegular", "[function]")
   REQUIRE(cont.called_two);
   REQUIRE(cont.called_three);
 
-  fprintf(stderr, "return string\n%s\n", json_out.c_str());
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 
@@ -256,7 +244,6 @@ TEST_CASE("super_class_param_testExternalRegular", "[function]")
 
   REQUIRE(cont.execute_one_executed);
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "callFunction failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 
@@ -327,7 +314,6 @@ TEST_CASE("call_void_testExternalRegular", "[function]")
   context.callFunctions(voidStruct);
 
   if (context.error_context.getLatestError() != JS::Error::NoError)
-    fprintf(stderr, "error %s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.error_context.getLatestError() == JS::Error::NoError);
   REQUIRE(voidStruct.executed_1);
   REQUIRE(voidStruct.executed_2);
@@ -397,7 +383,6 @@ TEST_CASE("call_error_checkExternalRegular", "[function]")
   JS::Error error = context.callFunctions(errorCheck);
 
   REQUIRE(error == JS::Error::NoError);
-  fprintf(stderr, "json out %s\n", json_out.c_str());
   REQUIRE(errorCheck.executed1);
   REQUIRE(errorCheck.executed2);
   REQUIRE(errorCheck.executed3);
@@ -455,7 +440,6 @@ TEST_CASE("call_json_aliasExternalRegular", "[function]")
   REQUIRE(cont.executeThree);
 
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 
@@ -514,7 +498,6 @@ TEST_CASE("call_json_wrong_arg_typeExternalRegular", "[function]")
   REQUIRE(cont.executeThree);
 
   if (context.parse_context.error != JS::Error::NoError)
-    fprintf(stderr, "call_json_alias failed \n%s\n", context.parse_context.tokenizer.makeErrorString().c_str());
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
 } // namespace

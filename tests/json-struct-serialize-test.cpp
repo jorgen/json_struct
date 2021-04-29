@@ -137,7 +137,6 @@ TEST_CASE("serialze_test_escaped_data", "[json_struct][serialize]")
   WithEscapedData escaped;
   escaped.data = "escaped \n \" \t string";
   std::string output = JS::serializeStruct(escaped);
-  fprintf(stderr, "%s\n%s\n", escaped_expected, output.c_str());
   REQUIRE(output == escaped_expected);
 }
 

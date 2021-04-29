@@ -1432,6 +1432,13 @@ static Type getType(Type type, const char *data, size_t length)
   }
   return Type::Ascii;
 }
+
+inline size_t strnlen(const char *data, size_t size)
+{
+  auto it = std::find(data, data + size, '\0');
+  return it - data;
+}
+
 } // namespace Internal
 
 inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const DataRef &json_data)
@@ -1453,7 +1460,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
         if (property_state > InPropertyState::NoStartFound)
         {
           intermediate_token.active = true;
-          size_t to_null = strnlen(data.data, json_data.size - current_data_start);
+          size_t to_null = Internal::strnlen(data.data, json_data.size - current_data_start);
           intermediate_token.name.append(data.data, to_null);
           if (!intermediate_token.name_type_set)
           {
@@ -1554,7 +1561,7 @@ inline Error Tokenizer::populateNextTokenFromDataRef(Token &next_token, const Da
         }
         if (property_state > InPropertyState::NoStartFound)
         {
-          size_t data_length = strnlen(data.data, json_data.size - current_data_start);
+          size_t data_length = Internal::strnlen(data.data, json_data.size - current_data_start);
           intermediate_token.data.append(data.data, data_length);
           if (!intermediate_token.data_type_set)
           {

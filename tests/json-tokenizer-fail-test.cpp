@@ -48,7 +48,6 @@ TEST_CASE("check_fail_json_with_ascii_property", "[tokenizer]")
   REQUIRE(assert_token(token, JS::Type::String, "foo", JS::Type::String, "bar") == 0);
 
   error = tokenizer.nextToken(token);
-  fprintf(stderr, "Error %s\n", tokenizer.makeErrorString().c_str());
   REQUIRE(error == JS::Error::IllegalPropertyName);
 }
 

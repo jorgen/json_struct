@@ -338,7 +338,6 @@ TEST_CASE("check_remove_callback", "[tokenizer]")
   bool has_been_called = false;
   {
     auto ref = tokenizer.registerNeedMoreDataCallback([&has_been_called](const JS::Tokenizer &) {
-      fprintf(stderr, "hello\n");
       has_been_called = true;
     });
     error = tokenizer.nextToken(token);

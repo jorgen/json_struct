@@ -78,7 +78,5 @@ TEST_CASE("members_size", "[json_struct]")
     array[i] = static_cast<int>(i);
   }
 
-  for (size_t i = 0; i < JS::Internal::memberCount<Subclass, 0>(); i++)
-    fprintf(stderr, "array %d\n", array[i]);
 }
 } // namespace

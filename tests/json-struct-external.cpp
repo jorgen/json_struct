@@ -92,7 +92,6 @@ TEST_CASE("json_struct_external", "[json_struct]")
   REQUIRE(context.error == JS::Error::NoError);
 
   std::string json = JS::serializeStruct(data);
-  fprintf(stderr, "%s\n", json.c_str());
 }
 
 } // namespace
