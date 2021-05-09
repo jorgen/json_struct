@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 project (json_struct)
-
+option(BUILD_BENCHMARK "Build the benchmarking tests" ON)
 set (CMAKE_CXX_STANDARD 11)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Wno-c++98-compat -Wno-old-style-cast -Wno-shadow-field-in-constructor -Wno-switch-enum -Wno-padded -Wno-documentation-unknown-command -Wno-c++98-compat-pedantic")
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
@@ -21,7 +21,7 @@ add_subdirectory(examples)
 enable_testing()
 add_subdirectory(tests)
 
-set(BUILD_PERFORMANCE ON)
+set(BUILD_PERFORMANCE ${BUILD_BENCHMARK})
 if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
   set(BUILD_PERFORMANCE OFF)
 endif()
