@@ -50,6 +50,21 @@ TEST_CASE("check_enum_parser", "[json_struct][enum]")
   REQUIRE(jsonout == json);
 }
 
+const char json_number[] = R"json({
+    "colors" : 2
+})json";
+
+TEST_CASE("check_enum_number_parser", "[json_struct][enum]")
+{
+  JS::ParseContext pc(json_number);
+  TestEnumParser ep;
+  pc.parseTo(ep);
+
+  REQUIRE(pc.error == JS::Error::NoError);
+
+  REQUIRE(ep.colors == Colors::Blue);
+}
+
 namespace FOO
 {
 namespace BAR

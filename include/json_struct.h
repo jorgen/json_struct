@@ -4274,6 +4274,17 @@ struct EnumHandler
         }
       }
     }
+    else if (context.token.value_type == Type::Number)
+    {
+      using enum_int_t = typename std::underlying_type<T>::type;
+      enum_int_t tmp;
+      auto err = TypeHandler<enum_int_t>::to(tmp, context);
+      if (err != Error::NoError)
+        return err;
+      to_type = static_cast<T>(tmp);
+      return Error::NoError;
+    }
+
     return Error::IllegalDataValue;
   }
 
