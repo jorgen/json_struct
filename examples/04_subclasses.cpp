@@ -17,9 +17,7 @@ struct JsonData
     int number;
     bool boolean;
 
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(number),
-              JS_MEMBER(boolean));
+    JS_OBJ(key, number, boolean);
 };
 
 struct SubClass : public JsonData
@@ -27,9 +25,7 @@ struct SubClass : public JsonData
     std::string additional;
     double data;
 
-    JS_OBJECT_WITH_SUPER(JS_SUPER_CLASSES(JS_SUPER_CLASS(JsonData)),
-                         JS_MEMBER(additional),
-                         JS_MEMBER(data));
+    JS_OBJ_SUPER(JS_SUPER(JsonData), additional, data);
 };
 
 int main()

@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include "json_struct.h"
 
-JS_ENUM(Color, Red , Green , Blue, Yellow4 ,
-        Purple );
+JS_ENUM(Color, Red , Green , Blue, Yellow4 ,Purple );
 
 struct ColorData
 {
     Color color;
 
-    JS_OBJECT(JS_MEMBER(color));
+    JS_OBJ(color);
 };
 JS_ENUM_DECLARE_STRING_PARSER(Color);
 

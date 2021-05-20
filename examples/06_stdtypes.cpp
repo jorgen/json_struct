@@ -2,7 +2,7 @@
 #include <json_struct.h>
 #include <cinttypes>
 //these two have to be ifdef guarded becuase JS support compiler versions where
-//they are not implemented
+//they are not implemented, hence if you use unordered_map or optional in your code there is no need for the guards.
 #ifdef JS_STD_UNORDERED_MAP
 #include <unordered_map>
 #endif
@@ -31,7 +31,7 @@ const char json[] = R"json(
 struct SubType
 {
     int member;
-    JS_OBJECT(JS_MEMBER(member));
+    JS_OBJ(member);
 };
 
 struct JsonData
@@ -55,16 +55,15 @@ struct JsonData
     uint32_t uint32_number;
     uint64_t uint64_number;
 
-    JS_OBJECT(JS_MEMBER(vector),
-              JS_MEMBER(string),
-              JS_MEMBER(tuple),
-              JS_MEMBER(unordered_map),
-              JS_MEMBER(optional),
-              JS_MEMBER(uint8_number),
-              JS_MEMBER(uint16_number),
-              JS_MEMBER(uint32_number),
-              JS_MEMBER(uint64_number)
-              );
+    JS_OBJ(vector,
+           string,
+           tuple,
+           unordered_map,
+           optional,
+           uint8_number,
+           uint16_number,
+           uint32_number,
+           uint64_number);
 };
 
 int main()

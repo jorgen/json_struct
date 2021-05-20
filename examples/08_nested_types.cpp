@@ -30,8 +30,7 @@ struct InnerJsonData
 {
     int key;
     double value;
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(value));
+    JS_OBJ(key, value);
 };
 
 const char json[] = R"json(

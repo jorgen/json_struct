@@ -670,7 +670,7 @@ public:
   void setConvertAsciiToString(bool set);
 
   unsigned char depth() const;
-  void setDepth(unsigned char depth);
+  void setDepth(int depth);
 
   void skipDelimiter(bool skip);
 
@@ -1767,10 +1767,10 @@ inline void SerializerOptions::skipDelimiter(bool skip)
     m_token_delimiter = ",";
 }
 
-inline void SerializerOptions::setDepth(unsigned char depth)
+inline void SerializerOptions::setDepth(int depth)
 {
   m_depth = depth;
-  m_prefix = m_style == Pretty ? std::string(depth * m_shift_size, ' ') : std::string();
+  m_prefix = m_style == Pretty ? std::string(depth * int(m_shift_size), ' ') : std::string();
 }
 
 inline const std::string &SerializerOptions::prefix() const

@@ -23,8 +23,7 @@ struct FunctionBArguments
 {
     float paramA;
     std::string paramB;
-    JS_OBJECT(JS_MEMBER(paramA),
-              JS_MEMBER(paramB));
+    JS_OBJ(paramA, paramB);
 };
 
 struct FunctionBReturn
@@ -33,9 +32,7 @@ struct FunctionBReturn
     std::string functionBReturnB;
     double functionBReturnC[3];
 
-    JS_OBJECT(JS_MEMBER(functionBReturnA),
-              JS_MEMBER(functionBReturnB),
-              JS_MEMBER(functionBReturnC));
+    JS_OBJ(functionBReturnA, functionBReturnB, functionBReturnC);
 };
 
 struct FunctionCArguments
@@ -43,8 +40,7 @@ struct FunctionCArguments
     int this_function;
     bool can_fail_at_runtime;
 
-    JS_OBJECT(JS_MEMBER(this_function),
-              JS_MEMBER(can_fail_at_runtime));
+    JS_OBJ(this_function, can_fail_at_runtime);
 };
 
 struct FunctionCReturn
@@ -53,10 +49,7 @@ struct FunctionCReturn
     int type_will_not;
     int be_serialized;
     int on_failure;
-    JS_OBJECT(JS_MEMBER(this_return),
-              JS_MEMBER(type_will_not),
-              JS_MEMBER(be_serialized),
-              JS_MEMBER(on_failure));
+    JS_OBJ(this_return, type_will_not, be_serialized, on_failure);
 };
 
 struct JsonFunctions
@@ -93,10 +86,7 @@ struct JsonFunctions
         fprintf(stderr, "Function d shows that just simple types can be used - %d\n", arg);
         return arg;
     }
-    JS_FUNCTION_CONTAINER(JS_FUNCTION(function_a),
-                          JS_FUNCTION(function_b),
-                          JS_FUNCTION(function_c),
-                          JS_FUNCTION(function_d));
+    JS_FUNC_OBJ(function_a, function_b, function_c, function_d);
 };
 
 int main()

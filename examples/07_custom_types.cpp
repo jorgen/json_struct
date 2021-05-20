@@ -39,8 +39,7 @@ struct JsonData
     std::string key;
     Vec3 vec;
 
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(vec));
+    JS_OBJ(key, vec);
 };
 
 int main()

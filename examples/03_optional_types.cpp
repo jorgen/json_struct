@@ -1,3 +1,4 @@
+//Please see example 06_stdtypes for std::optional support
 #include <string>
 #include <json_struct.h>
 
@@ -24,12 +25,7 @@ struct JsonData
 
     std::string member_not_in_json;
 
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(number),
-              JS_MEMBER(boolean),
-              JS_MEMBER(opt),
-              JS_MEMBER(opt_checked),
-              JS_MEMBER(member_not_in_json));
+    JS_OBJ(key, number, boolean, opt, opt_checked, member_not_in_json);
 };
 
 int main()

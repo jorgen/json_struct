@@ -15,9 +15,7 @@ struct JsonData
     int number;
     bool boolean;
 
-    JS_OBJECT(JS_MEMBER(key),
-              JS_MEMBER(number),
-              JS_MEMBER(boolean));
+    JS_OBJ(key, number, boolean);
 };
 
 int main()
