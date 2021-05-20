@@ -81,7 +81,7 @@ TEST_CASE("Benchmarks", "[performance]")
   BENCHMARK("Nlohmann_JsonForModernC++_Dom_SmallStruct_Object")
   {
     auto dom = nlohmann::json::parse(generatedJsonObject, generatedJsonObject + sizeof(generatedJsonObject) - 1);
-    int max_size = dom.size();
+    int max_size = int(dom.size());
     SmallPerson smallPerson;
     smallPerson.name = dom["name"];
     return smallPerson;
@@ -153,12 +153,12 @@ TEST_CASE("Benchmarks", "[performance]")
     JPerson person;
     simdjson::dom::element d = parser.parse(json, sizeof(generatedJsonObject)-1);
     person._id = std::string(d["_id"].get_string().first);
-    person.index = d["index"].get_int64();
+    person.index = int(d["index"].get_int64());
     person.guid = std::string(d["guid"].get_string().first);
     person.isActive = d["isActive"].get_bool();
     person.balance = std::string(d["balance"].get_string().first);
     person.picture = std::string(d["picture"].get_string().first);
-    person.age = d["age"].get_int64();
+    person.age = int(d["age"].get_int64());
     person.eyeColor = std::string(d["eyeColor"].get_string().first);
     person.name = std::string(d["name"].get_string().first);
     person.gender = std::string(d["gender"].get_string().first);
@@ -168,8 +168,8 @@ TEST_CASE("Benchmarks", "[performance]")
     person.address = std::string(d["address"].get_string().first);
     person.about = std::string(d["about"].get_string().first);
     person.registered = std::string(d["registered"].get_string().first);
-    person.latitude = d["latitude"].get_double();
-    person.longitude = d["longitude"].get_double();
+    person.latitude = float(d["latitude"].get_double());
+    person.longitude = float(d["longitude"].get_double());
     auto tags = d["tags"].get_array().first;
     person.tags.reserve(tags.size());
     for (auto it = tags.begin(); it != tags.end(); ++it)
@@ -181,7 +181,7 @@ TEST_CASE("Benchmarks", "[performance]")
     for (auto it = friends.begin(); it != friends.end(); ++it)
     {
       Friends f;
-      f.id = (*it)["id"].get_int64().first;
+      f.id = int((*it)["id"].get_int64().first);
       f.name = std::string((*it)["name"].get_string().first);
       person.friends.push_back(std::move(f));
     }
@@ -271,7 +271,7 @@ TEST_CASE("Benchmarks", "[performance]")
   BENCHMARK("Nlohmann_JsonForModernC++_DOM_SmallStruct_Array")
   {
     auto dom = nlohmann::json::parse(generatedJsonArray, generatedJsonArray + sizeof(generatedJsonArray) - 1);
-    int max_size = dom.size();
+    int max_size = int(dom.size());
     SmallPerson smallPerson;
     smallPerson.name = dom.at(1)["name"];
     return smallPerson;
@@ -342,12 +342,12 @@ TEST_CASE("Benchmarks", "[performance]")
     JPerson person;
     simdjson::dom::element d = parser.parse(json, sizeof(generatedJsonArray)-1);
     person._id = std::string(d.at(1)["_id"].get_string().first);
-    person.index = d.at(1)["index"].get_int64();
+    person.index = int(d.at(1)["index"].get_int64());
     person.guid = std::string(d.at(1)["guid"].get_string().first);
     person.isActive = d.at(1)["isActive"].get_bool();
     person.balance = std::string(d.at(1)["balance"].get_string().first);
     person.picture = std::string(d.at(1)["picture"].get_string().first);
-    person.age = d.at(1)["age"].get_int64();
+    person.age = int(d.at(1)["age"].get_int64());
     person.eyeColor = std::string(d.at(1)["eyeColor"].get_string().first);
     person.name = std::string(d.at(1)["name"].get_string().first);
     person.gender = std::string(d.at(1)["gender"].get_string().first);
@@ -357,8 +357,8 @@ TEST_CASE("Benchmarks", "[performance]")
     person.address = std::string(d.at(1)["address"].get_string().first);
     person.about = std::string(d.at(1)["about"].get_string().first);
     person.registered = std::string(d.at(1)["registered"].get_string().first);
-    person.latitude = d.at(1)["latitude"].get_double();
-    person.longitude = d.at(1)["longitude"].get_double();
+    person.latitude = float(d.at(1)["latitude"].get_double());
+    person.longitude = float(d.at(1)["longitude"].get_double());
     auto tags = d.at(1)["tags"].get_array().first;
     person.tags.reserve(tags.size());
     for (auto it = tags.begin(); it != tags.end(); ++it)
@@ -370,7 +370,7 @@ TEST_CASE("Benchmarks", "[performance]")
     for (auto it = friends.begin(); it != friends.end(); ++it)
     {
       Friends f;
-      f.id = (*it)["id"].get_int64().first;
+      f.id = int((*it)["id"].get_int64().first);
       f.name = std::string((*it)["name"].get_string().first);
       person.friends.push_back(std::move(f));
     }

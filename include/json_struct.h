@@ -1769,8 +1769,8 @@ inline void SerializerOptions::skipDelimiter(bool skip)
 
 inline void SerializerOptions::setDepth(int depth)
 {
-  m_depth = depth;
-  m_prefix = m_style == Pretty ? std::string(depth * int(m_shift_size), ' ') : std::string();
+  m_depth = unsigned char(depth);
+  m_prefix = m_style == Pretty ? std::string(depth * size_t(m_shift_size), ' ') : std::string();
 }
 
 inline const std::string &SerializerOptions::prefix() const
@@ -3698,6 +3698,7 @@ static inline void checkValidVoidParameter(CallFunctionContext &context)
       context.parse_context.token.value_type != Type::ObjectStart &&
       context.parse_context.token.value_type != Type::Bool)
   {
+    //what to do
     fprintf(stderr, "Passing data arguments to a void function\n");
   }
   skipArrayOrObject(context.parse_context);
@@ -3888,7 +3889,7 @@ struct FunctionObjectTraverser<T, Functions, 0>
 template <typename T, typename Functions>
 struct FunctionObjectTraverser<T, Functions, size_t(-1)>
 {
-  static Error call(T &container, CallFunctionContext &context, Functions &functions, bool primary)
+  static Error call(T &container, CallFunctionContext &context, Functions &, bool primary)
   {
     using SuperMeta = decltype(Internal::template JsonStructFunctionContainerDummy<T, T>::js_static_meta_super_info());
     return StartFunctionalSuperRecursion<T, SuperMeta::size>::callFunction(container, context, primary);
@@ -6052,11 +6053,11 @@ static float_base10 decode(T f)
   else
   {
     q = max(0, int(-exp * log_10_5) - 1);
-    int k = int(std::ceil((-exp - q) * log_2_5)) - cache_values<T>::b1;
+    int k = int(std::ceil((double(-exp) - double(q)) * log_2_5)) - cache_values<T>::b1;
     shift_right = q - k;
     if (q && q - 1 <= float_info<T>::max_double_2_pow_q())
     {
-      uint64_t mod = uint64_t(1) << (q - 1);
+      uint64_t mod = uint64_t(1) << int(q - 1);
       zero[1] = (mentissa % mod) == 0;
 
       if (q <= float_info<T>::max_double_2_pow_q())
@@ -6118,7 +6119,7 @@ inline int convert_parsed_to_buffer(const float_base10 &result, char *buffer, in
     return offset;
   }
 
-  char significan_buffer[17];
+  char significan_buffer[17] = {};
   assert(result.significand_digit_count <= uint8_t(17));
   int digits_before_decimals = result.significand_digit_count + result.exp;
   int digits_after_decimals = result.exp < 0 ? -result.exp : 0;
@@ -6212,7 +6213,7 @@ inline int convert_parsed_to_buffer(const float_base10 &result, char *buffer, in
 
     exp += result.significand_digit_count;
     exp--;
-    char exponent_buffer[4];
+    char exponent_buffer[4] = {};
     int exponent_digit_count = count_chars(exp);
     if (exp < 0)
     {
@@ -6323,13 +6324,13 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
     {
       if (parsedString.significand_digit_count < 19)
       {
-        parsedString.significand = parsedString.significand * uint64_t(10) + uint64_t(*current - '0');
+        parsedString.significand = parsedString.significand * uint64_t(10) + (uint64_t(*current) - '0');
         parsedString.significand_digit_count++;
       }
       else if (increase_significand && parsedString.significand_digit_count < 20)
       {
         increase_significand = false;
-        uint64_t digit(*current - '0');
+        uint64_t digit = uint64_t(*current) - '0';
         auto biggest_multiplier = (std::numeric_limits<uint64_t>::max() - digit) / parsedString.significand;
 
         if (biggest_multiplier >= 10)
