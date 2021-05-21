@@ -1769,7 +1769,7 @@ inline void SerializerOptions::skipDelimiter(bool skip)
 
 inline void SerializerOptions::setDepth(int depth)
 {
-  m_depth = unsigned char(depth);
+  m_depth = (unsigned char)depth;
   m_prefix = m_style == Pretty ? std::string(depth * size_t(m_shift_size), ' ') : std::string();
 }
 
