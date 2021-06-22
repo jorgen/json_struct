@@ -16,10 +16,10 @@ and clang. It is also tested on VS 2015 and newer.
 json_struct can parse json and automatically populate structures with content
 by adding some metadata to the C++ structs.
 
-```c++
+```json
 {
     "One" : 1,
-    "Two" : two,
+    "Two" : "two",
     "Three" : 3.333
 }
 ```
