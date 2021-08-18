@@ -4523,7 +4523,7 @@ template <int shift = 1>
 inline void left_shift(uint64_t (&a)[2])
 {
   static_assert(shift < sizeof(*a) * 8,
-                "This functions does only supprot shifting by sizes smaller than sizeof(*a) * 8");
+                "This functions does only support shifting by sizes smaller than sizeof(*a) * 8");
   a[1] = a[1] << shift | (a[0] >> (int(sizeof(uint64_t) * 8) - shift));
   a[0] = a[0] << shift;
 }
@@ -4532,7 +4532,7 @@ template <int shift = 1>
 inline void left_shift(uint64_t &a)
 {
   static_assert(shift < sizeof(a) * 8,
-                "This functions does only supprot shifting by sizes smaller than sizeof(*a) * 8");
+                "This functions does only support shifting by sizes smaller than sizeof(*a) * 8");
   a = a << shift;
 }
 
