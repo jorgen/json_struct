@@ -82,6 +82,10 @@ if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
   target_link_libraries(unit-tests-cxx17 PRIVATE catch_main)
 endif()
 
+add_executable(unit-tests-experimental json-struct-polymorphic-map.cpp)
+target_link_libraries(unit-tests-experimental PRIVATE catch_main)
+
+
 add_custom_target(clangformat_tests
   COMMAND clang-format -i ${unit_test_sources}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests

@@ -364,6 +364,7 @@ enum class Error : unsigned char
   UnassignedRequiredMember,
   NonContigiousMemory,
   ScopeHasEnded,
+  KeyNotFound,
   UnknownError,
   UserDefinedErrors
 };
@@ -573,6 +574,7 @@ public:
   template <size_t N>
   void addData(const char (&data)[N]);
   void addData(const std::vector<Token> *parsedData);
+  void resetData(const std::vector<Token> *parsedData, size_t index);
   size_t registeredBuffers() const;
 
   NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
@@ -804,6 +806,12 @@ inline void Tokenizer::addData(const std::vector<Token> *parsedData)
   cursor_index = 0;
 }
 
+inline void Tokenizer::resetData(const std::vector<Token> *parsedData, size_t index)
+{
+  parsed_data_vector = parsedData;
+  cursor_index = index;
+}
+
 inline size_t Tokenizer::registeredBuffers() const
 {
   return data_list.size();
@@ -992,6 +1000,7 @@ static const char *error_strings[] = {
   "UnassignedRequiredMember",
   "NonContigiousMemory",
   "ScopeHasEnded",
+  "KeyNotFound",
   "UnknownError",
 };
 }
@@ -7987,5 +7996,111 @@ public:
   }
 };
 #endif
+
+#ifdef JS_EXPERIMENTAL_MAP
+namespace Internal
+{
+  inline bool compareDataRefWithString(const DataRef& a, const std::string& b)
+  {
+    return a.size == b.size() && memcmp(a.data, b.data(), a.size) == 0;
+  }
+}
+struct Map
+{
+  using It = unsigned int;
+  JS::JsonTokens tokens;
+  std::vector<JsonMeta> meta;
+  JS::ParseContext parseContext;
+
+  template<typename T>
+  JS::Error castToType(const std::string &name, T &to)
+  {
+    if (tokens.data.empty() || tokens.data.front().value_type != JS::Type::ObjectStart)
+    {
+      return JS::Error::ExpectedObjectStart;
+    }
+    unsigned int i = 1;
+    unsigned int next_meta = 1;
+    unsigned int next_complex = next_meta < meta.size() ? meta[next_meta].position : tokens.data.size();
+    while (i < tokens.data.size())
+    {
+      if (Internal::compareDataRefWithString(tokens.data[i].name, name))
+      {
+        parseContext.tokenizer.resetData(&tokens.data, i);
+        parseContext.nextToken();
+        return JS::TypeHandler<T>::to(to, parseContext);
+      }
+      if (i == next_complex)
+      {
+        i += meta[next_meta].skip;
+        next_meta += meta[next_meta].complex_children + 1;
+        next_complex = next_meta < meta.size() ? meta[next_meta].position : tokens.data.size();
+      }
+      else
+      {
+        i++;
+      }
+    }
+    return JS::Error::KeyNotFound;
+  }
+  template<typename T>
+  T castTo(const std::string &name, JS::Error &error)
+  {
+    T t;
+    error = castToType<T>(name, t);
+    return t;
+  }
+};
+
+inline Map createMap(const char* data, size_t size, JS::Error &error)
+{
+  Map map;
+  map.parseContext.tokenizer.addData(data, size);
+  map.parseContext.parseTo(map);
+  error = map.parseContext.error;
+  return map;
+}
+
+inline Map createMap(const char* data, JS::Error &error)
+{
+  auto size = strlen(data);
+  return createMap(data, size, error);
+}
+
+template<size_t SIZE>
+inline Map createMap(const char(&data)[SIZE], JS::Error &error)
+{
+  return createMap(data, SIZE, error);
+}
+
+inline Map createMap(const std::string& data, JS::Error &error)
+{
+  return createMap(data.data(), data.size(), error);
+}
+
+template <>
+struct TypeHandler<Map>
+{
+  static inline Error to(Map &to_type, ParseContext &context)
+  {
+    Error error = TypeHandler<JS::JsonTokens>::to(to_type.tokens, context);
+    if (error == Error::NoError)
+    {
+      to_type.meta = metaForTokens(to_type.tokens);
+    }
+
+    return error;
+  }
+
+  static inline void from(const Error &from_type, Token &token, Serializer &serializer)
+  {
+    (void)from_type;
+    (void)token;
+    (void)serializer;
+    abort(); //this is a mistake;
+  }
+};
+#endif //JS_EXPERIMENTAL_MAP
+
 } // namespace JS
 #endif // JSON_STRUCT_H
