@@ -8007,10 +8007,98 @@ namespace Internal
 }
 struct Map
 {
-  using It = unsigned int;
+  struct It
+  {
+    Map &map;
+    unsigned int index = 0;
+    unsigned int next_meta = 0;
+    unsigned int next_complex = 0;
+
+    inline Token &operator*()
+    {
+      return map.tokens.data[index];
+    }
+
+    inline Token *operator->()
+    {
+      return &map.tokens.data[index];
+    }
+
+    inline It& operator++()
+    {
+      if (index == next_complex)
+      {
+        index += map.meta[next_meta].skip;
+        next_meta += map.meta[next_meta].complex_children + 1;
+        next_complex = next_meta < map.meta.size() ? map.meta[next_meta].position : map.tokens.data.size();
+      }
+      else
+      {
+        index++;
+      }
+      return *this;
+    }
+    inline bool operator==(const It& other) const
+    {
+      return index == other.index;
+    }
+    inline bool operator!=(const It& other) const
+    {
+      return index != other.index;
+    }
+    inline void operator=(It& other)
+    {
+      map = other.map;
+      index = other.index;
+      next_meta = other.next_meta;
+      next_complex = other.next_complex;
+    }
+
+  };
   JS::JsonTokens tokens;
   std::vector<JsonMeta> meta;
   JS::ParseContext parseContext;
+
+  inline It begin()
+  {
+    It b{*this};
+    b.index = 1;
+    b.next_meta = 1;
+    b.next_complex = b.next_meta < meta.size() ? meta[b.next_meta].position : tokens.data.size();
+    return b;
+  }
+
+  inline It end()
+  {
+    It e{*this};
+    e.index = tokens.data.size();
+    e.next_meta = 0;
+    e.next_complex = 0;
+    return e;
+  }
+
+  inline It find(const std::string& name)
+  {
+    return std::find_if(begin(), end(),
+                        [&name](Token &token) { return Internal::compareDataRefWithString(token.name, name); });
+  }
+
+  template<typename T>
+  JS::Error castToType(T& to)
+  {
+    parseContext.tokenizer.resetData(&tokens.data, 0);
+    parseContext.nextToken();
+    return JS::TypeHandler<T>::to(to, parseContext);
+  }
+
+  template<typename T>
+  JS::Error castToType(const It& iterator, T& to)
+  {
+    assert(iterator.index < tokens.data.size());
+    parseContext.tokenizer.resetData(&tokens.data, iterator.index);
+    parseContext.nextToken();
+    return JS::TypeHandler<T>::to(to, parseContext);
+  }
 
   template<typename T>
   JS::Error castToType(const std::string &name, T &to)
@@ -8019,30 +8107,21 @@ struct Map
     {
       return JS::Error::ExpectedObjectStart;
     }
-    unsigned int i = 1;
-    unsigned int next_meta = 1;
-    unsigned int next_complex = next_meta < meta.size() ? meta[next_meta].position : tokens.data.size();
-    while (i < tokens.data.size())
-    {
-      if (Internal::compareDataRefWithString(tokens.data[i].name, name))
-      {
-        parseContext.tokenizer.resetData(&tokens.data, i);
-        parseContext.nextToken();
-        return JS::TypeHandler<T>::to(to, parseContext);
-      }
-      if (i == next_complex)
-      {
-        i += meta[next_meta].skip;
-        next_meta += meta[next_meta].complex_children + 1;
-        next_complex = next_meta < meta.size() ? meta[next_meta].position : tokens.data.size();
-      }
-      else
-      {
-        i++;
-      }
-    }
+
+    It it = find(name);
+    if (it != end())
+      return castToType(it, to);
     return JS::Error::KeyNotFound;
   }
+
+  template<typename T>
+  T castTo(JS::Error& error)
+  {
+    T t;
+    error = castToType<T>(t);
+    return t;
+  }
+
   template<typename T>
   T castTo(const std::string &name, JS::Error &error)
   {

@@ -38,7 +38,7 @@ static const char json[] = R"json(
 }
 )json";
 
-struct ComplexFields
+struct ComplexFields_t
 {
   int Hello;
   int World;
@@ -51,9 +51,9 @@ struct SubObject_t
   std::vector<std::string> MoreValues;
   JS_OBJ(SimpleMember, MoreValues);
 };
-struct ComplexFields2
+struct ComplexFields2_t
 {
-  ComplexFields2(bool init)
+  ComplexFields2_t(bool init)
     : SimpleMember(init)
   {
   }
@@ -61,6 +61,21 @@ struct ComplexFields2
   std::vector<int> ArrayOfValues;
   SubObject_t SubObject;
   JS_OBJ(SimpleMember, ArrayOfValues, SubObject);
+};
+
+struct Root_t
+{
+  Root_t()
+    : ComplexFields2(true)
+  {
+  }
+  int Field1;
+  bool Field2;
+  std::string Field3;
+  int Field4;
+  ComplexFields_t ComplexFields;
+  ComplexFields2_t ComplexFields2;
+  JS_OBJ(Field1, Field2, Field3, Field4, ComplexFields, ComplexFields2);
 };
 
 TEST_CASE("polymorphic_map_basic", "json_struct")
@@ -75,9 +90,9 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(error == JS::Error::NoError);
   REQUIRE(map.castTo<std::string>("Field3", error) == "432");
   REQUIRE(error == JS::Error::NoError);
-  ComplexFields complexFields1 = map.castTo<ComplexFields>("ComplexFields", error);
+  ComplexFields_t complexFields1 = map.castTo<ComplexFields_t>("ComplexFields", error);
   REQUIRE(error == JS::Error::NoError);
-  ComplexFields complexFields1_2;
+  ComplexFields_t complexFields1_2;
   error = map.castToType("ComplexFields", complexFields1_2);
   REQUIRE(error == JS::Error::NoError);
   REQUIRE(complexFields1.Hello == complexFields1_2.Hello);
@@ -85,14 +100,23 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(complexFields1.Hello == 4);
   REQUIRE(complexFields1.World == 2);
 
-  ComplexFields2 complexFields2(false);
+  ComplexFields2_t complexFields2(false);
   error = map.castToType("ComplexFields2", complexFields2);
   REQUIRE(error == JS::Error::NoError);
   REQUIRE(complexFields2.ArrayOfValues[1] == 3);
   REQUIRE(complexFields2.SubObject.MoreValues[1] == "World");
-  
+
   REQUIRE(map.castTo<int>("Field4", error) == 567);
   REQUIRE(error == JS::Error::NoError);
+
+  Root_t root = map.castTo<Root_t>(error);
+  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(root.Field1 == 4);
+  REQUIRE(root.ComplexFields2.SubObject.MoreValues[0] == "Hello");
+
+  auto it = map.find("Field2");
+  REQUIRE(it != map.end());
+  REQUIRE(it->value_type == JS::Type::Bool);
 }
 
 } // namespace
