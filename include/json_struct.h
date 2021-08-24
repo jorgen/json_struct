@@ -2377,10 +2377,10 @@ struct JsonMeta
   }
 
   size_t position;
-  unsigned int size;
-  unsigned int skip;
-  unsigned int children;
-  unsigned int complex_children;
+  uint32_t size;
+  uint32_t skip;
+  uint32_t children;
+  uint32_t complex_children;
   bool is_array : 1;
   bool has_data : 1;
 };
@@ -2441,7 +2441,7 @@ static inline size_t findFirstChildWithData(const std::vector<JsonMeta> &meta_ve
     return size_t(-1);
 
   size_t skip_size = 0;
-  for (unsigned int i = 0; i < meta.complex_children; i++)
+  for (uint32_t i = 0; i < meta.complex_children; i++)
   {
     auto &current_child = meta_vec[start_index + skip_size + 1];
     skip_size += current_child.skip;
@@ -8009,11 +8009,19 @@ struct Map
 {
   struct It
   {
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type   = int;
+    using value_type        = Token;
+    using pointer           = Token *;
+    using reference         = Token &;
     Map &map;
-    unsigned int index = 0;
-    unsigned int next_meta = 0;
-    unsigned int next_complex = 0;
+    uint32_t index = 0;
+    uint32_t next_meta = 0;
+    uint32_t next_complex = 0;
 
+    It(Map &map)
+      : map(map)
+    {}
     inline Token &operator*()
     {
       return map.tokens.data[index];
@@ -8030,7 +8038,7 @@ struct Map
       {
         index += map.meta[next_meta].skip;
         next_meta += map.meta[next_meta].complex_children + 1;
-        next_complex = next_meta < map.meta.size() ? map.meta[next_meta].position : map.tokens.data.size();
+        next_complex = next_meta < uint32_t(map.meta.size()) ? map.meta[next_meta].position : uint32_t(map.tokens.data.size());
       }
       else
       {
@@ -8046,7 +8054,8 @@ struct Map
     {
       return index != other.index;
     }
-    inline void operator=(It& other)
+
+    inline void operator=(const It& other)
     {
       map = other.map;
       index = other.index;
@@ -8061,17 +8070,17 @@ struct Map
 
   inline It begin()
   {
-    It b{*this};
+    It b(*this);
     b.index = 1;
     b.next_meta = 1;
-    b.next_complex = b.next_meta < meta.size() ? meta[b.next_meta].position : tokens.data.size();
+    b.next_complex = b.next_meta < uint32_t(meta.size()) ? meta[b.next_meta].position : uint32_t(tokens.data.size());
     return b;
   }
 
   inline It end()
   {
-    It e{*this};
-    e.index = tokens.data.size();
+    It e(*this);
+    e.index = uint32_t(tokens.data.size());
     e.next_meta = 0;
     e.next_complex = 0;
     return e;
