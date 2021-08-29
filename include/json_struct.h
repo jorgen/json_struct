@@ -1858,6 +1858,7 @@ inline bool Serializer::write(const Token &in_token)
 
   if (token.value_type == Type::ObjectEnd || token.value_type == Type::ArrayEnd)
   {
+    assert(m_option.depth() > 0);
     m_option.setDepth(m_option.depth() - 1);
   }
 
@@ -7997,7 +7998,6 @@ public:
 };
 #endif
 
-#ifdef JS_EXPERIMENTAL_MAP
 namespace Internal
 {
   inline bool compareDataRefWithString(const DataRef& a, const std::string& b)
@@ -8010,10 +8010,10 @@ struct Map
   struct It
   {
     using iterator_category = std::forward_iterator_tag;
-    using difference_type   = int;
-    using value_type        = Token;
-    using pointer           = Token *;
-    using reference         = Token &;
+    using difference_type = int;
+    using value_type = Token;
+    using pointer = Token *;
+    using reference = Token &;
     Map &map;
     uint32_t index = 0;
     uint32_t next_meta = 0;
@@ -8021,7 +8021,8 @@ struct Map
 
     It(Map &map)
       : map(map)
-    {}
+    {
+    }
     inline Token &operator*()
     {
       return map.tokens.data[index];
@@ -8032,13 +8033,14 @@ struct Map
       return &map.tokens.data[index];
     }
 
-    inline It& operator++()
+    inline It &operator++()
     {
       if (index == next_complex)
       {
-        index += map.meta[next_meta].skip;
-        next_meta += map.meta[next_meta].complex_children + 1;
-        next_complex = next_meta < uint32_t(map.meta.size()) ? map.meta[next_meta].position : uint32_t(map.tokens.data.size());
+        index += map.meta[next_meta].size;
+        next_meta += map.meta[next_meta].skip;
+        next_complex =
+          next_meta < uint32_t(map.meta.size()) ? map.meta[next_meta].position : uint32_t(map.tokens.data.size());
       }
       else
       {
@@ -8046,27 +8048,27 @@ struct Map
       }
       return *this;
     }
-    inline bool operator==(const It& other) const
+    inline bool operator==(const It &other) const
     {
       return index == other.index;
     }
-    inline bool operator!=(const It& other) const
+    inline bool operator!=(const It &other) const
     {
       return index != other.index;
     }
 
-    inline void operator=(const It& other)
+    inline void operator=(const It &other)
     {
       map = other.map;
       index = other.index;
       next_meta = other.next_meta;
       next_complex = other.next_complex;
     }
-
   };
   JS::JsonTokens tokens;
   std::vector<JsonMeta> meta;
   JS::ParseContext parseContext;
+  std::vector<std::pair<int, std::string>> json_data;
 
   inline It begin()
   {
@@ -8086,22 +8088,22 @@ struct Map
     return e;
   }
 
-  inline It find(const std::string& name)
+  inline It find(const std::string &name)
   {
     return std::find_if(begin(), end(),
                         [&name](Token &token) { return Internal::compareDataRefWithString(token.name, name); });
   }
 
-  template<typename T>
-  JS::Error castToType(T& to)
+  template <typename T>
+  JS::Error castToType(T &to)
   {
     parseContext.tokenizer.resetData(&tokens.data, 0);
     parseContext.nextToken();
     return JS::TypeHandler<T>::to(to, parseContext);
   }
 
-  template<typename T>
-  JS::Error castToType(const It& iterator, T& to)
+  template <typename T>
+  JS::Error castToType(const It &iterator, T &to)
   {
     assert(iterator.index < tokens.data.size());
     parseContext.tokenizer.resetData(&tokens.data, iterator.index);
@@ -8109,7 +8111,7 @@ struct Map
     return JS::TypeHandler<T>::to(to, parseContext);
   }
 
-  template<typename T>
+  template <typename T>
   JS::Error castToType(const std::string &name, T &to)
   {
     if (tokens.data.empty() || tokens.data.front().value_type != JS::Type::ObjectStart)
@@ -8123,48 +8125,103 @@ struct Map
     return JS::Error::KeyNotFound;
   }
 
-  template<typename T>
-  T castTo(JS::Error& error)
+  template <typename T>
+  T castTo(JS::Error &error)
   {
     T t;
     error = castToType<T>(t);
     return t;
   }
 
-  template<typename T>
+  template <typename T>
   T castTo(const std::string &name, JS::Error &error)
   {
     T t;
     error = castToType<T>(name, t);
     return t;
   }
+
+  template<typename T>
+  JS::Error setValue(const std::string& name, const T& value)
+  {
+    auto it = find(name);
+    if (it != end())
+    {
+      meta[0].children--;
+      if (it.index == it.next_complex)
+      {
+        auto theMeta = meta[it.next_meta];
+        meta[0].complex_children--;
+        meta[0].size -= theMeta.size;
+        meta[0].skip -= theMeta.skip;
+        auto start_token = tokens.data.begin() + it.index;
+        tokens.data.erase(start_token, start_token + theMeta.size);
+        int to_adjust_index = it.next_meta;
+        auto start_meta = meta.begin() + it.next_meta;
+        meta.erase(start_meta, start_meta + theMeta.skip);
+        for (int i = to_adjust_index; i < meta.size(); i++)
+        {
+          meta[i].position -= theMeta.size;
+        }
+      }
+      else
+      {
+        meta[0].size--;
+        tokens.data.erase(tokens.data.begin() + it.index);
+      }
+      auto json_data_it = std::find_if(json_data.begin(), json_data.end(),
+                                    [it](const std::pair<int, std::string> &a) { return a.first == it.index; });
+      if (json_data_it != json_data.end())
+        json_data.erase(json_data_it);
+    }
+    static const char objectStart[] = "{";
+    static const char objectEnd[] = "}";
+    std::string out;
+    JS::SerializerContext serializeContext(out);
+    serializeContext.serializer.setOptions(SerializerOptions(JS::SerializerOptions::Compact));
+    JS::Token token;
+    token.value_type = Type::ObjectStart;
+    token.value = DataRef(objectStart);
+    serializeContext.serializer.write(token);
+
+    token.name = DataRef(name);
+    token.name_type = Type::String;
+    JS::TypeHandler<T>::from(value, token, serializeContext.serializer);
+
+    token.name = DataRef();
+    token.value_type = Type::ObjectEnd;
+    token.value = DataRef(objectEnd);
+    serializeContext.serializer.write(token);
+
+    serializeContext.flush();
+    JS::JsonTokens new_tokens;
+    JS::ParseContext pc(out.c_str(), out.size(), new_tokens);
+    auto new_meta = metaForTokens(new_tokens);
+
+    json_data.emplace_back(tokens.data.size() - 1, std::move(out));
+    int old_tokens_size = tokens.data.size();
+    tokens.data.insert(tokens.data.end() - 1, new_tokens.data.begin() + 1, new_tokens.data.end() - 1);
+    meta[0].children++;
+    if (new_meta[0].complex_children)
+    {
+      meta[0].complex_children++;
+      meta[0].size += new_meta[1].size;
+      meta[0].skip += new_meta[1].skip;
+      int old_meta_size = meta.size();
+      meta.insert(meta.end(), new_meta.begin() + 1, new_meta.end());
+      for (int new_meta_i = old_meta_size; new_meta_i < meta.size(); new_meta_i++)
+      {
+        meta[new_meta_i].position += old_tokens_size - 1 - 1; //position contains an extra and old_tokens_size has another extra
+      }
+    }
+    else
+    {
+      meta[0].size++;
+    }
+
+    return JS::Error::NoError;
+  }
 };
-
-inline Map createMap(const char* data, size_t size, JS::Error &error)
-{
-  Map map;
-  map.parseContext.tokenizer.addData(data, size);
-  map.parseContext.parseTo(map);
-  error = map.parseContext.error;
-  return map;
-}
-
-inline Map createMap(const char* data, JS::Error &error)
-{
-  auto size = strlen(data);
-  return createMap(data, size, error);
-}
-
-template<size_t SIZE>
-inline Map createMap(const char(&data)[SIZE], JS::Error &error)
-{
-  return createMap(data, SIZE, error);
-}
-
-inline Map createMap(const std::string& data, JS::Error &error)
-{
-  return createMap(data.data(), data.size(), error);
-}
 
 template <>
 struct TypeHandler<Map>
@@ -8180,15 +8237,13 @@ struct TypeHandler<Map>
     return error;
   }
 
-  static inline void from(const Error &from_type, Token &token, Serializer &serializer)
+  static inline void from(const Map &from_type, Token &token, Serializer &serializer)
   {
-    (void)from_type;
-    (void)token;
-    (void)serializer;
-    abort(); //this is a mistake;
+    for (auto& token : from_type.tokens.data)
+    {
+      serializer.write(token);
+    }
   }
 };
-#endif //JS_EXPERIMENTAL_MAP
-
 } // namespace JS
 #endif // JSON_STRUCT_H
