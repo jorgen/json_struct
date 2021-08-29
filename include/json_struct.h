@@ -1021,9 +1021,9 @@ inline std::string Tokenizer::makeErrorString() const
     retString += error_context.lines[i] + "\n";
     if (i == error_context.line)
     {
-      std::string pointing(error_context.character + 1, ' ');
-      pointing[error_context.character - 1] = '^';
-      pointing[error_context.character] = '\n';
+      std::string pointing(error_context.character + 2, ' ');
+      pointing[error_context.character] = '^';
+      pointing[error_context.character + 1] = '\n';
       retString += pointing;
     }
   }
