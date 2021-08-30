@@ -114,33 +114,33 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(pc.error == JS::Error::NoError);
 
   JS::Error error;
-  REQUIRE(map.castTo<int>("Field1", error) == 4);
-  REQUIRE(error == JS::Error::NoError);
-  REQUIRE(map.castTo<bool>("Field2", error) == true);
-  REQUIRE(error == JS::Error::NoError);
-  REQUIRE(map.castTo<std::string>("Field3", error) == "432");
-  REQUIRE(error == JS::Error::NoError);
-  ComplexFields_t complexFields1 = map.castTo<ComplexFields_t>("ComplexFields", error);
-  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(map.castTo<int>("Field1", pc) == 4);
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(map.castTo<bool>("Field2", pc) == true);
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(map.castTo<std::string>("Field3", pc) == "432");
+  REQUIRE(pc.error == JS::Error::NoError);
+  ComplexFields_t complexFields1 = map.castTo<ComplexFields_t>("ComplexFields", pc);
+  REQUIRE(pc.error == JS::Error::NoError);
   ComplexFields_t complexFields1_2;
-  error = map.castToType("ComplexFields", complexFields1_2);
-  REQUIRE(error == JS::Error::NoError);
+  error = map.castToType("ComplexFields", pc, complexFields1_2);
+  REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(complexFields1.Hello == complexFields1_2.Hello);
   REQUIRE(complexFields1.World == complexFields1_2.World);
   REQUIRE(complexFields1.Hello == 4);
   REQUIRE(complexFields1.World == 2);
 
   ComplexFields2_t complexFields2(false);
-  error = map.castToType("ComplexFields2", complexFields2);
-  REQUIRE(error == JS::Error::NoError);
+  error = map.castToType("ComplexFields2", pc, complexFields2);
+  REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(complexFields2.ArrayOfValues[1] == 3);
   REQUIRE(complexFields2.SubObject.MoreValues[1] == "World");
 
-  REQUIRE(map.castTo<int>("Field4", error) == 567);
-  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(map.castTo<int>("Field4", pc) == 567);
+  REQUIRE(pc.error == JS::Error::NoError);
 
-  Root_t root = map.castTo<Root_t>(error);
-  REQUIRE(error == JS::Error::NoError);
+  Root_t root = map.castTo<Root_t>(pc);
+  REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(root.Field1 == 4);
   REQUIRE(root.ComplexFields2.SubObject.MoreValues[0] == "Hello");
 
@@ -148,45 +148,45 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(it != map.end());
   REQUIRE(it->value_type == JS::Type::Bool);
 
-  map.setValue("HelloWorld", 4567);
-  REQUIRE(map.castTo<int>("HelloWorld", error) == 4567);
-  REQUIRE(error == JS::Error::NoError);
+  map.setValue("HelloWorld", pc, 4567);
+  REQUIRE(map.castTo<int>("HelloWorld", pc) == 4567);
+  REQUIRE(pc.error == JS::Error::NoError);
   verify_map_meta(map);
 
-  map.setValue("Field4", std::string("hello world"));
-  REQUIRE(map.castTo<std::string>("Field4", error) == "hello world");
-  REQUIRE(error == JS::Error::NoError);
+  map.setValue("Field4", pc, std::string("hello world"));
+  REQUIRE(map.castTo<std::string>("Field4", pc) == "hello world");
+  REQUIRE(pc.error == JS::Error::NoError);
   verify_map_meta(map);
 
-  map.setValue("ComplexFields", true);
-  REQUIRE(map.castTo<bool>("ComplexFields", error) == true);
-  REQUIRE(error == JS::Error::NoError);
+  map.setValue("ComplexFields", pc, true);
+  REQUIRE(map.castTo<bool>("ComplexFields", pc) == true);
+  REQUIRE(pc.error == JS::Error::NoError);
   verify_map_meta(map);
 
   NewComplexField newComplexField;
   newComplexField.Foo = "Map is awsome";
   newComplexField.Bar = "NewComplexField";
-  map.setValue("ComplexFields", newComplexField);
+  map.setValue("ComplexFields", pc, newComplexField);
 
   NewComplexField newComplexField2;
-  REQUIRE(map.castToType("ComplexFields", newComplexField2) == JS::Error::NoError);
+  REQUIRE(map.castToType("ComplexFields", pc, newComplexField2) == JS::Error::NoError);
   REQUIRE(newComplexField.Foo == newComplexField2.Foo);
   REQUIRE(newComplexField.Bar == newComplexField2.Bar);
   verify_map_meta(map);
 
-  map.setValue("Some", 5678);
+  map.setValue("Some", pc, 5678);
   
-  map.setValue("MoreValues", complexFields2);
+  map.setValue("MoreValues", pc, complexFields2);
 
-  REQUIRE(map.castTo<NewComplexField>("ComplexFields", error).Foo == "Map is awsome");
-  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(map.castTo<NewComplexField>("ComplexFields", pc).Foo == "Map is awsome");
+  REQUIRE(pc.error == JS::Error::NoError);
   verify_map_meta(map);
 
-  map.setValue("ComplexFields2", false);
+  map.setValue("ComplexFields2", pc, false);
   verify_map_meta(map);
 
-  REQUIRE(map.castTo<NewComplexField>("ComplexFields", error).Foo == "Map is awsome");
-  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(map.castTo<NewComplexField>("ComplexFields", pc).Foo == "Map is awsome");
+  REQUIRE(pc.error == JS::Error::NoError);
 }
 
 } // namespace

@@ -8014,21 +8014,21 @@ struct Map
     using value_type = Token;
     using pointer = Token *;
     using reference = Token &;
-    Map &map;
+    const Map &map;
     uint32_t index = 0;
     uint32_t next_meta = 0;
     uint32_t next_complex = 0;
 
-    It(Map &map)
+    It(const Map &map)
       : map(map)
     {
     }
-    inline Token &operator*()
+    inline const Token &operator*()
     {
       return map.tokens.data[index];
     }
 
-    inline Token *operator->()
+    inline const Token *operator->()
     {
       return &map.tokens.data[index];
     }
@@ -8059,7 +8059,7 @@ struct Map
 
     inline void operator=(const It &other)
     {
-      map = other.map;
+      assert(&map == &other.map);
       index = other.index;
       next_meta = other.next_meta;
       next_complex = other.next_complex;
@@ -8067,10 +8067,9 @@ struct Map
   };
   JS::JsonTokens tokens;
   std::vector<JsonMeta> meta;
-  JS::ParseContext parseContext;
   std::vector<std::pair<int, std::string>> json_data;
 
-  inline It begin()
+  inline It begin() const
   {
     It b(*this);
     b.index = 1;
@@ -8079,7 +8078,7 @@ struct Map
     return b;
   }
 
-  inline It end()
+  inline It end() const
   {
     It e(*this);
     e.index = uint32_t(tokens.data.size());
@@ -8088,14 +8087,14 @@ struct Map
     return e;
   }
 
-  inline It find(const std::string &name)
+  inline It find(const std::string &name) const
   {
     return std::find_if(begin(), end(),
-                        [&name](Token &token) { return Internal::compareDataRefWithString(token.name, name); });
+                        [&name](const Token &token) { return Internal::compareDataRefWithString(token.name, name); });
   }
 
   template <typename T>
-  JS::Error castToType(T &to)
+  JS::Error castToType(JS::ParseContext &parseContext, T &to) const
   {
     parseContext.tokenizer.resetData(&tokens.data, 0);
     parseContext.nextToken();
@@ -8103,7 +8102,7 @@ struct Map
   }
 
   template <typename T>
-  JS::Error castToType(const It &iterator, T &to)
+  JS::Error castToType(const It &iterator, JS::ParseContext &parseContext, T &to) const
   {
     assert(iterator.index < tokens.data.size());
     parseContext.tokenizer.resetData(&tokens.data, iterator.index);
@@ -8112,7 +8111,7 @@ struct Map
   }
 
   template <typename T>
-  JS::Error castToType(const std::string &name, T &to)
+  JS::Error castToType(const std::string &name, JS::ParseContext &parseContext, T &to) const
   {
     if (tokens.data.empty() || tokens.data.front().value_type != JS::Type::ObjectStart)
     {
@@ -8121,28 +8120,28 @@ struct Map
 
     It it = find(name);
     if (it != end())
-      return castToType(it, to);
+      return castToType(it, parseContext, to);
     return JS::Error::KeyNotFound;
   }
 
   template <typename T>
-  T castTo(JS::Error &error)
+  T castTo(JS::ParseContext &parseContext) const
   {
     T t;
-    error = castToType<T>(t);
+    castToType<T>(parseContext, t);
     return t;
   }
 
   template <typename T>
-  T castTo(const std::string &name, JS::Error &error)
+  T castTo(const std::string &name, JS::ParseContext &parseContext) const
   {
     T t;
-    error = castToType<T>(name, t);
+    castToType<T>(name, parseContext, t);
     return t;
   }
 
   template<typename T>
-  JS::Error setValue(const std::string& name, const T& value)
+  JS::Error setValue(const std::string& name, JS::ParseContext &parseContext, const T& value)
   {
     auto it = find(name);
     if (it != end())
