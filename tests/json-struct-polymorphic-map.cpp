@@ -105,6 +105,13 @@ void verify_map_meta(const JS::Map &map)
     REQUIRE(new_meta[i].size == map.meta[i].size); 
     REQUIRE(new_meta[i].skip == map.meta[i].skip); 
   }
+
+  for (auto &json_data : map.json_data)
+  {
+    auto &token = map.tokens.data[json_data.first];
+    REQUIRE(token.name.data >= json_data.second.data());
+    REQUIRE(token.value.data + token.value.size < json_data.second.data() + json_data.second.size());
+  }
 }
 
 TEST_CASE("polymorphic_map_basic", "json_struct")
@@ -189,4 +196,45 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(pc.error == JS::Error::NoError);
 }
 
+struct HelloWorld
+{
+  std::string Hello;
+  std::string World;
+  JS_OBJ(Hello, World);
+};
+TEST_CASE("clean_map", "json_struct, map")
+{
+  JS::Map map;
+  JS::ParseContext pc;
+  map.setValue("Hello", pc, std::string("world"));
+  map.setValue("World", pc, std::string("hello"));
+  HelloWorld helloWorld = map.castTo<HelloWorld>(pc);
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(helloWorld.Hello == "world");
+  REQUIRE(helloWorld.World == "hello");
+}
+
+TEST_CASE("to_clean_map", "json_struct, map")
+{
+  HelloWorld helloworld;
+  helloworld.Hello = "Foo";
+  helloworld.World = "Bar";
+  JS::Map map;
+  JS::ParseContext pc;
+  map.setValue(pc, helloworld);
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(map.castTo<std::string>("Hello", pc) == "Foo");
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(map.castTo<std::string>("World", pc) == "Bar"); 
+}
+
+//TEST_CASE("fail_to_compile", "json_struct, map")
+//{
+//  JS::Map map;
+//  JS::ParseContext pc;
+//  int foo = 44;
+//  map.setValue(pc, foo);
+//  REQUIRE(pc.error == JS::Error::NoError);
+//
+//}
 } // namespace

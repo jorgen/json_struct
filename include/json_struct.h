@@ -574,6 +574,7 @@ public:
   template <size_t N>
   void addData(const char (&data)[N]);
   void addData(const std::vector<Token> *parsedData);
+  void resetData(const char *data, size_t size, size_t index);
   void resetData(const std::vector<Token> *parsedData, size_t index);
   size_t registeredBuffers() const;
 
@@ -806,10 +807,26 @@ inline void Tokenizer::addData(const std::vector<Token> *parsedData)
   cursor_index = 0;
 }
 
+inline void Tokenizer::resetData(const char *data, size_t size, size_t index)
+{
+
+  for (auto &data_buffer : data_list)
+    release_callbacks.invokeCallbacks(data_buffer.data);
+  data_list.clear();
+  parsed_data_vector = nullptr;
+  cursor_index = index;
+  addData(data, size);
+  resetForNewToken();
+}
+
 inline void Tokenizer::resetData(const std::vector<Token> *parsedData, size_t index)
 {
+  for (auto &data_buffer : data_list)
+    release_callbacks.invokeCallbacks(data_buffer.data);
+  data_list.clear();
   parsed_data_vector = parsedData;
   cursor_index = index;
+  resetForNewToken();
 }
 
 inline size_t Tokenizer::registeredBuffers() const
@@ -8141,15 +8158,51 @@ struct Map
   }
 
   template<typename T>
+  JS::Error setValue(JS::ParseContext &parseContext, const T& value)
+  {
+    static_assert(sizeof(JS::Internal::HasJsonStructBase<T>::template test_in_base<T>(nullptr)) ==
+                    sizeof(typename JS::Internal::HasJsonStructBase<T>::yes),
+                  "Not a Json Object type\n");
+    std::string obj = JS::serializeStruct(value);
+    parseContext.tokenizer.resetData(obj.data(), obj.size(), 0);
+    tokens.data.clear();
+    meta.clear();
+    json_data.clear();
+    parseContext.parseTo(tokens);
+    if (parseContext.error == JS::Error::NoError)
+      assert(tokens.data.size() && tokens.data[0].value_type == JS::Type::ObjectStart);
+
+    meta = metaForTokens(tokens);
+    json_data.emplace_back(0, std::move(obj));
+    return parseContext.error;
+  }
+
+  template<typename T>
   JS::Error setValue(const std::string& name, JS::ParseContext &parseContext, const T& value)
   {
+    if (tokens.data.empty())
+    {
+      tokens.data.reserve(10);
+      meta.reserve(10);
+      JS::Token token;
+      token.value_type = JS::Type::ObjectStart;
+      token.value = JS::DataRef("{");
+      tokens.data.push_back(token);
+      token.value_type = JS::Type::ObjectEnd;
+      token.value = JS::DataRef("}");
+      tokens.data.push_back(token);
+      meta = JS::metaForTokens(tokens);
+    }
+
     auto it = find(name);
     if (it != end())
     {
       meta[0].children--;
+      int tokens_removed = 0;
       if (it.index == it.next_complex)
       {
         auto theMeta = meta[it.next_meta];
+        tokens_removed = theMeta.size;
         meta[0].complex_children--;
         meta[0].size -= theMeta.size;
         meta[0].skip -= theMeta.skip;
@@ -8167,11 +8220,22 @@ struct Map
       {
         meta[0].size--;
         tokens.data.erase(tokens.data.begin() + it.index);
+        tokens_removed = 1;
       }
-      auto json_data_it = std::find_if(json_data.begin(), json_data.end(),
-                                    [it](const std::pair<int, std::string> &a) { return a.first == it.index; });
-      if (json_data_it != json_data.end())
-        json_data.erase(json_data_it);
+      {
+        int index_to_remove = -1;
+        for (int i = 0; i < json_data.size(); i++)
+        {
+          if (json_data[i].first == it.index)
+            index_to_remove = i;
+          else if (json_data[i].first > it.index)
+            json_data[i].first -= tokens_removed;
+        }
+        if (index_to_remove >= 0)
+        {
+          json_data.erase(json_data.begin() + index_to_remove);
+        }
+      }
     }
     static const char objectStart[] = "{";
     static const char objectEnd[] = "}";
