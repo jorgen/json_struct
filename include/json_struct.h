@@ -8082,6 +8082,7 @@ struct Map
       next_complex = other.next_complex;
     }
   };
+
   JS::JsonTokens tokens;
   std::vector<JsonMeta> meta;
   std::vector<std::pair<int, std::string>> json_data;
