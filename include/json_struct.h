@@ -8133,13 +8133,15 @@ struct Map
   {
     if (tokens.data.empty() || tokens.data.front().value_type != JS::Type::ObjectStart)
     {
-      return JS::Error::ExpectedObjectStart;
+      parseContext.error = JS::Error::ExpectedObjectStart;
+      return parseContext.error;
     }
 
     It it = find(name);
     if (it != end())
       return castToType(it, parseContext, to);
-    return JS::Error::KeyNotFound;
+    parseContext.error = JS::Error::KeyNotFound;
+    return parseContext.error;
   }
 
   template <typename T>
