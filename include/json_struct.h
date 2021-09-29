@@ -8057,7 +8057,7 @@ struct Map
         index += map.meta[next_meta].size;
         next_meta += map.meta[next_meta].skip;
         next_complex =
-          next_meta < uint32_t(map.meta.size()) ? map.meta[next_meta].position : uint32_t(map.tokens.data.size());
+          next_meta < uint32_t(map.meta.size()) ? uint32_t(map.meta[next_meta].position) : uint32_t(map.tokens.data.size());
       }
       else
       {
@@ -8092,7 +8092,7 @@ struct Map
     It b(*this);
     b.index = 1;
     b.next_meta = 1;
-    b.next_complex = b.next_meta < uint32_t(meta.size()) ? meta[b.next_meta].position : uint32_t(tokens.data.size());
+    b.next_complex = b.next_meta < uint32_t(meta.size()) ? uint32_t(meta[b.next_meta].position) : uint32_t(tokens.data.size());
     return b;
   }
 
@@ -8301,7 +8301,7 @@ struct TypeHandler<Map>
     return error;
   }
 
-  static inline void from(const Map &from_type, Token &token, Serializer &serializer)
+  static inline void from(const Map &from_type, Token &, Serializer &serializer)
   {
     for (auto& token : from_type.tokens.data)
     {
