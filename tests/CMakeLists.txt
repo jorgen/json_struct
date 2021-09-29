@@ -49,6 +49,7 @@ set(unit_test_sources
                            json-struct-escape.cpp
                            json-struct-error-string.cpp
                            json-struct-polymorphic-map.cpp
+                           json-struct-array-varlength.cpp
                            )
 
 add_executable(unit-tests ${unit_test_sources})
@@ -84,7 +85,7 @@ if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
   target_link_libraries(unit-tests-cxx17 PRIVATE catch_main)
 endif()
 
-#add_executable(unit-tests-experimental json-struct-polymorphic-map.cpp)
+#add_executable(unit-tests-experimental json-struct-array-varlength.cpp)
 #target_link_libraries(unit-tests-experimental PRIVATE catch_main)
 
 add_custom_target(clangformat_tests

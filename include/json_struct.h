@@ -8311,5 +8311,59 @@ struct TypeHandler<Map>
     }
   }
 };
+
+template<typename T, size_t COUNT>
+struct ArrayVariableContent
+{
+  T data[COUNT];
+  size_t size = 0;
+};
+
+template<typename T, size_t COUNT>
+struct TypeHandler<ArrayVariableContent<T, COUNT>>
+{
+  static inline Error to(ArrayVariableContent<T, COUNT> &to_type, ParseContext &context)
+  {
+    if (context.token.value_type != Type::ArrayStart)
+      return JS::Error::ExpectedArrayStart;
+
+    context.nextToken();
+    for (size_t i = 0; i < COUNT; i++)
+    {
+      if (context.error != JS::Error::NoError)
+        return context.error;
+      if (context.token.value_type == Type::ArrayEnd)
+      {
+        to_type.size = i;
+        break;
+      }
+      context.error = TypeHandler<T>::to(to_type.data[i], context);
+      if (context.error != JS::Error::NoError)
+        return context.error;
+
+      context.nextToken();
+    }
+
+    if (context.token.value_type != Type::ArrayEnd)
+      return JS::Error::ExpectedArrayEnd;
+    return context.error;
+  }
+
+  static inline void from(const ArrayVariableContent<T, COUNT> &from_type, Token &token, Serializer &serializer)
+  {
+    token.value_type = Type::ArrayStart;
+    token.value = DataRef("[");
+    serializer.write(token);
+
+    token.name = DataRef("");
+    for (size_t i = 0; i < from_type.size; i++)
+      TypeHandler<T>::from(from_type.data[i], token, serializer);
+
+    token.name = DataRef("");
+    token.value_type = Type::ArrayEnd;
+    token.value = DataRef("]");
+    serializer.write(token);
+  }
+};
 } // namespace JS
 #endif // JSON_STRUCT_H

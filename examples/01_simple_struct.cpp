@@ -3,36 +3,102 @@
 
 const char json[] = R"json(
 {
-    "key" : "value",
-    "number" : 100,
-    "boolean" : true
+  "vec" : [
+    { "key" : 4, "value": 1.0 },
+    { "key" : 5, "value": 2.0 },
+    { "key" : 6, "value": 3.0 }
+  ]
 }
 )json";
 
-struct JsonData
+struct VecMember
 {
-    std::string key;
-    int number;
-    bool boolean;
+  std::string key;
+  double value;
 
-    JS_OBJ(key, number, boolean);
+  JS_OBJ(key, value);
 };
+
+
+struct ModuleList
+{
+  enum
+  {
+    ReservedSize = 16
+  };
+  VecMember modules[ReservedSize];
+  int size = 0;
+};
+
+namespace JS
+{
+template <>
+struct TypeHandler<ModuleList>
+{
+  static inline Error to(ModuleList &to_type, ParseContext &context)
+  {
+    if (context.token.value_type != Type::ArrayStart)
+      return JS::Error::ExpectedArrayStart;
+
+    context.nextToken();
+    for (size_t i = 0; i < ModuleList::ReservedSize; i++)
+    {
+      if (context.error != JS::Error::NoError)
+        return context.error;
+      if (context.token.value_type == Type::ArrayEnd)
+      {
+        to_type.size = i;
+        break;
+      }
+      context.error = TypeHandler<VecMember>::to(to_type.modules[i], context);
+      if (context.error != JS::Error::NoError)
+        return context.error;
+
+      context.nextToken();
+    }
+
+    if (context.token.value_type != Type::ArrayEnd)
+      return JS::Error::ExpectedArrayEnd;
+    return context.error;
+  }
+
+  static inline void from(const ModuleList &from_type, Token &token, Serializer &serializer)
+  {
+    token.value_type = Type::ArrayStart;
+    token.value = DataRef("[");
+    serializer.write(token);
+
+    token.name = DataRef("");
+    for (size_t i = 0; i < from_type.size; i++)
+      TypeHandler<VecMember>::from(from_type.modules[i], token, serializer);
+
+    token.name = DataRef("");
+    token.value_type = Type::ArrayEnd;
+    token.value = DataRef("]");
+    serializer.write(token);
+  }
+};
+} // namespace JS
+
+struct JsonObject
+{
+  ModuleList vec;
+  JS_OBJ(vec);
+};
+
 
 int main()
 {
-    JsonData dataStruct;
+    JsonObject obj;
     JS::ParseContext parseContext(json);
-    if (parseContext.parseTo(dataStruct) != JS::Error::NoError)
+    if (parseContext.parseTo(obj) != JS::Error::NoError)
     {
         std::string errorStr = parseContext.makeErrorString();
         fprintf(stderr, "Error parsing struct %s\n", errorStr.c_str());
         return -1;
     }
 
-    fprintf(stdout, "Key is: %s, number is %d bool is %d\n",
-            dataStruct.key.c_str(),
-            dataStruct.number,
-            dataStruct.boolean);
+    fprintf(stdout, "Vec has size %zu\n", obj.vec.size);
 
     return 0;
 }
