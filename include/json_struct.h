@@ -7155,6 +7155,39 @@ public:
 
 /// \private
 template <typename T>
+struct TypeHandler<std::shared_ptr<T>>
+{
+public:
+  static inline Error to(std::shared_ptr<T> &to_type, ParseContext &context)
+  {
+    if (context.token.value_type != Type::Null)
+    {
+      if (!to_type)
+        to_type = std::make_shared<T>();
+      return TypeHandler<T>::to(*to_type.get(), context);
+    }
+    to_type.reset();
+    return Error::NoError;
+  }
+
+  static inline void from(const std::shared_ptr<T> &unique, Token &token, Serializer &serializer)
+  {
+    if (unique)
+    {
+      TypeHandler<T>::from(*unique.get(), token, serializer);
+    }
+    else
+    {
+      const char nullChar[] = "null";
+      token.value_type = Type::Null;
+      token.value = DataRef(nullChar);
+      serializer.write(token);
+    }
+  }
+};
+
+/// \private
+template <typename T>
 struct TypeHandler<std::unique_ptr<T>>
 {
 public:
