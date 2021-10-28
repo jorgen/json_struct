@@ -152,7 +152,7 @@
 #endif
 
 #ifndef JS_IF_CONSTEXPR
-#if __cpp_if_consexpr
+#if __cpp_if_constexpr
 #define JS_IF_CONSTEXPR(exp) if constexpr (exp)
 #elif defined(_MSC_VER)
 #define JS_IF_CONSTEXPR(exp) __pragma(warning(push)) __pragma(warning(disable : 4127)) if (exp) __pragma(warning(pop))
