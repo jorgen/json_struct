@@ -123,6 +123,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <limits>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -5823,7 +5824,7 @@ inline void normalize(int &exp, uint64_t &mentissa)
   }
 }
 
-static void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_smaller, bool accept_larger,
+inline void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_smaller, bool accept_larger,
                              bool break_tie_down, int &exponent_adjuster, uint64_t &shortest_base10)
 {
   int i = 0;
@@ -5837,12 +5838,10 @@ static void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_sma
   uint64_t b_next = b / 10;
   uint32_t b_remainder = b % 10;
   uint64_t c_next = c / 10;
-  uint32_t c_remainder = c % 10;
   while (a_next < c_next)
   {
     a_remainder = a % 10;
     b_remainder = b % 10;
-    c_remainder = c % 10;
 
     all_b_zero &= bool(!b_remainder);
     all_a_zero &= bool(!a_remainder);
@@ -5859,9 +5858,7 @@ static void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_sma
   {
     while (!(a_next % 10))
     {
-      a_remainder = a % 10;
       b_remainder = b % 10;
-      c_remainder = c % 10;
 
       all_b_zero &= bool(!b_remainder);
 
@@ -8072,6 +8069,14 @@ struct Map
     It(const Map &map)
       : map(map)
     {
+    }
+    It(const It& other)
+      : map(other.map)
+      , index(other.index)
+      , next_meta(other.next_meta)
+      , next_complex(other.next_complex)
+    {
+
     }
     inline const Token &operator*()
     {
