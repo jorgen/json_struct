@@ -4566,7 +4566,7 @@ inline void left_shift(uint64_t &a)
 
 inline void left_shift(uint64_t (&a)[2], int shift)
 {
-  if (shift > sizeof(*a) * 8)
+  if (shift > int(sizeof(*a)) * 8)
   {
     auto shift_0 = (int(sizeof(uint64_t) * 8) - shift);
     if (shift_0 > 0)
@@ -4770,7 +4770,7 @@ struct float_info<double>
                                          double &to_digit)
   {
     uint64_t q = a[1] & ~str_to_float_mask();
-    uint64_t to_round_off = (q & (uint64_t(1) << 8) - 1);
+    uint64_t to_round_off = (q & ((uint64_t(1) << 8) - 1));
     bool bigger = to_round_off > (uint64_t(1) << (8 - 1)) || (to_round_off == (uint64_t(1) << (8 - 1)) && a[0]);
     bool tie_odd = (!(q & ((uint64_t(1) << 7) - 1))) && (q & (uint64_t(1) << 8)) && !a[0];
     if (bigger || tie_odd)
@@ -4901,7 +4901,7 @@ struct float_info<float>
                                          float &to_digit)
   {
     uint64_t q = a & ~str_to_float_mask();
-    bool bigger = (q & (uint64_t(1) << 37) - 1) > (uint64_t(1) << (37 - 1));
+    bool bigger = (q & ((uint64_t(1) << 37) - 1)) > (uint64_t(1) << (37 - 1));
     bool tie_odd = (!(q & ((uint64_t(1) << 36) - 1))) && (q & (uint64_t(1) << 37));
     if (bigger || tie_odd)
     {
@@ -5925,9 +5925,9 @@ inline uint64_t multiply_and_shift<double>(uint64_t a, const uint64_t *b, int sh
   result[5] = high(result[4]);
 
   uint64_t ret[4];
-  ret[0] = low(result[0]) | (low(result[1]) << 32) + high(result[0]);
-  ret[1] = low(result[2]) | low(result[3]) << 32;
-  ret[2] = low(result[4]) | low(result[5]) << 32;
+  ret[0] = low(result[0]) | ((low(result[1]) << 32) + high(result[0]));
+  ret[1] = low(result[2]) | (low(result[3]) << 32);
+  ret[2] = low(result[4]) | (low(result[5]) << 32);
 
   int index = shift_right / 64;
   int shift_right_in_index = shift_right - (index * 64);
@@ -5975,8 +5975,8 @@ inline uint64_t multiply_and_shift<float>(uint64_t a, const uint64_t *b, int shi
   result[3] += high(result[2]);
 
   uint64_t ret[4];
-  ret[0] = low(result[0]) | (low(result[1]) << 32) + high(result[0]);
-  ret[1] = low(result[2]) | low(result[3]) << 32;
+  ret[0] = low(result[0]) | ((low(result[1]) << 32) + high(result[0]));
+  ret[1] = low(result[2]) | (low(result[3]) << 32);
 
   int index = shift_right / 64;
   int shift_right_in_index = shift_right - (index * 64);
