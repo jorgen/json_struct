@@ -174,6 +174,18 @@
 #define JS JS
 #endif
 
+#ifndef JS_NO_SYSTEM_HEADER
+#ifdef __GNUC__
+#ifdef __clang__
+#pragma clang system_header
+#else
+#pragma GCC system_header
+#endif
+#else
+#pragma system_header
+#endif
+#endif
+
 namespace JS
 {
 /*!
