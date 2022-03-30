@@ -98,7 +98,7 @@ int main()
         return -1;
     }
 
-    fprintf(stdout, "Vec has size %zu\n", obj.vec.size);
+    fprintf(stdout, "Vec has size %d\n", obj.vec.size);
 
     return 0;
 }

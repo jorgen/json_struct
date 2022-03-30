@@ -27,8 +27,8 @@ int main()
     }
 
     fprintf(stdout, "Color data is: %d, enum green has value %d\n",
-            dataStruct.color,
-            Color::Green);
+            (int)dataStruct.color,
+            (int)Color::Green);
 
     return 0;
 }
