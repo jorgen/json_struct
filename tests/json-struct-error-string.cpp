@@ -91,7 +91,7 @@ TEST_CASE("test_make_error_string_missing_member", "[json_struct][error]")
   REQUIRE(errorString.size() != 0);
 }
 
-TEST_CASE("test_make_error_string_missing_member", "[json_struct][error]")
+TEST_CASE("test_make_error_string_missing_members", "[json_struct][error]")
 {
   static const char json_data[] = R"json({
   "One" : "foo / bar",
