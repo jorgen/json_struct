@@ -1020,12 +1020,13 @@ static const char *error_strings[] = {
   "ScopeHasEnded",
   "KeyNotFound",
   "UnknownError",
+  "UserDefinedErrors",
 };
 }
 
 inline std::string Tokenizer::makeErrorString() const
 {
-  static_assert(sizeof(Internal::error_strings) / sizeof *Internal::error_strings == size_t(Error::UserDefinedErrors),
+  static_assert(sizeof(Internal::error_strings) / sizeof *Internal::error_strings == size_t(Error::UserDefinedErrors) + 1,
                 "Please add missing error message");
 
   std::string retString("Error");
@@ -2546,6 +2547,45 @@ struct ParseContext
 
   std::string makeErrorString() const
   {
+    if (error == Error::MissingPropertyMember)
+    {
+      if (missing_members.size() == 0)
+      {
+        return "";
+      }
+      else if (missing_members.size() == 1)
+      {
+        return std::string("JSON Object contained member not found in C++ struct/class. JSON Object member is: ") + missing_members.front();
+      }
+      std::string member_string = missing_members.front();
+      for (int i = 1; i < missing_members.size(); i++)
+        member_string += std::string(", ") + missing_members[i];
+      return std::string("JSON Object contained members not found in C++ struct/class. JSON Object members are: ") + member_string;
+    }
+    else if (error  == Error::UnassignedRequiredMember)
+    {
+      if (unassigned_required_members.size() == 0)
+      {
+        return "";
+      }
+      else if (unassigned_required_members.size() == 1)
+      {
+        return std::string("C++ struct/class has a required member that is not present in input JSON. The unassigned C++ member is: ") + unassigned_required_members.front();
+      }
+      std::string required_string = unassigned_required_members.front();
+      for (int i = 1; i< unassigned_required_members.size(); i++)
+        required_string += std::string(", ") + unassigned_required_members[i];
+      return std::string("C++ struct/class has required members that are not present in the input JSON. The unassigned C++ members are: ") + required_string;
+    }
+    if (tokenizer.errorContext().error == Error::NoError && error != Error::NoError)
+    {
+      std::string retString("Error:");
+      if (error <= Error::UserDefinedErrors)
+        retString += Internal::error_strings[int(error)];
+      else
+        retString += "Unknown error";
+      return retString;
+    }
     return tokenizer.makeErrorString();
   }
 
