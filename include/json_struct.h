@@ -3240,6 +3240,9 @@ inline Error ParseContext::parseTo(T &to_type)
   if (error != JS::Error::NoError)
     return error;
   error = TypeHandler<T>::to(to_type, *this);
+  if (error != JS::Error::NoError && tokenizer.errorContext().error == JS::Error::NoError) {
+    tokenizer.updateErrorContext(error);
+  }
   return error;
 }
 
