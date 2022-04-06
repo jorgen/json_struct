@@ -2329,6 +2329,11 @@ struct OptionalChecked
   {
     return data;
   }
+#ifdef JS_STD_OPTIONAL
+  std::optional<T> opt() const {
+    return assigned ? std::optional<T>(data) : std::nullopt;
+  }
+#endif
   T data;
   bool assigned;
   typedef bool IsOptionalType;
