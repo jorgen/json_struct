@@ -666,6 +666,7 @@ public:
   SerializerOptions(Style style = Style::Pretty);
 
   int shiftSize() const;
+  void setShiftSize(unsigned char set);
 
   Style style() const;
   void setStyle(Style style);
@@ -1757,6 +1758,11 @@ inline SerializerOptions::SerializerOptions(Style style)
 inline int SerializerOptions::shiftSize() const
 {
   return m_shift_size;
+}
+
+inline void SerializerOptions::setShiftSize(unsigned char set)
+{
+  m_shift_size = set;
 }
 
 inline unsigned char SerializerOptions::depth() const
