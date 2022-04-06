@@ -168,6 +168,12 @@
  Use "#define NOMINMAX 1" before including Windows.h
 #endif
 
+#ifndef INT128_T // TODO: make better
+#define INT128_T
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+#endif
+
 #define JS_UNUSED(x) (void)(x)
 
 #ifndef JS
@@ -6655,6 +6661,24 @@ inline typename std::enable_if<std::is_unsigned<T>::value, T>::type make_integer
   return T(significand);
 }
 
+#ifdef INT128_T // TODO: make better
+template <typename T>
+inline typename std::enable_if<std::is_same<T, int128_t>::value, T>::type make_integer_return_value(uint64_t significand,
+                                                                                                    bool negative)
+{
+  return negative ? -T(significand) : T(significand);
+}
+#endif
+
+#ifdef INT128_T // TODO: make better
+template <typename T>
+inline typename std::enable_if<std::is_same<T, uint128_t>::value, T>::type make_integer_return_value(uint64_t significand,
+                                                                                                     bool)
+{
+  return T(significand);
+}
+#endif
+
 template <typename T>
 inline T convert_to_integer(const parsed_string &parsed)
 {
@@ -6871,6 +6895,77 @@ public:
     serializer.write(token);
   }
 };
+
+
+#ifdef INT128_T // TODO: make better
+/// \private
+template <>
+struct TypeHandler<int128_t>
+{
+public:
+  static inline Error to(int128_t &to_type, ParseContext &context)
+  {
+    const char *pointer;
+    auto parse_error =
+      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
+    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
+      return Error::FailedToParseInt;
+    return Error::NoError;
+  }
+
+  static void from(const int128_t &from_type, Token &token, Serializer &serializer)
+  {
+    char buf[44];
+    int digits_truncated;
+    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
+    if (size <= 0 || digits_truncated)
+    {
+      fprintf(stderr, "error serializing int token\n");
+      return;
+    }
+
+    token.value_type = Type::Number;
+    token.value.data = buf;
+    token.value.size = size_t(size);
+    serializer.write(token);
+  }
+};
+#endif
+
+#ifdef INT128_T // TODO: make better
+/// \private
+template <>
+struct TypeHandler<uint128_t>
+{
+public:
+  static inline Error to(uint128_t &to_type, ParseContext &context)
+  {
+    const char *pointer;
+    auto parse_error =
+      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
+    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
+      return Error::FailedToParseInt;
+    return Error::NoError;
+  }
+
+  static inline void from(const uint128_t &from_type, Token &token, Serializer &serializer)
+  {
+    char buf[44];
+    int digits_truncated;
+    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
+    if (size <= 0 || digits_truncated)
+    {
+      fprintf(stderr, "error serializing int token\n");
+      return;
+    }
+
+    token.value_type = Type::Number;
+    token.value.data = buf;
+    token.value.size = size_t(size);
+    serializer.write(token);
+  }
+};
+#endif
 
 /// \private
 template <>
