@@ -234,11 +234,11 @@ TEST_CASE("super_class_param_testRegular", "[function]")
 
 const char call_void_json[] = R"json(
 {
-    "call_void": [],
-    "call_void_context": null,
-    "call_int_void": {},
-    "call_int_void_context": {},
-    "call_void_with_value": 4,
+  "call_void": [],
+  "call_void_context": null,
+  "call_int_void": {},
+  "call_int_void_context": {},
+  "call_void_with_value": 4,
   "call_void_error": {}
 }
 )json";
@@ -308,10 +308,10 @@ TEST_CASE("call_void_testRegular", "[function]")
 
 const char call_error_check_json[] = R"json(
 {
-    "call_void": [],
-    "call_with_int": 5,
-    "call_another_void": {},
-    "call_with_object": { "x": 9 }
+  "call_void": [],
+  "call_with_int": 5,
+  "call_another_void": {},
+  "call_with_object": { "x": 9 }
 }
 )json";
 
@@ -372,9 +372,9 @@ TEST_CASE("call_error_checkRegular", "[function]")
 
 const char json_alias[] = R"json(
 {
-    "execute_one": 4,
-    "execute_two": 5,
-    "execute_three": 6
+  "execute_one": 4,
+  "execute_two": 5,
+  "execute_three": 6
 }
 )json";
 
@@ -423,9 +423,9 @@ TEST_CASE("call_json_aliasRegular", "[function]")
 
 const char json_wrong_arg_type[] = R"json(
 {
-    "execute_one": { "some_function_object": 1 },
-    "execute_two": { "more_members": false },
-    "execute_three": { "last_member": 44.50 }
+  "execute_one": { "some_function_object": 1 },
+  "execute_two": { "more_members": false },
+  "execute_three": { "last_member": 44.50 }
 }
 )json";
 

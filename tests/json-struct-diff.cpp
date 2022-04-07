@@ -159,61 +159,61 @@ TEST_CASE("diff_check_empty_items", "[json_struct][diff]")
 
 const char basicDiffOptionsJson[] = R"json(
 {
-    "name": "json",
-    "id": 123,
-    "value": 3.141592,
-    "enabled": true,
-    "meta": null,
-    "number1": 1.000000001,
-    "number2": 2.000000020,
-    "number3": 3.000000300,
-    "number4": 4.000004000,
-    "number5": 5.000050000,
-    "number6": 6.000600000,
-    "number7": 7.007000000,
-    "number8": 8.080000000,
-    "number9": 9.900000000,
-    "number10": 10.00000000
+  "name": "json",
+  "id": 123,
+  "value": 3.141592,
+  "enabled": true,
+  "meta": null,
+  "number1": 1.000000001,
+  "number2": 2.000000020,
+  "number3": 3.000000300,
+  "number4": 4.000004000,
+  "number5": 5.000050000,
+  "number6": 6.000600000,
+  "number7": 7.007000000,
+  "number8": 8.080000000,
+  "number9": 9.900000000,
+  "number10": 10.00000000
 }
 )json";
 
 const char basicDiffOptionsJsonIdentical[] = R"json(
 {
-    "name": "json",
-    "id": 123,
-    "value": 3.141592,
-    "enabled": true,
-    "meta": null,
-    "number1": 1.000000001,
-    "number2": 2.000000020,
-    "number3": 3.000000300,
-    "number4": 4.000004000,
-    "number5": 5.000050000,
-    "number6": 6.000600000,
-    "number7": 7.007000000,
-    "number8": 8.080000000,
-    "number9": 9.900000000,
-    "number10": 10.00000000
+  "name": "json",
+  "id": 123,
+  "value": 3.141592,
+  "enabled": true,
+  "meta": null,
+  "number1": 1.000000001,
+  "number2": 2.000000020,
+  "number3": 3.000000300,
+  "number4": 4.000004000,
+  "number5": 5.000050000,
+  "number6": 6.000600000,
+  "number7": 7.007000000,
+  "number8": 8.080000000,
+  "number9": 9.900000000,
+  "number10": 10.00000000
 }
 )json";
 
 const char basicDiffOptionsJsonAlmostEqual[] = R"json(
 {
-    "name": "json",
-    "id": 123,
-    "value": 3.141592,
-    "enabled": true,
-    "meta": null,
-    "number1": 1.0000000011,
-    "number2": 2.0000000220,
-    "number3": 3.0000003300,
-    "number4": 4.0000044000,
-    "number5": 5.0000550000,
-    "number6": 6.0006600000,
-    "number7": 7.0077000000,
-    "number8": 8.0880000000,
-    "number9": 9.9900000000,
-    "number10": 11.00000000
+  "name": "json",
+  "id": 123,
+  "value": 3.141592,
+  "enabled": true,
+  "meta": null,
+  "number1": 1.0000000011,
+  "number2": 2.0000000220,
+  "number3": 3.0000003300,
+  "number4": 4.0000044000,
+  "number5": 5.0000550000,
+  "number6": 6.0006600000,
+  "number7": 7.0077000000,
+  "number8": 8.0880000000,
+  "number9": 9.9900000000,
+  "number10": 11.00000000
 }
 )json";
 
@@ -424,79 +424,79 @@ TEST_CASE("diff_check_nested_objects_diff", "[json_struct][diff]")
 
 const char basicArrayJson[] = R"json(
 [
-    {
-        "name": "item0",
-        "id": 0,
-        "value": 1.0,
-        "enabled": true,
-        "meta": null
-    },
-    {
-        "name": "item1",
-        "id": 1,
-        "value": 2.0,
-        "enabled": false,
-        "meta": "I am meta"
-    },
-    {
-        "name": "item2",
-        "id": 2,
-        "value": 4.2e1,
-        "enabled": true,
-        "meta": 42
-    }
+  {
+    "name": "item0",
+    "id": 0,
+    "value": 1.0,
+    "enabled": true,
+    "meta": null
+  },
+  {
+    "name": "item1",
+    "id": 1,
+    "value": 2.0,
+    "enabled": false,
+    "meta": "I am meta"
+  },
+  {
+    "name": "item2",
+    "id": 2,
+    "value": 4.2e1,
+    "enabled": true,
+    "meta": 42
+  }
 ]
 )json";
 
 const char basicArrayJsonEqual[] = R"json(
 [
-    {
-        "meta": null,
-        "value": 1.0000,
-        "id": 0,
-        "name": "item0",
-        "enabled": true
-    },
-    {
-        "value": 2.0,
-        "id": 1,
-        "meta": "I am meta",
-        "name": "item1",
-        "enabled": false
-    },
-    {
-        "name": "item2",
-        "id": 2,
-        "value": 4.2e1,
-        "enabled": true,
-        "meta": 42
-    }
+  {
+    "meta": null,
+    "value": 1.0000,
+    "id": 0,
+    "name": "item0",
+    "enabled": true
+  },
+  {
+    "value": 2.0,
+    "id": 1,
+    "meta": "I am meta",
+    "name": "item1",
+    "enabled": false
+  },
+  {
+    "name": "item2",
+    "id": 2,
+    "value": 4.2e1,
+    "enabled": true,
+    "meta": 42
+  }
 ]
 )json";
 
 const char basicArrayJsonDifferent[] = R"json(
 [
-    {
-        "value": 1e1,
-        "meta": "meta10",
-        "name": "item10",
-        "enabled": false,
-        "id": 10
-    },
-    {
-        "meta": "I am more meta",
-        "value": 20.0,
-        "name": "item2",
-        "id": 20,
-        "enabled": false
-    },
-    {
-        "name": "item20",
-        "id": 24,
-        "value": 2.4e1,
-        "enabled": true,
-        "meta": 24
-    }
+  {
+    "value": 1e1,
+    "meta": "meta10",
+    "name": "item10",
+    "enabled": false,
+    "id": 10
+  },
+  {
+    "meta": "I am more meta",
+    "value": 20.0,
+    "name": "item2",
+    "id": 20,
+    "enabled": false
+  },
+  {
+    "name": "item20",
+    "id": 24,
+    "value": 2.4e1,
+    "enabled": true,
+    "meta": 24
+  }
 ]
 )json";
 
@@ -546,115 +546,115 @@ TEST_CASE("diff_check_basic_array_diff_ordered", "[json_struct][diff]")
 
 const char largeObjectWithAllDataTypes[] = R"json(
 {
-    "member1": 0,
-    "member2": 2147483647,
-    "member3": -2147483648,
-    "member4": 0e10,
-    "member5": 2e5,
-    "member6": 2E5,
-    "member7": 2e+5,
-    "member8": 2E+5,
-    "member9": 2e-5,
-    "member10": 2E-5,
-    "member11": -3e4,
-    "member12": -3E4,
-    "member13": -3e+4,
-    "member14": -3E+4,
-    "member15": -3e-4,
-    "member16": -3E-4,
-    "member17": 0.0,
-    "member18": 123456.789,
-    "member19": -123456.789,
-    "member20": 2.345e5,
-    "member21": 2.345E5,
-    "member22": -3.456e5,
-    "member23": -3.456E5,
-    "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
-    "member26": "",
-    "member27": {},
-    "member28": [],
-    "member29": [[],{},[],{}],
-    "member30": [[[[[[[[[[null,true,false,1,2,3,"a","b","c"]]]]]]]]]],
-    "member31": null,
-    "member32": true,
-    "member33": false
+  "member1": 0,
+  "member2": 2147483647,
+  "member3": -2147483648,
+  "member4": 0e10,
+  "member5": 2e5,
+  "member6": 2E5,
+  "member7": 2e+5,
+  "member8": 2E+5,
+  "member9": 2e-5,
+  "member10": 2E-5,
+  "member11": -3e4,
+  "member12": -3E4,
+  "member13": -3e+4,
+  "member14": -3E+4,
+  "member15": -3e-4,
+  "member16": -3E-4,
+  "member17": 0.0,
+  "member18": 123456.789,
+  "member19": -123456.789,
+  "member20": 2.345e5,
+  "member21": 2.345E5,
+  "member22": -3.456e5,
+  "member23": -3.456E5,
+  "member24": "iamastring",
+  "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
+  "member26": "",
+  "member27": {},
+  "member28": [],
+  "member29": [[],{},[],{}],
+  "member30": [[[[[[[[[[null,true,false,1,2,3,"a","b","c"]]]]]]]]]],
+  "member31": null,
+  "member32": true,
+  "member33": false
 }
 )json";
 
 const char largeObjectWithAllDataTypesEqual[] = R"json(
 {
-    "member1": 0,
-    "member2": 2147483647,
-    "member3": -2147483648,
-    "member4": 0e10,
-    "member5": 2e5,
-    "member6": 2E5,
-    "member7": 2e+5,
-    "member8": 2E+5,
-    "member9": 2e-5,
-    "member10": 2E-5,
-    "member11": -3e4,
-    "member12": -3E4,
-    "member13": -3e+4,
-    "member14": -3E+4,
-    "member15": -3e-4,
-    "member16": -3E-4,
-    "member17": 0.0,
-    "member18": 123456.789,
-    "member19": -123456.789,
-    "member20": 2.345e5,
-    "member21": 2.345E5,
-    "member22": -3.456e5,
-    "member23": -3.456E5,
-    "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
-    "member26": "",
-    "member27": {},
-    "member28": [],
-    "member29": [[],{},[],{}],
-    "member30": [[[[[[[[[[null,true,false,1,2,3,"a","b","c"]]]]]]]]]],
-    "member31": null,
-    "member32": true,
-    "member33": false
+  "member1": 0,
+  "member2": 2147483647,
+  "member3": -2147483648,
+  "member4": 0e10,
+  "member5": 2e5,
+  "member6": 2E5,
+  "member7": 2e+5,
+  "member8": 2E+5,
+  "member9": 2e-5,
+  "member10": 2E-5,
+  "member11": -3e4,
+  "member12": -3E4,
+  "member13": -3e+4,
+  "member14": -3E+4,
+  "member15": -3e-4,
+  "member16": -3E-4,
+  "member17": 0.0,
+  "member18": 123456.789,
+  "member19": -123456.789,
+  "member20": 2.345e5,
+  "member21": 2.345E5,
+  "member22": -3.456e5,
+  "member23": -3.456E5,
+  "member24": "iamastring",
+  "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
+  "member26": "",
+  "member27": {},
+  "member28": [],
+  "member29": [[],{},[],{}],
+  "member30": [[[[[[[[[[null,true,false,1,2,3,"a","b","c"]]]]]]]]]],
+  "member31": null,
+  "member32": true,
+  "member33": false
 }
 )json";
 
 const char largeObjectWithAllDataTypesDifferent[] = R"json(
 {
-    "member1": 0,
-    "member2": 2147483647,
-    "member3": -2147483648,
-    "member4": 0e10,
-    "member5": 0.2e6,
-    "member6": 0.2E6,
-    "member7": 2e+5,
-    "member8": 2E+5,
-    "member9": 2e-5,
-    "member10": 2E-5,
-    "member11": -0.03e6,
-    "member12": -0.003E7,
-    "member13": -3e+4,
-    "member14": -3E+4,
-    "member15": -3e-4,
-    "member16": -3E-4,
-    "member17": 0.0,
-    "member18": 123456.789,
-    "member19": -123456.789,
-    "member20": 2.345e5,
-    "member21": 2.345E5,
-    "member22": -3.456e5,
-    "member23": -3.456E5,
-    "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
-    "member26": "",
-    "member27": {},
-    "member28": [],
-    "member29": [[],{},[],{}],
-    "member30": [[[[[[[[[[true,false,1,2,3,"a","b","c",1,"hey"]]]]]]]]]],
-    "member31": null,
-    "member32": true,
-    "member33": false
+  "member1": 0,
+  "member2": 2147483647,
+  "member3": -2147483648,
+  "member4": 0e10,
+  "member5": 0.2e6,
+  "member6": 0.2E6,
+  "member7": 2e+5,
+  "member8": 2E+5,
+  "member9": 2e-5,
+  "member10": 2E-5,
+  "member11": -0.03e6,
+  "member12": -0.003E7,
+  "member13": -3e+4,
+  "member14": -3E+4,
+  "member15": -3e-4,
+  "member16": -3E-4,
+  "member17": 0.0,
+  "member18": 123456.789,
+  "member19": -123456.789,
+  "member20": 2.345e5,
+  "member21": 2.345E5,
+  "member22": -3.456e5,
+  "member23": -3.456E5,
+  "member24": "iamastring",
+  "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>������������������",
+  "member26": "",
+  "member27": {},
+  "member28": [],
+  "member29": [[],{},[],{}],
+  "member30": [[[[[[[[[[true,false,1,2,3,"a","b","c",1,"hey"]]]]]]]]]],
+  "member31": null,
+  "member32": true,
+  "member33": false
 }
 )json";
 
@@ -707,53 +707,53 @@ TEST_CASE("diff_check_large_object_with_all_data_types", "[json_struct][diff]")
 
 const char jsonWithSubObjects[] = R"json(
 {
-    "member1": 1,
-    "member2": 2,
-    "member3": 3,
-    "sub_object": {
-        "submember1": "11",
-        "submember2": "22",
-        "subsub_object": {
-            "subsubmember1": 1.1e1,
-            "subsubmember2": 2.2e1,
-            "subsubsub_array": [
-                true,
-                false,
-                "A",
-                "B",
-                "C",
-            ],
-            "subsubsub_object": {
-                "id": 333,
-                "name": "Sub SubSub",
-                "info": null,
-                "array_with_missing_members": [
-                    4,
-                    5,
-                    6,
-                    7,
-                    {
-                        "i": "am",
-                        "a": "missing_object"
-                    }
-                ]
-            }
-        },
-        "subsub_array": [
-            "string",
-            123,
-            true,
-            false,
-            null,
-            {
-                "subsub_array_object": {
-                    "item1": 1,
-                    "itemA": "A",
-                    "itemNull": null
-                }
-            }
+  "member1": 1,
+  "member2": 2,
+  "member3": 3,
+  "sub_object": {
+    "submember1": "11",
+    "submember2": "22",
+    "subsub_object": {
+      "subsubmember1": 1.1e1,
+      "subsubmember2": 2.2e1,
+      "subsubsub_array": [
+        true,
+        false,
+        "A",
+        "B",
+        "C",
+      ],
+      "subsubsub_object": {
+        "id": 333,
+        "name": "Sub SubSub",
+        "info": null,
+        "array_with_missing_members": [
+          4,
+          5,
+          6,
+          7,
+          {
+            "i": "am",
+            "a": "missing_object"
+          }
         ]
-    }
+      }
+    },
+    "subsub_array": [
+      "string",
+      123,
+      true,
+      false,
+      null,
+      {
+        "subsub_array_object": {
+          "item1": 1,
+          "itemA": "A",
+          "itemNull": null
+        }
+      }
+    ]
+  }
 }
 )json";
 

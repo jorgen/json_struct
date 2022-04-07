@@ -29,7 +29,7 @@ namespace
 const char json_data[] = R"json(
 {
   "vec": [
-  1,2,3,4
+    1,2,3,4
   ]
 }
 )json";
