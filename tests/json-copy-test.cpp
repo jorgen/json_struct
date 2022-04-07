@@ -27,17 +27,17 @@
 namespace
 {
 const char json[] = "{\n"
-                    "    \"property_one\" : 432432,\n"
-                    "    \"execute_one\" : {\n"
-                    "        \"number\" : 45,\n"
-                    "        \"valid\" : \"false\"\n"
-                    "    },"
-                    "    \"execute_two\" : 99,\n"
-                    "    \"execute_three\" : [\n"
-                    "        4,\n"
-                    "        6,\n"
-                    "        8\n"
-                    "    ]\n"
+                    "  \"property_one\": 432432,\n"
+                    "  \"execute_one\": {\n"
+                    "    \"number\": 45,\n"
+                    "    \"valid\": \"false\"\n"
+                    "  },"
+                    "  \"execute_two\": 99,\n"
+                    "  \"execute_three\": [\n"
+                    "    4,\n"
+                    "    6,\n"
+                    "    8\n"
+                    "  ]\n"
                     "}\n";
 
 struct SubObject
@@ -145,12 +145,12 @@ TEST_CASE("copy_test_js_partial_3", "[tokenizer]")
 
 const char json2[] =
   R"json({
-	"test" : true,
-	"more" : {
-		"sub_object_prop1" : true,
-		"sub_object_prop2" : 456
-	},
-	"int_value" : 65
+  "test": true,
+  "more": {
+    "sub_object_prop1": true,
+    "sub_object_prop2": 456
+  },
+  "int_value": 65
 })json";
 
 struct Child
@@ -197,14 +197,14 @@ TEST_CASE("copy_test_js_copy_parsed", "[tokenizer]")
 
 const char json_token_copy[] = R"json(
 {
-    "number" : 45,
-    "valid" : false,
-    "child" : {
-        "some_more": "world",
-        "another_int" : 495
-    },
-    "more_data" : "string data",
-    "super_data" : "hello"
+  "number": 45,
+  "valid": false,
+  "child": {
+    "some_more": "world",
+    "another_int": 495
+  },
+  "more_data": "string data",
+  "super_data": "hello"
 }
 )json";
 

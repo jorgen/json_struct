@@ -28,10 +28,10 @@ namespace
 {
 
 const char json_data1[] = R"json(
-    {
-        "TheAlias" : 55,
-        "SomeOtherValue" : 44
-    }
+{
+  "TheAlias": 55,
+  "SomeOtherValue": 44
+}
 )json";
 
 struct FirstAlias
@@ -71,10 +71,10 @@ TEST_CASE("struct_aliases_checkPlainShadow", "[json_struct][aliases]")
 }
 
 const char json_data2[] = R"json(
-    {
-        "SomeOtherValue" : 44,
-        "TheAlias" : 55
-    }
+{
+  "SomeOtherValue": 44,
+  "TheAlias": 55
+}
 )json";
 
 struct TheSuper
@@ -108,13 +108,13 @@ TEST_CASE("struct_aliases_checkSuperShadow", "[json_struct][aliases]")
 
 const char recursive_alias[] = R"json(
 {
-    "first" : "first",
-    "second" : {
-        "one" : "one",
-        "two" : "two",
-        "three" : "three"
-    },
-    "third": "third"
+  "first": "first",
+  "second": {
+    "one": "one",
+    "two": "two",
+    "three": "three"
+  },
+  "third": "third"
 }
 )json";
 

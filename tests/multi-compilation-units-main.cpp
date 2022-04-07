@@ -27,17 +27,17 @@
 namespace multiple_compilation_units
 {
 const char json_data1[] = R"json(
-	{
-		"num1": 1.234,
-		"num2": 5.678
-	}
+  {
+    "num1": 1.234,
+    "num2": 5.678
+  }
 )json";
 
 const char json_data2[] = R"json(
-	{
-		"num1": 4.321,
-		"num2": 8.765
-	}
+  {
+    "num1": 4.321,
+    "num2": 8.765
+  }
 )json";
 
 extern std::string serialize_json1(float num1, double num2);

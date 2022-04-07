@@ -81,16 +81,16 @@ struct Cover
   // template<typename ELEMLIST_T>
   // struct FOO
   //{
-  //	static decltype(std::make_tuple(SubElem<int>("int"))) &the_sublist()
-  //	{
-  //		static auto list = std::make_tuple(SubElem<int>("int")); return list;
-  //	}
-  //	static decltype(std::make_tuple(makeElem("bar", &ELEMLIST_T::bar), makeElem("foo", &ELEMLIST_T::foo)))
+  //  static decltype(std::make_tuple(SubElem<int>("int"))) &the_sublist()
+  //  {
+  //    static auto list = std::make_tuple(SubElem<int>("int")); return list;
+  //  }
+  //  static decltype(std::make_tuple(makeElem("bar", &ELEMLIST_T::bar), makeElem("foo", &ELEMLIST_T::foo)))
   //&getList()
-  //	{
-  //		static auto list = std::make_tuple(std::make_tuple(makeElem("bar", &ELEMLIST_T::bar), makeElem("foo",
+  //  {
+  //    static auto list = std::make_tuple(std::make_tuple(makeElem("bar", &ELEMLIST_T::bar), makeElem("foo",
   //&ELEMLIST_T::foo))); return list;
-  //	}
+  //  }
   //};
   LIST(SUB_LIST(SUB_ELEM(int), SUB_ELEM(int), SUB_ELEM(int), SUB_ELEM(short)), ELEM(bar), ELEM(foo));
   FOO<Cover> f;

@@ -29,20 +29,20 @@ namespace
 
 const char json_data1[] = R"json(
 {
-    "StringNode" : "Some test data",
-    "NumberNode" : 4676.4,
-    "BooleanTrue" : true,
-    "BooleanFalse" : false,
-    "TestStruct" : {
-        "SubString" : "Some other string",
-        "SubNumber" : 500,
-        "Array" : [
-            5,
-            6,
-            3,
-            6
-        ]
-	}
+  "StringNode": "Some test data",
+  "NumberNode": 4676.4,
+  "BooleanTrue": true,
+  "BooleanFalse": false,
+  "TestStruct": {
+    "SubString": "Some other string",
+    "SubNumber": 500,
+    "Array": [
+      5,
+      6,
+      3,
+      6
+    ]
+  }
 }
 )json";
 struct TestStructT

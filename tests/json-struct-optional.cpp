@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Jorgen Lind
+ * Copyright ï¿½ 2020 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -31,10 +31,10 @@
 namespace
 {
 static const char json[] = R"json({
-                                       "Field1" : 4,
-                                       "Field2" : true,
-                                       "Field3" : "432"
-                                       })json";
+  "Field1": 4,
+  "Field2": true,
+  "Field3": "432"
+})json";
 
 struct field_struct
 {

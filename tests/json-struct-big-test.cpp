@@ -357,12 +357,12 @@ struct BigStructShort
 
 const char json[] = R"json(
 {
-	"A" : 4,
-	"B" : 5,
-	"Ea" : 8,
-	"Ic" : 1234,
-	"Id" : 932,
-	"Me" : 1000
+  "A": 4,
+  "B": 5,
+  "Ea": 8,
+  "Ic": 1234,
+  "Id": 932,
+  "Me": 1000
 }
 )json";
 

@@ -31,28 +31,28 @@ namespace
 
 const char json_data[] = R"json(
 {
-	"f_pos_zero":  0,
-	"f_neg_zero": -0,
-	"d_pos_zero":  0,
-	"d_neg_zero": -0
+  "f_pos_zero":  0,
+  "f_neg_zero": -0,
+  "d_pos_zero":  0,
+  "d_neg_zero": -0
 }
 )json";
 
 const char json_data_decimal[] = R"json(
 {
-	"f_pos_zero":  0.0,
-	"f_neg_zero": -0.0,
-	"d_pos_zero":  0.0,
-	"d_neg_zero": -0.0
+  "f_pos_zero":  0.0,
+  "f_neg_zero": -0.0,
+  "d_pos_zero":  0.0,
+  "d_neg_zero": -0.0
 }
 )json";
 
 const char json_data_scientific[] = R"json(
 {
-	"f_pos_zero":  0e0,
-	"f_neg_zero": -0e0,
-	"d_pos_zero":  0e0,
-	"d_neg_zero": -0e0
+  "f_pos_zero":  0e0,
+  "f_neg_zero": -0e0,
+  "d_pos_zero":  0e0,
+  "d_neg_zero": -0e0
 }
 )json";
 

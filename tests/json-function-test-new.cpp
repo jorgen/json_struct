@@ -28,16 +28,16 @@ namespace
 {
 
 const char json[] = "{"
-                    "    \"execute_one\" : {\n"
-                    "        \"number\" : 45,\n"
-                    "        \"valid\" : \"false\"\n"
-                    "    },"
-                    "    \"execute_two\" : 99,\n"
-                    "    \"execute_three\" : [\n"
-                    "        4,\n"
-                    "        6,\n"
-                    "        8\n"
-                    "    ]\n"
+                    "  \"execute_one\": {\n"
+                    "    \"number\": 45,\n"
+                    "    \"valid\": \"false\"\n"
+                    "  },"
+                    "  \"execute_two\": 99,\n"
+                    "  \"execute_three\": [\n"
+                    "    4,\n"
+                    "    6,\n"
+                    "    8\n"
+                    "  ]\n"
                     "}\n";
 
 struct SimpleData
@@ -173,12 +173,12 @@ TEST_CASE("virtualFunctionTestShortNotation", "[function]")
 
 const char json_two[] = R"json(
 {
-    "execute_one" : {
-        "number" : 45,
-        "valid" : false,
-        "more_data" : "string data",
-        "super_data" : "hello"
-    }
+  "execute_one": {
+    "number": 45,
+    "valid": false,
+    "more_data": "string data",
+    "super_data": "hello"
+  }
 }
 )json";
 
@@ -231,12 +231,12 @@ TEST_CASE("super_class_param_testShortNotation", "[function]")
 
 const char call_void_json[] = R"json(
 {
-    "call_void" : [],
-    "call_void_context" : null,
-    "call_int_void" : {},
-    "call_int_void_context" : {},
-    "call_void_with_value" : 4,
-	"call_void_error" : {}
+    "call_void": [],
+    "call_void_context": null,
+    "call_int_void": {},
+    "call_int_void_context": {},
+    "call_void_with_value": 4,
+  "call_void_error": {}
 }
 )json";
 
@@ -304,10 +304,10 @@ TEST_CASE("call_void_testShortNotation", "[function]")
 
 const char call_error_check_json[] = R"json(
 {
-    "call_void" : [],
-    "call_with_int" : 5,
-    "call_another_void" : {},
-    "call_with_object" : { "x" : 9 }
+    "call_void": [],
+    "call_with_int": 5,
+    "call_another_void": {},
+    "call_with_object": { "x": 9 }
 }
 )json";
 
@@ -367,8 +367,8 @@ TEST_CASE("call_error_checkShortNotation", "[function]")
 
 const char json_alias[] = R"json(
 {
-    "execute_one" : 4,
-    "execute_two" : 5,
+    "execute_one": 4,
+    "execute_two": 5,
     "execute_three": 6
 }
 )json";
@@ -418,9 +418,9 @@ TEST_CASE("call_json_aliasShortNotation", "[function]")
 
 const char json_wrong_arg_type[] = R"json(
 {
-    "execute_one" : { "some_function_object": 1 },
-    "execute_two" : { "more_members": false },
-    "execute_three": { "last_member" : 44.50 } 
+    "execute_one": { "some_function_object": 1 },
+    "execute_two": { "more_members": false },
+    "execute_three": { "last_member": 44.50 }
 }
 )json";
 

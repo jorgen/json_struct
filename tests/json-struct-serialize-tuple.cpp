@@ -13,13 +13,13 @@ struct Foo
 };
 
 const char json[] = R"json(
-    {
-        "data" : [
-            9876,
-            "Tuples are cool",
-            3.1415
-        ]	
-    }
+{
+  "data": [
+    9876,
+    "Tuples are cool",
+    3.1415
+  ]
+}
 )json";
 
 TEST_CASE("serialize_tuple", "[json_struct][tuple]")

@@ -6,53 +6,53 @@ namespace
 
 const char ingredientJsonError[] = R"json(
 {
-    "id": 666,
-    "name": "Polser",
-    "base_unit": "g",
-    "description": "Fooofooofooo",
-    "shop_group_id": 4,
-    "energy_per_unit", 3.14,
-    "vegetarian": true,
-    "vegan": false,
-    "grams_per_deciliter": 0.43,
-    "grams_per_dimensionless": 0.0,
-    "unit": "dl",
-    "quantity": 2.0,
-    "group_name": "topping",
-    "recipe_id": 5,
-    "recipe_name": "gryta",
-    "use_ingredient_groups": true,
-    "portions": 2,
-    "portions_unit": "porsjon",
-    "shop_group_name": "frukt und grunt",
-    "allergens": [
-      "fisk",
-      "gluten"
-    ]
+  "id": 666,
+  "name": "Polser",
+  "base_unit": "g",
+  "description": "Fooofooofooo",
+  "shop_group_id": 4,
+  "energy_per_unit", 3.14,
+  "vegetarian": true,
+  "vegan": false,
+  "grams_per_deciliter": 0.43,
+  "grams_per_dimensionless": 0.0,
+  "unit": "dl",
+  "quantity": 2.0,
+  "group_name": "topping",
+  "recipe_id": 5,
+  "recipe_name": "gryta",
+  "use_ingredient_groups": true,
+  "portions": 2,
+  "portions_unit": "porsjon",
+  "shop_group_name": "frukt und grunt",
+  "allergens": [
+    "fisk",
+    "gluten"
+  ]
 }
 )json";
 
 const char shoppingListNameSkipJson[] = R"json(
 {
-    "ingredients": [
-        {
-            "id": 123,
-            "recipe_name_id_list" : {
-                "items" : []
-            },
-            "allergens" : [],
-            "name" : "babyleafblader"
-        }
-    ],
-    "userDefinedItems" : [
-    ],
-    "notes" : "",
-    "fileVersion" : 2,
-    "sortOrder" : 2,
-    "name" : "Handleliste",
-    "dateExplicit" : "9. november 2017",
-    "timestamp" : "2017-11-09 21-52-05",
-    "isAutomaticSave" : false
+  "ingredients": [
+    {
+      "id": 123,
+      "recipe_name_id_list": {
+        "items": []
+      },
+      "allergens": [],
+      "name": "babyleafblader"
+    }
+  ],
+  "userDefinedItems": [
+  ],
+  "notes": "",
+  "fileVersion": 2,
+  "sortOrder": 2,
+  "name": "Handleliste",
+  "dateExplicit": "9. november 2017",
+  "timestamp": "2017-11-09 21-52-05",
+  "isAutomaticSave": false
 }
 )json";
 

@@ -77,7 +77,7 @@ TEST_CASE("check_fail_json_with_ascii_data", "[tokenizer]")
 
 const char json_with_new_line_seperator[] = "{"
                                             "   \"foo\": \"bar\"\n"
-                                            "   \"color\" : \"red\""
+                                            "   \"color\": \"red\""
                                             "}";
 
 TEST_CASE("check_fail_json_with_new_line_seperator", "[tokenizer]")
@@ -101,7 +101,7 @@ TEST_CASE("check_fail_json_with_new_line_seperator", "[tokenizer]")
 
 const char json_with_comma_before_obj_end[] = "{"
                                               "   \"foo\": \"bar\","
-                                              "   \"color\" : \"red\","
+                                              "   \"color\": \"red\","
                                               "}";
 
 TEST_CASE("check_fail_json_with_comma_before_obj_end", "[tokenizer]")
@@ -129,7 +129,7 @@ TEST_CASE("check_fail_json_with_comma_before_obj_end", "[tokenizer]")
 
 const char json_with_illegal_chars[] = "{"
                                        "   \"foo\": \"bar\","
-                                       " ,  \"color\" : \"red\","
+                                       " ,  \"color\": \"red\","
                                        "}";
 
 TEST_CASE("check_fail_json_with_illegal_chars", "[tokenizer]")
@@ -152,7 +152,7 @@ TEST_CASE("check_fail_json_with_illegal_chars", "[tokenizer]")
 }
 
 const char json_with_illegal_comma_in_array[] = "{"
-                                                "    \"foo\": [,4,5,6]"
+                                                "  \"foo\": [,4,5,6]"
                                                 "}";
 TEST_CASE("check_fail_json_with_empty_array", "[tokenizer]")
 {

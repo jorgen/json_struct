@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Jorgen Lind
+ * Copyright ï¿½ 2021 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -28,11 +28,11 @@ namespace
 {
 
 static const char json_data1[] = R"json({
-  "One" : "j\u00f8rgen",
-  "Two" : "j\u00f8rgen\u00f8",
-  "Three" : "j\u00f8rgen\u012",
-  "Four" : "j\u00f8rgen\u01",
-  "Five" : "j\u00f8rgen\u0"
+  "One": "j\u00f8rgen",
+  "Two": "j\u00f8rgen\u00f8",
+  "Three": "j\u00f8rgen\u012",
+  "Four": "j\u00f8rgen\u01",
+  "Five": "j\u00f8rgen\u0"
 })json";
 
 struct Struct

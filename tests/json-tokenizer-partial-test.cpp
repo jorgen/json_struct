@@ -29,7 +29,7 @@ namespace json_tokenizer_partial_test
 {
 const char json_data_partial_1_1[] = "{";
 const char json_data_partial_1_2[] = "   \"foo\": \"bar\","
-                                     "   \"color\" : \"red\"\n"
+                                     "   \"color\": \"red\"\n"
                                      "}";
 
 TEST_CASE("check_json_partial_1", "[tokenizer]")
@@ -64,7 +64,7 @@ TEST_CASE("check_json_partial_1", "[tokenizer]")
 
 const char json_data_partial_2_1[] = "{  \"fo";
 const char json_data_partial_2_2[] = "o\": \"bar\","
-                                     "   \"color\" : \"red\"\n"
+                                     "   \"color\": \"red\"\n"
                                      "}";
 
 TEST_CASE("check_json_partial_2", "[tokenizer]")
@@ -100,7 +100,7 @@ TEST_CASE("check_json_partial_2", "[tokenizer]")
 
 const char json_data_partial_3_1[] = "{  \"foo\"";
 const char json_data_partial_3_2[] = ": \"bar\","
-                                     "   \"color\" : \"red\"\n"
+                                     "   \"color\": \"red\"\n"
                                      "}";
 
 TEST_CASE("check_json_partial_3", "[tokenizer]")
@@ -135,7 +135,7 @@ TEST_CASE("check_json_partial_3", "[tokenizer]")
 
 const char json_data_partial_4_1[] = "{  \"foo\": \"bar\"";
 const char json_data_partial_4_2[] = ","
-                                     "   \"color\" : \"red\"\n"
+                                     "   \"color\": \"red\"\n"
                                      "}";
 
 TEST_CASE("check_json_partial_4", "[tokenizer]")
@@ -273,11 +273,11 @@ TEST_CASE("check_json_partial_7", "[tokenizer]")
 }
 
 const char json_data_partial_8_1[] = "{  \"foo\": \"bar\","
-                                     "   \"array\": ["
-                                     "       \"one\","
-                                     "       \"two\",";
-const char json_data_partial_8_2[] = "       \"three\""
-                                     "    ]"
+                                     "  \"array\": ["
+                                     "    \"one\","
+                                     "    \"two\",";
+const char json_data_partial_8_2[] = "    \"three\""
+                                     "  ]"
                                      "}";
 
 TEST_CASE("check_json_partial_8", "[tokenizer]")

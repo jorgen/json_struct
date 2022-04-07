@@ -6,20 +6,20 @@ namespace
 {
 
 const char json[] = R"json({
-    "func1" : {
-        "arg1" : "hello",
-        "arg2" : "world"
+  "func1": {
+    "arg1": "hello",
+    "arg2": "world"
+  },
+  "func2": {
+    "one": [ 1, 2, 3, 4 ],
+    "two": true
+  },
+  "func3": {
+    "first":  {
+      "advanced": true
     },
-    "func2" : {
-        "one" : [ 1, 2, 3, 4 ],
-        "two" : true
-    },
-    "func3" : {
-        "first" :  {
-            "advanced" : true
-        },
-        "second" : false
-    }
+    "second": false
+  }
 })json";
 
 struct Func1Arg

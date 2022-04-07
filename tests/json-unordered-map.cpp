@@ -5,10 +5,10 @@ namespace
 {
 
 const char json[] = R"json({
-    "unordered_map" : {
-        "foo" : [ 1.0 ],
-        "bar" : [ 2.0 ]
-    }
+  "unordered_map": {
+    "foo": [ 1.0 ],
+    "bar": [ 2.0 ]
+  }
 })json";
 
 struct JsonData

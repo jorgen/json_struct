@@ -4,14 +4,14 @@
 
 const char json_data[] = R"json(
 {
-    "execute_one" : {
-        "prop1" : 4,
-        "prop2" : "Property 2"
-    },
-    "execute_two" : {
-        "first_prop" : "some string",
-        "second_prop" : 8
-    }
+  "execute_one": {
+    "prop1": 4,
+    "prop2": "Property 2"
+  },
+  "execute_two": {
+    "first_prop": "some string",
+    "second_prop": 8
+  }
 }
 )json";
 

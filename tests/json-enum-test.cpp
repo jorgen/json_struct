@@ -35,7 +35,7 @@ JS_ENUM_DECLARE_STRING_PARSER(Colors);
 namespace
 {
 const char json[] = R"json({
-    "colors" : "Green"
+  "colors": "Green"
 })json";
 
 TEST_CASE("check_enum_parser", "[json_struct][enum]")
@@ -51,7 +51,7 @@ TEST_CASE("check_enum_parser", "[json_struct][enum]")
 }
 
 const char json_number[] = R"json({
-    "colors" : 2
+  "colors": 2
 })json";
 
 TEST_CASE("check_enum_number_parser", "[json_struct][enum]")
@@ -92,7 +92,7 @@ JS_ENUM_NAMESPACE_DECLARE_STRING_PARSER(FOO::BAR, Cars);
 namespace
 {
 const char car_json[] = R"json({
-    "car" : "BMW"
+  "car": "BMW"
 })json";
 
 TEST_CASE("check_enum_parser_namespace", "[json_struct][enum]")

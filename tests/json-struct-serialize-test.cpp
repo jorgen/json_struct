@@ -40,9 +40,9 @@ struct Simple
 };
 
 const char expected1[] = R"json({
-    "A" : "TestString",
-    "b" : false,
-    "some_longer_name" : 456
+  "A": "TestString",
+  "b": false,
+  "some_longer_name": 456
 })json";
 
 TEST_CASE("test_serialize_simple", "[json_struct][serialize]")
@@ -98,13 +98,13 @@ struct Subclass : public B, public F, public G
 };
 
 const char expected2[] = R"json({
-    "h" : 7,
-    "g" : "OutputString",
-    "f" : 6,
-    "e" : 5.5,
-    "d" : 5,
-    "b" : 4.5,
-    "a" : 4
+  "h": 7,
+  "g": "OutputString",
+  "f": 6,
+  "e": 5.5,
+  "d": 5,
+  "b": 4.5,
+  "a": 4
 })json";
 
 TEST_CASE("test_serialize_deep", "[json_struct][serialize]")
@@ -129,7 +129,7 @@ struct WithEscapedData
 };
 
 const char escaped_expected[] = R"json({
-    "data" : "escaped \n \" \t string"
+  "data": "escaped \n \" \t string"
 })json";
 
 TEST_CASE("serialze_test_escaped_data", "[json_struct][serialize]")
@@ -178,9 +178,9 @@ TEST_CASE("test_serialize_big", "[json_struct][serialize]")
 }
 
 const char empty_string_json[] = R"json({
-    "key1" : "value1",
-    "key2" : "",
-    "key3" : "value3"
+  "key1": "value1",
+  "key2": "",
+  "key3": "value3"
 })json";
 
 struct empty_string_struct

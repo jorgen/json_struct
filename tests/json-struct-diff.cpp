@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Øystein Myrmo
+ * Copyright ï¿½ 2018 ï¿½ystein Myrmo
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -28,31 +28,31 @@ namespace
 {
 const char basicBaseJson[] = R"json(
 {
-    "name": "json",
-    "id": 123,
-    "value": 3.141592,
-    "enabled": true,
-    "meta": null
+  "name": "json",
+  "id": 123,
+  "value": 3.141592,
+  "enabled": true,
+  "meta": null
 }
 )json";
 
 const char basicDiffJsonEqual[] = R"json(
 {
-    "enabled": true,
-    "name": "json",
-    "value": 3.1415921,
-    "meta": null,
-    "id": 123
+  "enabled": true,
+  "name": "json",
+  "value": 3.1415921,
+  "meta": null,
+  "id": 123
 }
 )json";
 
 const char basicDiffJsonDifferent[] = R"json(
 {
-    "enabled": false,
-    "name": "xml",
-    "value": 2.71828,
-    "meta": "This is so meta",
-    "id": 321
+  "enabled": false,
+  "name": "xml",
+  "value": 2.71828,
+  "meta": "This is so meta",
+  "id": 321
 }
 )json";
 
@@ -319,52 +319,52 @@ TEST_CASE("diff_check_diff_options", "[json_struct][diff]")
 
 const char basicBaseJsonWithSubObject[] = R"json(
 {
-    "name": "json",
-    "id": 123,
-    "value": 3.141592,
-    "enabled": true,
-    "meta": null,
-    "sub_object": {
-        "name": "json_sub",
-        "id": 1234,
-        "value": 1.570796,
-        "enabled": false,
-        "meta": null
-    }
+  "name": "json",
+  "id": 123,
+  "value": 3.141592,
+  "enabled": true,
+  "meta": null,
+  "sub_object": {
+    "name": "json_sub",
+    "id": 1234,
+    "value": 1.570796,
+    "enabled": false,
+    "meta": null
+  }
 }
 )json";
 
 const char basicDiffJsonEqualWithSubObject[] = R"json(
 {
-    "enabled": true,
-    "name": "json",
-    "sub_object": {
-        "meta": null,
-        "value": 1.570796,
-        "id": 1234,
-        "enabled": false,
-        "name": "json_sub"
-    },
-    "value": 3.1415921,
+  "enabled": true,
+  "name": "json",
+  "sub_object": {
     "meta": null,
-    "id": 123
+    "value": 1.570796,
+    "id": 1234,
+    "enabled": false,
+    "name": "json_sub"
+  },
+  "value": 3.1415921,
+  "meta": null,
+  "id": 123
 }
 )json";
 
 const char basicDiffJsonDifferentWithSubObject[] = R"json(
 {
-    "enabled": false,
-    "name": "xml",
-    "sub_object": {
-        "meta": 067,
-        "value": 1.35914,
-        "id": 1234,
-        "enabled": true,
-        "name": "xml_sub"
-    },
-    "value": 2.71828,
-    "meta": "This is so meta",
-    "id": 321
+  "enabled": false,
+  "name": "xml",
+  "sub_object": {
+    "meta": 067,
+    "value": 1.35914,
+    "id": 1234,
+    "enabled": true,
+    "name": "xml_sub"
+  },
+  "value": 2.71828,
+  "meta": "This is so meta",
+  "id": 321
 }
 )json";
 
@@ -570,7 +570,7 @@ const char largeObjectWithAllDataTypes[] = R"json(
     "member22": -3.456e5,
     "member23": -3.456E5,
     "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>æøåÆØÅàáâäèéêëòóôô",
+    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
     "member26": "",
     "member27": {},
     "member28": [],
@@ -608,7 +608,7 @@ const char largeObjectWithAllDataTypesEqual[] = R"json(
     "member22": -3.456e5,
     "member23": -3.456E5,
     "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>æøåÆØÅàáâäèéêëòóôô",
+    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
     "member26": "",
     "member27": {},
     "member28": [],
@@ -646,7 +646,7 @@ const char largeObjectWithAllDataTypesDifferent[] = R"json(
     "member22": -3.456e5,
     "member23": -3.456E5,
     "member24": "iamastring",
-    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>æøåÆØÅàáâäèéêëòóôô",
+    "member25": "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \" \\\/\b\f\n\r\t!@#$%^&*()_+-=[]{};:',.<>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
     "member26": "",
     "member27": {},
     "member28": [],

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Jorgen Lind
+ * Copyright ï¿½ 2021 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -27,12 +27,12 @@ namespace
 {
 static const char json[] = R"json(
 {
-  "Field1" : 4,
-  "Field2" : true,
-  "ComplexFields" : { "Hello" : 4, "World" : 2 },
-  "Field3" : "432",
-  "ComplexFields2" : { "SimpleMember" : true, "ArrayOfValues" : [4, 3, 5, 7], "SubObject" : { "SimpleMember" : false, "MoreValues": [ "Hello", "World"] } },
-  "Field4" : 567
+  "Field1": 4,
+  "Field2": true,
+  "ComplexFields": { "Hello": 4, "World": 2 },
+  "Field3": "432",
+  "ComplexFields2": { "SimpleMember": true, "ArrayOfValues": [4, 3, 5, 7], "SubObject": { "SimpleMember": false, "MoreValues": [ "Hello", "World"] } },
+  "Field4": 567
 }
 )json";
 

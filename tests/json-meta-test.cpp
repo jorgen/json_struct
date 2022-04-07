@@ -7,7 +7,7 @@ const char first_child_with_data_json[] = R"json([ [], [],  [
 [],
 [],
 {
-	"this has a member" : true
+  "this has a member": true
 },
 []
 ], [], []])json";
@@ -26,7 +26,7 @@ const char first_child_with_data_json_last[] = R"json([ [], [], [],  [
 [],
 [],
 {
-	"this has a member" : true
+  "this has a member": true
 },
 []
 ]])json";

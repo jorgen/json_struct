@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Jorgen Lind
+ * Copyright ï¿½ 2021 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -28,8 +28,8 @@ namespace
 {
 const char json_data[] = R"json(
 {
-  "vec" : [
-    1,2,3,4
+  "vec": [
+  1,2,3,4
   ]
 }
 )json";

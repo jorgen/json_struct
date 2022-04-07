@@ -29,8 +29,8 @@ struct SmallStructNullableChecked
 
 const char json[] = R"json(
 {
-	"a" : 1,
-	"b" : null
+  "a": 1,
+  "b": null
 }
 )json";
 

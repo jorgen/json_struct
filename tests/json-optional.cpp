@@ -29,9 +29,9 @@ struct SmallStructStd
 
 const char json[] = R"json(
 {
-	"a" : 1,
-  "b" : 2.2,
-  "c" : "hello world"
+  "a": 1,
+  "b": 2.2,
+  "c": "hello world"
 }
 )json";
 

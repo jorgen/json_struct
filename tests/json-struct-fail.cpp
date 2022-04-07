@@ -29,7 +29,7 @@ namespace
 
 const char json_data[] = R"json(
 {
-    "some_data" : 44.50
+  "some_data": 44.50
 }
 )json";
 

@@ -28,8 +28,8 @@ namespace json_struct_verify
 {
 
 static const char json_data1[] = "{\n"
-                                 "\"StringNode\" : \"Some test data\",\n"
-                                 "\"NumberNode\" : 4676\n"
+                                 "\"StringNode\": \"Some test data\",\n"
+                                 "\"NumberNode\": 4676\n"
                                  "}\n";
 
 struct ContainsStringNode
@@ -57,8 +57,8 @@ TEST_CASE("testSimpleOneMember", "[json_struct][json_struct_verify]")
 }
 
 static const char json_data2[] = "{\n"
-                                 "\"ThisWillBeUnassigned\" : \"Some data\",\n"
-                                 "\"StringNode\" : \"Some test data\",\n"
+                                 "\"ThisWillBeUnassigned\": \"Some data\",\n"
+                                 "\"StringNode\": \"Some test data\",\n"
                                  "}\n";
 
 TEST_CASE("testSimpleVerifyMissingMemberInStruct", "[json_struct][json_struct_verify]")
@@ -73,8 +73,8 @@ TEST_CASE("testSimpleVerifyMissingMemberInStruct", "[json_struct][json_struct_ve
 }
 
 static const char json_data3[] = "{\n"
-                                 "\"Field1\" : 1\n,"
-                                 "\"Field3\" : 3\n"
+                                 "\"Field1\": 1\n,"
+                                 "\"Field3\": 3\n"
                                  "}\n";
 
 struct RequiredMemberStruct
@@ -98,9 +98,9 @@ TEST_CASE("testSimpleVerifyMissingRequiredMemberInStruct", "[json_struct][json_s
 }
 
 static const char json_data4[] = "{\n"
-                                 "\"StringNode\" : \"Some test data\",\n"
-                                 "\"NumberNode\" : 342,\n"
-                                 "\"SubNode\" : \"This should be in subclass\"\n"
+                                 "\"StringNode\": \"Some test data\",\n"
+                                 "\"NumberNode\": 342,\n"
+                                 "\"SubNode\": \"This should be in subclass\"\n"
                                  "}\n";
 
 struct SuperClass
@@ -148,7 +148,7 @@ struct RegularClass : public SuperClass2
 };
 
 static const char json_data5[] = "{\n"
-                                 "\"SuperSuper\" : 5,\n"
+                                 "\"SuperSuper\": 5,\n"
                                  "\"Regular\": 42\n"
                                  "}\n";
 
@@ -163,9 +163,9 @@ TEST_CASE("testClassHIrarchyVerifyMissingDataForStruct", "[json_struct][json_str
 }
 
 static const char json_data6[] = "{\n"
-                                 "\"SuperSuper\" : 5,\n"
-                                 "\"Super\" : \"This is super\",\n"
-                                 "\"SuperSuperSuper\" : 42,\n"
+                                 "\"SuperSuper\": 5,\n"
+                                 "\"Super\": \"This is super\",\n"
+                                 "\"SuperSuperSuper\": 42,\n"
                                  "\"Regular\": 42\n"
                                  "}\n";
 
@@ -221,12 +221,12 @@ struct Subclass : public B, public F, public G
 };
 
 static const char json_data7[] = "{\n"
-                                 "\"a\" : 4,\n"
-                                 "\"b\" : 5.5,\n"
-                                 "\"d\" : 127,\n"
-                                 "\"f\" : 345,\n"
-                                 "\"g\" : \"a\",\n"
-                                 "\"h\" : 987\n"
+                                 "\"a\": 4,\n"
+                                 "\"b\": 5.5,\n"
+                                 "\"d\": 127,\n"
+                                 "\"f\": 345,\n"
+                                 "\"g\": \"a\",\n"
+                                 "\"h\": 987\n"
                                  "}\n";
 
 TEST_CASE("testClassHirarchyVerifyMissingDataForStructDeep", "[json_struct][json_strut_verify]")

@@ -29,29 +29,29 @@ namespace json_struct_short_notation
 {
 
 static const char json_data1[] = "{\n"
-                                 "\"StringNode\" : \"Some test data\",\n"
-                                 "\"NumberNode\" : 4676.4,\n"
-                                 "\"BooleanTrue\" : true,\n"
-                                 "\"BooleanFalse\" : false,\n"
-                                 "\"TestStruct\" : {\n"
-                                 "\"SubString\" : \"Some other string\",\n"
-                                 "\"SubNumber\" : 500,\n"
-                                 "\"Array\" : [\n"
+                                 "\"StringNode\": \"Some test data\",\n"
+                                 "\"NumberNode\": 4676.4,\n"
+                                 "\"BooleanTrue\": true,\n"
+                                 "\"BooleanFalse\": false,\n"
+                                 "\"TestStruct\": {\n"
+                                 "\"SubString\": \"Some other string\",\n"
+                                 "\"SubNumber\": 500,\n"
+                                 "\"Array\": [\n"
                                  "5,\n"
                                  "6,\n"
                                  "3,\n"
                                  "6\n"
                                  "],\n"
-                                 "\"optional_float\" : 300,\n"
-                                 "\"this_property_does_not_exist\" : true\n"
+                                 "\"optional_float\": 300,\n"
+                                 "\"this_property_does_not_exist\": true\n"
                                  "},\n"
-                                 "\"OptionalButWithData\" : [ 17.5 ],\n"
-                                 "\"subStruct2\" : {\n"
-                                 "\"Field1\" : 4,\n"
-                                 "\"Field2\" : true\n"
+                                 "\"OptionalButWithData\": [ 17.5 ],\n"
+                                 "\"subStruct2\": {\n"
+                                 "\"Field1\": 4,\n"
+                                 "\"Field2\": true\n"
                                  "},\n"
-                                 "\"Skipped_sub_object\" : {\n"
-                                 "\"Field3\" : 465\n"
+                                 "\"Skipped_sub_object\": {\n"
+                                 "\"Field3\": 465\n"
                                  "}\n"
                                  "}\n";
 
@@ -67,9 +67,9 @@ struct SubStruct
 };
 
 static const char sub_struct3_data[] = "{\n"
-                                       "\"Field1\" : 4,\n"
-                                       "\"Field2\" : true,\n"
-                                       "\"Field3\" : \"432\"\n"
+                                       "\"Field1\": 4,\n"
+                                       "\"Field2\": true,\n"
+                                       "\"Field3\": \"432\"\n"
                                        "}\n";
 
 struct SubStruct2
@@ -133,11 +133,11 @@ TEST_CASE("short_check_json_tree_nodes", "json_struct")
 }
 
 static const char json_data2[] = "{\n"
-                                 "\"some_int\" : 4,\n"
-                                 "\"sub_object\" : {\n"
-                                 "\"more_data\" : \"some text\",\n"
-                                 "\"a_float\" : 1.2,\n"
-                                 "\"boolean_member\" : false\n"
+                                 "\"some_int\": 4,\n"
+                                 "\"sub_object\": {\n"
+                                 "\"more_data\": \"some text\",\n"
+                                 "\"a_float\": 1.2,\n"
+                                 "\"boolean_member\": false\n"
                                  "}\n"
                                  "}\n";
 
@@ -177,9 +177,9 @@ TEST_CASE("short_check_json_tree_subclass", "json_struct")
 }
 
 static const char json_data3[] = "{\n"
-                                 "\"SuperSuper\" : 5,\n"
+                                 "\"SuperSuper\": 5,\n"
                                  "\"Regular\": 42,\n"
-                                 "\"Super\" : \"This is in the Superclass\"\n"
+                                 "\"Super\": \"This is in the Superclass\"\n"
                                  "}\n";
 
 struct SuperSuperClass
@@ -212,10 +212,10 @@ TEST_CASE("short_check_json_tree_deep_tree", "json_struct")
 
 static const char missing_object_def[] = R"json(
 {
-    "first" : true,
-    "second" : "hello world",
-    "third" : {},
-    "fourth" : 33
+  "first": true,
+  "second": "hello world",
+    "third": {},
+    "fourth": 33
 }
 )json";
 
@@ -240,13 +240,13 @@ TEST_CASE("short_check_json_missing_object", "json_struct")
 
 static const char error_in_sub[] = R"json(
 {
-    "first" : {
-        "ffirst" : 4,
-        "fsecond" : {},
-        "not_assigned" : 555
-    },
-    "second" : "hello world",
-    "third" : 33
+  "first": {
+    "ffirst": 4,
+    "fsecond": {},
+    "not_assigned": 555
+  },
+  "second": "hello world",
+  "third": 33
 }
 )json";
 
@@ -313,13 +313,13 @@ struct JsonObjectOrArrayObjectRefTester
 };
 
 static const char jsonObjectTest[] = R"json({
-    "field" : "hello",
-    "obj" : {
-        "some_sub_filed" : 2,
-        "some_sub_array" : [ "a", "b", "c"],
-        "some_sub_object" : { "field" : "not hello" }
-    },
-    "number" : 43
+  "field": "hello",
+  "obj": {
+    "some_sub_filed": 2,
+    "some_sub_array": [ "a", "b", "c"],
+    "some_sub_object": { "field": "not hello" }
+  },
+  "number": 43
 })json";
 
 TEST_CASE("short_check_json_object", "json_struct")
@@ -415,15 +415,15 @@ struct JsonObjectOrArrayArrayRefTester
 };
 
 static const char jsonArrayTest[] = R"json({
-    "string" : "foo",
-    "array" : [
-        ["a","b","c"],
-        {
-            "sub object" : 44.50
-        },
-        12345
-    ],
-    "number" : 43
+  "string": "foo",
+  "array": [
+    ["a","b","c"],
+    {
+      "sub object": 44.50
+    },
+    12345
+  ],
+  "number": 43
 })json";
 
 TEST_CASE("short_check_json_array", "json_struct")
@@ -490,10 +490,10 @@ struct JsonMapTest
 };
 
 static const char jsonMapTest[] = R"json({
-    "map" : {
-		"hello" : { "some object" : 3 },
-		"bye" : [4]
-	}
+  "map": {
+    "hello": { "some object": 3 },
+    "bye": [4]
+  }
 })json";
 
 TEST_CASE("short_check_json_map", "json_struct")
@@ -527,20 +527,20 @@ struct TypeHandlerTypes
 };
 
 static const char jsonTypeHandlerTypes[] = R"json({
-    "doubleN" : 44.50,
-    "floatN" : 33.40,
-    "intN" : -345,
-    "uintN" : 567,
-    "int64N" : -1234,
-    "uint64N" : 987,
-    "int16N" : -23,
-    "uint16N" : 45,
-    "uint8N" : 255,
-    "int8N" : -127,
-    "charN": 123,
-    "scharN": -123,
-    "ucharN": 234,
-    "boolN" : true
+  "doubleN": 44.50,
+  "floatN": 33.40,
+  "intN": -345,
+  "uintN": 567,
+  "int64N": -1234,
+  "uint64N": 987,
+  "int16N": -23,
+  "uint16N": 45,
+  "uint8N": 255,
+  "int8N": -127,
+  "charN": 123,
+  "scharN": -123,
+  "ucharN": 234,
+  "boolN": true
 })json";
 
 TEST_CASE("short_check_json_type_handler_types", "json_struct")
@@ -570,18 +570,18 @@ struct TypeHandlerIntTypes
 };
 
 static const char jsonTypeHandlerIntTypes[] = R"json({
-    "intN" : -345,
-    "uintN" : 567,
-    "int64N" : -1234,
-    "uint64N" : 987,
-    "int16N" : -23,
-    "uint16N" : 45,
-    "uint8N" : 255,
-    "int8N" : -127,
-    "charN": 123,
-    "scharN": -123,
-    "ucharN": 234,
-    "boolN" : true
+  "intN": -345,
+  "uintN": 567,
+  "int64N": -1234,
+  "uint64N": 987,
+  "int16N": -23,
+  "uint16N": 45,
+  "uint8N": 255,
+  "int8N": -127,
+  "charN": 123,
+  "scharN": -123,
+  "ucharN": 234,
+  "boolN": true
 })json";
 
 TEST_CASE("short_check_json_type_handler_integer_types", "json_struct")
@@ -634,7 +634,7 @@ struct ArrayTest
 };
 
 static const char arrayTestJson[] = R"json({
-    "data" : [4, 5, 6]
+  "data": [4, 5, 6]
 })json";
 
 TEST_CASE("short_check_json_array_test", "json_struct")
@@ -680,61 +680,61 @@ struct SkipTestSubClass : public SkipTestBase
 
 static const char jsonSkipTest[] = R"json(
 {
-    "skip_test_list_01": [
-        {
-            "id" : 1,
-            "container" : {
-                "items" : []
-            },
-            "skip_me" : [],
-            "name": "list01"
-        },
-        {
-            "name": "list02",
-            "skip_me" : [],
-            "container" : {
-                "items" : [1.1, 2.2, 3.3]
-            },
-            "id" : 2
-        },
-        {
-            "skip_me" : [],
-            "name": "list03",
-            "id" : 3,
-            "container" : {
-                "items" : [0, 1, 2]
-            }
-        }
-    ],
-    "skip_test_list_02": [
-        {
-            "name": "list01",
-            "id" : 1,
-            "container" : {
-                "items" : []
-            },
-            "skip_me" : []
-        },
-        {
-            "name": "list02",
-            "skip_me" : [],
-            "container" : {
-                "items" : []
-            },
-            "id" : 2
-        },
-        {
-            "container" : {
-                "items" : []
-            },
-            "skip_me" : [],
-            "name": "list03",
-            "id" : 3
-        }
-    ],
-    "value" : 3.14,
-    "name" : "base_name",
-    "id" : 444
+  "skip_test_list_01": [
+    {
+      "id": 1,
+      "container": {
+        "items": []
+      },
+      "skip_me": [],
+      "name": "list01"
+    },
+    {
+      "name": "list02",
+      "skip_me": [],
+      "container": {
+        "items": [1.1, 2.2, 3.3]
+      },
+      "id": 2
+    },
+    {
+      "skip_me": [],
+      "name": "list03",
+      "id": 3,
+      "container": {
+        "items": [0, 1, 2]
+      }
+    }
+  ],
+  "skip_test_list_02": [
+    {
+      "name": "list01",
+      "id": 1,
+      "container": {
+        "items": []
+      },
+      "skip_me": []
+    },
+    {
+      "name": "list02",
+      "skip_me": [],
+      "container": {
+        "items": []
+      },
+      "id": 2
+    },
+    {
+      "container": {
+        "items": []
+      },
+      "skip_me": [],
+      "name": "list03",
+      "id": 3
+    }
+  ],
+  "value": 3.14,
+  "name": "base_name",
+  "id": 444
 }
 )json";
 
@@ -779,12 +779,12 @@ TEST_CASE("short_check_multi_top_level_json", "json_struct")
 }
 
 static const char escapedJson[] = R"json({
-    "some_text" : "more\"_te\\xt",
-    "sub_object" : {
-        "more_data" : "so\\me \"text",
-        "a_float" : 1.2,
-        "boolean_member" : false
-    }
+  "some_text": "more\"_te\\xt",
+  "sub_object": {
+    "more_data": "so\\me \"text",
+    "a_float": 1.2,
+    "boolean_member": false
+  }
 })json";
 
 template <typename T>
@@ -830,8 +830,8 @@ namespace json_struct_short_notation
 {
 
 static const char outside_json[] = R"json({
-    "data" : "this is some text",
-    "a" : 44.5
+  "data": "this is some text",
+  "a": 44.5
 })json";
 
 TEST_CASE("short_check_json_meta_outside", "json_struct")
@@ -853,8 +853,8 @@ struct FloatingPointAtTheEnd
 };
 
 static const char short_floating_at_the_end[] = R"json({
-    "enabled": true,
-    "value": 0.5
+  "enabled": true,
+  "value": 0.5
 })json";
 
 TEST_CASE("short_check_short_floating_point", "json_struct")
@@ -873,8 +873,8 @@ struct InvalidFloating
 };
 
 static const char invalid_floating[] = R"json({
-    "enabled": true,
-    "value": 0.5.e..-.E.5
+  "enabled": true,
+  "value": 0.5.e..-.E.5
 })json";
 
 TEST_CASE("short_check_invalid_floating_point", "json_struct")
@@ -886,13 +886,13 @@ TEST_CASE("short_check_invalid_floating_point", "json_struct")
 }
 
 static const char moreEscapedJsonAtEnd[] = R"json({
-    "some_text" : "more\n",
-    "some_other" : "tests\"",
-    "pure_escape" : "\n",
-    "strange_escape" : "foo\s",
-    "pure_strange_escape" : "\k",
-    "empty_string" : ""
-    }
+  "some_text": "more\n",
+  "some_other": "tests\"",
+  "pure_escape": "\n",
+  "strange_escape": "foo\s",
+  "pure_strange_escape": "\k",
+  "empty_string": ""
+  }
 })json";
 
 struct MoreEscapedStruct
