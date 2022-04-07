@@ -2,6 +2,8 @@
 ### Project
 cmake_minimum_required(VERSION 3.14)
 project(json_struct VERSION "0.0.1" LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD_REQUIRED FALSE)
+set(CMAKE_CXX_STANDARD 20)
 
 ### Misc
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)

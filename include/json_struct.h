@@ -800,6 +800,14 @@ private:
   std::string m_postfix;
 };
 
+#if __cplusplus >= 201403L
+template<SerializerOptions::Style S = SerializerOptions::Style::Pretty>
+const static SerializerOptions DEFAULT_OPS = []() { // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp)
+  SerializerOptions ops(S);
+  return ops;
+}();
+#endif
+
 class SerializerBuffer
 {
 public:
