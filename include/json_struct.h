@@ -180,15 +180,20 @@
 namespace JS
 {
 // Overrides for used type_traits
+template< class T > struct js_remove_cv                   { typedef T type; };
+template< class T > struct js_remove_cv<const T>          { typedef T type; };
+template< class T > struct js_remove_cv<volatile T>       { typedef T type; };
+template< class T > struct js_remove_cv<const volatile T> { typedef T type; };
+
 template<typename T>
-  struct is_signed
+  struct js_is_signed
   : public std::is_signed<T>::type { };
 template<typename T>
-  struct is_unsigned
+  struct js_is_unsigned
   : public std::is_unsigned<T>::type { };
 
 template<typename T>
-  struct is_integral
+  struct js_is_integral
   : public std::is_integral<T>::type { };
 
 // Compiler support check
@@ -200,18 +205,75 @@ typedef unsigned __int128 uint128_t;
 
 // Add in our type_traits
 #ifdef JS_INT_128
+// TODO: cleanup. only doing this verbose method due to Intel DPCPP...
 template<>
-  struct is_signed<std::remove_cv<int128_t>>
+  struct js_is_signed<int128_t>
   : public std::true_type { };
 template<>
-  struct is_unsigned<std::remove_cv<uint128_t>>
+  struct js_is_unsigned<uint128_t>
   : public std::true_type { };
 
 template<>
-  struct is_integral<std::remove_cv<int128_t>>
+  struct js_is_integral<int128_t>
   : public std::true_type { };
 template<>
-  struct is_integral<std::remove_cv<uint128_t>>
+  struct js_is_integral<uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<const int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<const uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<const int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<const uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<volatile int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<volatile uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<volatile int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<volatile uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<const volatile int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<const volatile uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<const volatile int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<const volatile uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<js_remove_cv<int128_t>>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<js_remove_cv<uint128_t>>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<js_remove_cv<int128_t>>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<js_remove_cv<uint128_t>>
   : public std::true_type { };
 #endif
 }
@@ -5178,13 +5240,13 @@ struct CharsInDigit<T, -1, CURRENT>
 };
 
 template <typename T>
-T iabs(typename std::enable_if<is_unsigned<T>::value, T>::type a)
+T iabs(typename std::enable_if<js_is_unsigned<T>::value, T>::type a)
 {
   return a;
 }
 
 template <typename T>
-T iabs(typename std::enable_if<is_signed<T>::value, T>::type a)
+T iabs(typename std::enable_if<js_is_signed<T>::value, T>::type a)
 {
   // this
   if (a > 0)
@@ -6640,11 +6702,11 @@ namespace integer
 template <typename T>
 inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_truncated = nullptr)
 {
-  static_assert(is_integral<T>::value, "Tryint to convert non int to string");
+  static_assert(js_is_integral<T>::value, "Tryint to convert non int to string");
   int chars_to_write = ft::count_chars(integer);
   char *target_buffer = buffer;
   bool negative = false;
-  if (is_signed<T>::value)
+  if (js_is_signed<T>::value)
   {
     if (integer < 0)
     {
@@ -6671,7 +6733,7 @@ inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_trunc
   for (int i = 0; i < chars_to_write; i++)
   {
     int remainder = integer % 10;
-    if (is_signed<T>::value)
+    if (js_is_signed<T>::value)
     {
       if (negative)
         remainder = -remainder;
@@ -6684,14 +6746,14 @@ inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_trunc
 }
 
 template <typename T>
-inline typename std::enable_if<is_signed<T>::value, T>::type make_integer_return_value(uint64_t significand,
+inline typename std::enable_if<js_is_signed<T>::value, T>::type make_integer_return_value(uint64_t significand,
                                                                                             bool negative)
 {
   return negative ? -T(significand) : T(significand);
 }
 
 template <typename T>
-inline typename std::enable_if<is_unsigned<T>::value, T>::type make_integer_return_value(uint64_t significand,
+inline typename std::enable_if<js_is_unsigned<T>::value, T>::type make_integer_return_value(uint64_t significand,
                                                                                               bool)
 {
   return T(significand);
