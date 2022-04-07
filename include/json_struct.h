@@ -1849,14 +1849,14 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
 
 inline SerializerOptions::SerializerOptions(Style style)
 
-  : m_shift_size(2)
+  : m_shift_size(style == Compact ? 0 : 2)
   , m_depth(0)
   , m_style(style)
   , m_convert_ascii_to_string(true)
   , m_token_delimiter(",")
+  , m_value_delimiter(style == Pretty ? ": " : ":")
+  , m_postfix(style == Pretty ? "\n" : "")
 {
-  m_value_delimiter = m_style == Pretty ? std::string(": ") : std::string(":");
-  m_postfix = m_style == Pretty ? std::string("\n") : std::string("");
 }
 
 inline int SerializerOptions::shiftSize() const
