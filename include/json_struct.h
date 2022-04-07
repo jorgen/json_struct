@@ -168,17 +168,53 @@
  Use "#define NOMINMAX 1" before including Windows.h
 #endif
 
-#ifndef INT128_T // TODO: make better
-#define INT128_T
-typedef __int128 int128_t;
-typedef unsigned __int128 uint128_t;
-#endif
-
 #define JS_UNUSED(x) (void)(x)
 
 #ifndef JS
 #define JS JS
 #endif
+
+/*!
+ *  \brief int128 support
+ */
+namespace JS
+{
+// Overrides for used type_traits
+template<typename T>
+  struct is_signed
+  : public std::is_signed<T>::type { };
+template<typename T>
+  struct is_unsigned
+  : public std::is_unsigned<T>::type { };
+
+template<typename T>
+  struct is_integral
+  : public std::is_integral<T>::type { };
+
+// Compiler support check
+#ifdef __SIZEOF_INT128__
+#define JS_INT_128
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+#endif
+
+// Add in our type_traits
+#ifdef JS_INT_128
+template<>
+  struct is_signed<std::remove_cv<int128_t>>
+  : public std::true_type { };
+template<>
+  struct is_unsigned<std::remove_cv<uint128_t>>
+  : public std::true_type { };
+
+template<>
+  struct is_integral<std::remove_cv<int128_t>>
+  : public std::true_type { };
+template<>
+  struct is_integral<std::remove_cv<uint128_t>>
+  : public std::true_type { };
+#endif
+}
 
 namespace JS
 {
@@ -5142,13 +5178,13 @@ struct CharsInDigit<T, -1, CURRENT>
 };
 
 template <typename T>
-T iabs(typename std::enable_if<std::is_unsigned<T>::value, T>::type a)
+T iabs(typename std::enable_if<is_unsigned<T>::value, T>::type a)
 {
   return a;
 }
 
 template <typename T>
-T iabs(typename std::enable_if<std::is_signed<T>::value, T>::type a)
+T iabs(typename std::enable_if<is_signed<T>::value, T>::type a)
 {
   // this
   if (a > 0)
@@ -6604,11 +6640,11 @@ namespace integer
 template <typename T>
 inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_truncated = nullptr)
 {
-  static_assert(std::is_integral<T>::value, "Tryint to convert non int to string");
+  static_assert(is_integral<T>::value, "Tryint to convert non int to string");
   int chars_to_write = ft::count_chars(integer);
   char *target_buffer = buffer;
   bool negative = false;
-  if (std::is_signed<T>::value)
+  if (is_signed<T>::value)
   {
     if (integer < 0)
     {
@@ -6635,7 +6671,7 @@ inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_trunc
   for (int i = 0; i < chars_to_write; i++)
   {
     int remainder = integer % 10;
-    if (std::is_signed<T>::value)
+    if (is_signed<T>::value)
     {
       if (negative)
         remainder = -remainder;
@@ -6648,36 +6684,18 @@ inline int to_buffer(T integer, char *buffer, int buffer_size, int *digits_trunc
 }
 
 template <typename T>
-inline typename std::enable_if<std::is_signed<T>::value, T>::type make_integer_return_value(uint64_t significand,
+inline typename std::enable_if<is_signed<T>::value, T>::type make_integer_return_value(uint64_t significand,
                                                                                             bool negative)
 {
   return negative ? -T(significand) : T(significand);
 }
 
 template <typename T>
-inline typename std::enable_if<std::is_unsigned<T>::value, T>::type make_integer_return_value(uint64_t significand,
+inline typename std::enable_if<is_unsigned<T>::value, T>::type make_integer_return_value(uint64_t significand,
                                                                                               bool)
 {
   return T(significand);
 }
-
-#ifdef INT128_T // TODO: make better
-template <typename T>
-inline typename std::enable_if<std::is_same<T, int128_t>::value, T>::type make_integer_return_value(uint64_t significand,
-                                                                                                    bool negative)
-{
-  return negative ? -T(significand) : T(significand);
-}
-#endif
-
-#ifdef INT128_T // TODO: make better
-template <typename T>
-inline typename std::enable_if<std::is_same<T, uint128_t>::value, T>::type make_integer_return_value(uint64_t significand,
-                                                                                                     bool)
-{
-  return T(significand);
-}
-#endif
 
 template <typename T>
 inline T convert_to_integer(const parsed_string &parsed)
@@ -6897,7 +6915,7 @@ public:
 };
 
 
-#ifdef INT128_T // TODO: make better
+#ifdef JS_INT_128
 /// \private
 template <>
 struct TypeHandler<int128_t>
@@ -6930,9 +6948,7 @@ public:
     serializer.write(token);
   }
 };
-#endif
 
-#ifdef INT128_T // TODO: make better
 /// \private
 template <>
 struct TypeHandler<uint128_t>
