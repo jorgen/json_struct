@@ -61,7 +61,7 @@ matrix:
       platform: x86
 
 build_script:
-- cmake -H. -B./build -DBUILD_BENCHMARK=OFF -GNinja
+- cmake -H. -B./build -DJSON_STRUCT_OPT_BUILD_BENCHMARKS=OFF -GNinja
 - ninja -C build
 
 test_script:
