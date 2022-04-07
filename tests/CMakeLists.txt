@@ -76,6 +76,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(zero-value-test-fp-fast PRIVATE "-ffast-math")
     message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM")
+    target_compile_options(zero-value-test-fp-fast PRIVATE "-ffast-math")
+    message("Enable fast floating point math for zero-value-test-fp-fast: -ffast-math")
 endif()
 
 
