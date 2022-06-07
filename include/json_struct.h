@@ -2720,6 +2720,7 @@ struct ParseContext
   bool allow_missing_members = true;
   bool allow_unnasigned_required_members = true;
   bool track_member_assignement_state = true;
+  void* user_data = nullptr;
 };
 
 /*! \def JS_MEMBER
@@ -3757,7 +3758,7 @@ struct JsonStructFunctionContainerDummy
   }
 
 #define JS_FUNC_OBJ(...) JS_FUNCTION_CONTAINER_INTERNAL_IMPL(JS::makeTuple(), JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)))
-#define JS_FUNCTION_CONTAINER(...) JS_FUNCTION_CONTAINER_INTERNAL_IMPL(JS::makeTuple(), JS::makeTuple(__VA_ARGS__)) 
+#define JS_FUNCTION_CONTAINER(...) JS_FUNCTION_CONTAINER_INTERNAL_IMPL(JS::makeTuple(), JS::makeTuple(__VA_ARGS__))
 #define JS_FUNC_OBJ_SUPER(super_list, ...)  JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)))
 #define JS_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...) JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, JS::makeTuple(__VA_ARGS__))
 
