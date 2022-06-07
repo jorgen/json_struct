@@ -2662,16 +2662,6 @@ struct ParseContext
   template <typename T>
   Error parseTo(T &to_type);
 
-  void* getUserData() const
-  {
-    return user_data;
-  }
-
-  void setUserData(void* data)
-  {
-    user_data = data;
-  }
-
   Error nextToken()
   {
     error = tokenizer.nextToken(token);
