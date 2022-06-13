@@ -6921,10 +6921,10 @@ struct TypeHandler<float>
 };
 
 /// \private
-template <>
-struct TypeHandler<int>
+template<typename T>
+struct TypeHandlerIntType
 {
-  static inline Error to(int &to_type, ParseContext &context)
+  static inline Error to(T &to_type, ParseContext &context)
   {
     const char *pointer;
     auto parse_error =
@@ -6934,9 +6934,9 @@ struct TypeHandler<int>
     return Error::NoError;
   }
 
-  static inline void from(const int &from_type, Token &token, Serializer &serializer)
+  static inline void from(const T &from_type, Token &token, Serializer &serializer)
   {
-    char buf[11];
+    char buf[8];
     int digits_truncated;
     int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
     if (size <= 0 || digits_truncated)
@@ -6954,333 +6954,61 @@ struct TypeHandler<int>
 
 /// \private
 template <>
-struct TypeHandler<uint32_t>
-{
-public:
-  static inline Error to(uint32_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
+struct TypeHandler<short int> : TypeHandlerIntType<short int> {};
 
-  static void from(const uint32_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[12];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
+/// \private
+template <>
+struct TypeHandler<unsigned short int> : TypeHandlerIntType<unsigned short int> {};
 
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
+/// \private
+template <>
+struct TypeHandler<int> : TypeHandlerIntType<int> {};
 
+/// \private
+template <>
+struct TypeHandler<unsigned int> : TypeHandlerIntType<unsigned int> {};
+
+/// \private
+template <>
+struct TypeHandler<long int> : TypeHandlerIntType<long int> {};
+
+/// \private
+template <>
+struct TypeHandler<unsigned long int> : TypeHandlerIntType<unsigned long int> {};
+
+/// \private
+template <>
+struct TypeHandler<long long int> : TypeHandlerIntType<long long int> {};
+
+/// \private
+template <>
+struct TypeHandler<unsigned long long int> : TypeHandlerIntType<unsigned long long int> {};
 
 #ifdef JS_INT_128
 /// \private
 template <>
-struct TypeHandler<int128_t>
-{
-public:
-  static inline Error to(int128_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static void from(const int128_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[44];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
+struct TypeHandler<int128_t> : TypeHandlerIntType<int128_t> {};
 
 /// \private
 template <>
-struct TypeHandler<uint128_t>
-{
-public:
-  static inline Error to(uint128_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const uint128_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[44];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
+struct TypeHandler<uint128_t> : TypeHandlerIntType<uint128_t> {};
 #endif
 
-/// \private
 template <>
-struct TypeHandler<int64_t>
+struct TypeHandler<uint8_t> : TypeHandlerIntType<uint8_t>
 {
-public:
-  static inline Error to(int64_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static void from(const int64_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[24];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
-
-/// \private
-template <>
-struct TypeHandler<uint64_t>
-{
-public:
-  static inline Error to(uint64_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const uint64_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[24];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
-
-/// \private
-template <>
-struct TypeHandler<int16_t>
-{
-public:
-  static inline Error to(int16_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const int16_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[8];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
-
-/// \private
-template <>
-struct TypeHandler<uint16_t>
-{
-public:
-  static inline Error to(uint16_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const uint16_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[8];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
 };
 
 template <>
-struct TypeHandler<uint8_t>
+struct TypeHandler<int8_t> : TypeHandlerIntType<int8_t>
 {
-public:
-  static inline Error to(uint8_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const uint8_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[8];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
 };
 
 template <>
-struct TypeHandler<int8_t>
+struct TypeHandler<char> : TypeHandlerIntType<char>
 {
-public:
-  static inline Error to(int8_t &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const int8_t &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[8];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
 };
 
-template <>
-struct TypeHandler<char>
-{
-public:
-  static inline Error to(char &to_type, ParseContext &context)
-  {
-    const char *pointer;
-    auto parse_error =
-      Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
-      return Error::FailedToParseInt;
-    return Error::NoError;
-  }
-
-  static inline void from(const char &from_type, Token &token, Serializer &serializer)
-  {
-    char buf[8];
-    int digits_truncated;
-    int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
-    if (size <= 0 || digits_truncated)
-    {
-      fprintf(stderr, "error serializing int token\n");
-      return;
-    }
-
-    token.value_type = Type::Number;
-    token.value.data = buf;
-    token.value.size = size_t(size);
-    serializer.write(token);
-  }
-};
 
 /// \private
 template <typename T>
