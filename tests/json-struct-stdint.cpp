@@ -63,4 +63,18 @@ TEST_CASE("js_std_int", "json_struct")
   REQUIRE(to_struct.int8 == 4);
   REQUIRE(to_struct.uint32 == 9);
 }
+
+TEST_CASE("large_number_roundtrip", "json_struct")
+{
+  stdinttypes to_serialize;
+  to_serialize.uint64 = 0;
+  to_serialize.uint64 = ~to_serialize.uint64;
+  std::string serialized = JS::serializeStruct(to_serialize);
+  JS::ParseContext context(serialized);
+
+  stdinttypes to_struct;
+  context.parseTo(to_struct);
+
+  REQUIRE(to_serialize.uint64 == to_struct.uint64);
+}
 }

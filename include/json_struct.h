@@ -6936,7 +6936,7 @@ struct TypeHandlerIntType
 
   static inline void from(const T &from_type, Token &token, Serializer &serializer)
   {
-    char buf[8];
+    char buf[40];
     int digits_truncated;
     int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
     if (size <= 0 || digits_truncated)
