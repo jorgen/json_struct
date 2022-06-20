@@ -3326,21 +3326,34 @@ static bool skipArrayOrObject(ParseContext &context)
     return false;
   }
 
-  while ((context.error == Error::NoError && context.token.value_type != end_type))
+  while (true)
   {
     context.nextToken();
+
     if (context.error != Error::NoError)
-      return false;
+    {
+      break;
+    }
+
     if (context.token.value_type == Type::ObjectStart || context.token.value_type == Type::ArrayStart)
     {
       if (skipArrayOrObject(context))
-        context.nextToken();
-      if (context.error != Error::NoError)
+      {
+        continue;
+      }
+      else
+      {
         return false;
+      }
+    }
+
+    if (context.token.value_type == end_type)
+    {
+      break;
     }
   }
 
-  return true;
+  return context.token.value_type == end_type && context.error == Error::NoError;
 }
 } // namespace Internal
 
