@@ -3312,6 +3312,7 @@ struct SuperClassHandler<T, PAGE, 0>
 static bool skipArrayOrObject(ParseContext &context)
 {
   assert(context.error == Error::NoError);
+  Type start_type = context.token.value_type;
   Type end_type;
   if (context.token.value_type == Type::ObjectStart)
   {
@@ -3326,30 +3327,21 @@ static bool skipArrayOrObject(ParseContext &context)
     return false;
   }
 
-  while (true)
+  int depth = 1;
+  while (depth > 0)
   {
     context.nextToken();
-
     if (context.error != Error::NoError)
     {
-      break;
+      return false;
     }
-
-    if (context.token.value_type == Type::ObjectStart || context.token.value_type == Type::ArrayStart)
+    if (context.token.value_type == start_type)
     {
-      if (skipArrayOrObject(context))
-      {
-        continue;
-      }
-      else
-      {
-        return false;
-      }
+      depth++;
     }
-
-    if (context.token.value_type == end_type)
+    else if (context.token.value_type == end_type)
     {
-      break;
+      depth--;
     }
   }
 
