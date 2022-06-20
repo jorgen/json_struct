@@ -51,6 +51,7 @@ set(unit_test_sources
                            json-struct-polymorphic-map.cpp
                            json-struct-array-varlength.cpp
                            json-struct-stdint.cpp
+                           json-struct-nested.cpp
                            )
 
 add_executable(unit-tests ${unit_test_sources})
