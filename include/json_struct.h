@@ -470,6 +470,7 @@ enum class Error : unsigned char
   NonContigiousMemory,
   ScopeHasEnded,
   KeyNotFound,
+  DuplicateInSet,
   UnknownError,
   UserDefinedErrors
 };
@@ -1132,6 +1133,7 @@ static const char *error_strings[] = {
   "NonContigiousMemory",
   "ScopeHasEnded",
   "KeyNotFound",
+  "DuplicateInSet",
   "UnknownError",
   "UserDefinedErrors",
 };
@@ -7224,7 +7226,6 @@ struct TypeHandler<bool>
 template <typename T>
 struct TypeHandler<std::vector<T>>
 {
-public:
   static inline Error to(std::vector<T> &to_type, ParseContext &context)
   {
     if (context.token.value_type != JS::Type::ArrayStart)
@@ -7892,7 +7893,7 @@ struct OneOrMany
 };
 
 template <typename T>
-class TypeHandler<OneOrMany<T>>
+struct TypeHandler<OneOrMany<T>>
 {
 public:
   static inline Error to(OneOrMany<T> &to_type, ParseContext &context)
@@ -7924,7 +7925,7 @@ public:
 };
 
 template <typename T, size_t N>
-class TypeHandler<T[N]>
+struct TypeHandler<T[N]>
 {
 public:
   static inline Error to(T (&to_type)[N], ParseContext &context)
@@ -7964,12 +7965,11 @@ public:
     serializer.write(token);
   }
 };
-#ifdef JS_STD_UNORDERED_MAP
-template <typename Key, typename Value>
-class TypeHandler<std::unordered_map<Key, Value>>
+
+template <typename Key, typename Value, typename Map>
+struct TypeHandlerMap
 {
-public:
-  static inline Error to(std::unordered_map<Key, Value> &to_type, ParseContext &context)
+  static inline Error to(Map &to_type, ParseContext &context)
   {
     if (context.token.value_type != Type::ObjectStart)
     {
@@ -7981,10 +7981,10 @@ public:
       return error;
     while (context.token.value_type != Type::ObjectEnd)
     {
-      Key k(context.token.name.data, context.token.name.size);
+      Key key(context.token.name.data, context.token.name.size);
       Value v;
       error = TypeHandler<Value>::to(v, context);
-      to_type[k] = v;
+      to_type[std::move(key)] = std::move(v);
       if (error != JS::Error::NoError)
         return error;
       error = context.nextToken();
@@ -7993,7 +7993,7 @@ public:
     return error;
   }
 
-  static void from(const std::unordered_map<Key, Value> &from, Token &token, Serializer &serializer)
+  static void from(const Map &from, Token &token, Serializer &serializer)
   {
     token.value_type = Type::ObjectStart;
     token.value = DataRef("{");
@@ -8012,6 +8012,12 @@ public:
     serializer.write(token);
   }
 };
+
+
+#ifdef JS_STD_UNORDERED_MAP
+template <typename Key, typename Value>
+struct TypeHandler<std::unordered_map<Key, Value>> : TypeHandlerMap<Key, Value, std::unordered_map<Key, Value>> {};
+
 #endif
 
 namespace Internal
@@ -8372,5 +8378,85 @@ struct TypeHandler<ArrayVariableContent<T, COUNT>>
     serializer.write(token);
   }
 };
+
+template <typename T, typename Set>
+struct TypeHandlerSet
+{
+  static inline Error to(Set &to_type, ParseContext &context)
+  {
+    if (context.token.value_type != JS::Type::ArrayStart)
+      return Error::ExpectedArrayStart;
+    Error error = context.nextToken();
+    if (error != JS::Error::NoError)
+      return error;
+    to_type.clear();
+    while (context.token.value_type != JS::Type::ArrayEnd)
+    {
+      T t;
+      error = TypeHandler<T>::to(t, context);
+      if (error != JS::Error::NoError)
+        break;
+      auto insert_ret = to_type.insert(std::move(t));
+      if (!insert_ret.second)
+        return JS::Error::DuplicateInSet;
+
+      error = context.nextToken();
+      if (error != JS::Error::NoError)
+        break;
+    }
+
+    return error;
+  }
+
+  static inline void from(const Set &set, Token &token, Serializer &serializer)
+  {
+    token.value_type = Type::ArrayStart;
+    token.value = DataRef("[");
+    serializer.write(token);
+
+    token.name = DataRef("");
+
+    for (auto &index : set)
+    {
+      TypeHandler<T>::from(index, token, serializer);
+    }
+
+    token.name = DataRef("");
+
+    token.value_type = Type::ArrayEnd;
+    token.value = DataRef("]");
+    serializer.write(token);
+  }
+};
 } // namespace JS
 #endif // JSON_STRUCT_H
+
+#if defined(JS_STL_MAP) && !defined(JS_STL_MAP_INCLUDE)
+#define JS_STL_MAP_INCLUDE
+#include <map>
+namespace JS
+{
+template<typename Key, typename Value>
+struct TypeHandler<std::map<Key, Value>> : TypeHandlerMap<Key, Value, std::map<Key, Value>> {};
+}
+#endif
+
+#if defined(JS_STL_SET) && !defined(JS_STL_SET_INCLUDE)
+#define JS_STL_SET_INCLUDE
+#include <set>
+namespace JS
+{
+template<typename Key>
+struct TypeHandler<std::set<Key>> : TypeHandlerSet<Key, std::set<Key>> {};
+}
+#endif
+
+#if defined(JS_STL_UNORDERED_SET) && !defined(JS_STL_UNORDERED_SET_INCLUDE)
+#define JS_STL_UNORDERED_SET_INCLUDE
+#include <unordered_set>
+namespace JS
+{
+template<typename Key>
+struct TypeHandler<std::unordered_set<Key>> : TypeHandlerSet<Key, std::unordered_set<Key>> {};
+}
+#endif
