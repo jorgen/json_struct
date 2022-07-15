@@ -94,8 +94,9 @@ if(JSON_STRUCT_OPT_INSTALL)
             NAMESPACE ${PROJECT_NAME}::
             DESTINATION lib/cmake/${PROJECT_NAME})
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-            DESTINATION .)
+    file(GLOB HEADERS_TO_INSTALL ${CMAKE_CURRENT_SOURCE_DIR}/include/*)
+    install(FILES ${HEADERS_TO_INSTALL}
+            DESTINATION include)
 
     export(EXPORT ${PROJECT_NAME}Config
             NAMESPACE ${PROJECT_NAME}::)
