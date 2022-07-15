@@ -197,83 +197,83 @@ template<typename T>
   : public std::is_integral<T>::type { };
 
 // Compiler support check
-#ifdef __SIZEOF_INT128__
+#if defined(__SIZEOF_INT128__) && !defined(JS_NO_INT128)
 #define JS_INT_128
-typedef __int128 int128_t;
-typedef unsigned __int128 uint128_t;
+typedef __int128 js_int128_t;
+typedef unsigned __int128 js_uint128_t;
 #endif
 
 // Add in our type_traits
 #ifdef JS_INT_128
 // TODO: cleanup. only doing this verbose method due to Intel DPCPP...
 template<>
-  struct js_is_signed<int128_t>
+  struct js_is_signed<js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_unsigned<uint128_t>
-  : public std::true_type { };
-
-template<>
-  struct js_is_integral<int128_t>
-  : public std::true_type { };
-template<>
-  struct js_is_integral<uint128_t>
+  struct js_is_unsigned<js_uint128_t>
   : public std::true_type { };
 
 template<>
-  struct js_is_signed<const int128_t>
+  struct js_is_integral<js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_unsigned<const uint128_t>
-  : public std::true_type { };
-
-template<>
-  struct js_is_integral<const int128_t>
-  : public std::true_type { };
-template<>
-  struct js_is_integral<const uint128_t>
+  struct js_is_integral<js_uint128_t>
   : public std::true_type { };
 
 template<>
-  struct js_is_signed<volatile int128_t>
+  struct js_is_signed<const js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_unsigned<volatile uint128_t>
-  : public std::true_type { };
-
-template<>
-  struct js_is_integral<volatile int128_t>
-  : public std::true_type { };
-template<>
-  struct js_is_integral<volatile uint128_t>
+  struct js_is_unsigned<const js_uint128_t>
   : public std::true_type { };
 
 template<>
-  struct js_is_signed<const volatile int128_t>
+  struct js_is_integral<const js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_unsigned<const volatile uint128_t>
-  : public std::true_type { };
-
-template<>
-  struct js_is_integral<const volatile int128_t>
-  : public std::true_type { };
-template<>
-  struct js_is_integral<const volatile uint128_t>
+  struct js_is_integral<const js_uint128_t>
   : public std::true_type { };
 
 template<>
-  struct js_is_signed<js_remove_cv<int128_t>>
+  struct js_is_signed<volatile js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_unsigned<js_remove_cv<uint128_t>>
+  struct js_is_unsigned<volatile js_uint128_t>
   : public std::true_type { };
 
 template<>
-  struct js_is_integral<js_remove_cv<int128_t>>
+  struct js_is_integral<volatile js_int128_t>
   : public std::true_type { };
 template<>
-  struct js_is_integral<js_remove_cv<uint128_t>>
+  struct js_is_integral<volatile js_uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<const volatile js_int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<const volatile js_uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<const volatile js_int128_t>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<const volatile js_uint128_t>
+  : public std::true_type { };
+
+template<>
+  struct js_is_signed<js_remove_cv<js_int128_t>>
+  : public std::true_type { };
+template<>
+  struct js_is_unsigned<js_remove_cv<js_uint128_t>>
+  : public std::true_type { };
+
+template<>
+  struct js_is_integral<js_remove_cv<js_int128_t>>
+  : public std::true_type { };
+template<>
+  struct js_is_integral<js_remove_cv<js_uint128_t>>
   : public std::true_type { };
 #endif
 }
@@ -6994,11 +6994,11 @@ struct TypeHandler<unsigned long long int> : TypeHandlerIntType<unsigned long lo
 #ifdef JS_INT_128
 /// \private
 template <>
-struct TypeHandler<int128_t> : TypeHandlerIntType<int128_t> {};
+struct TypeHandler<js_int128_t> : TypeHandlerIntType<js_int128_t> {};
 
 /// \private
 template <>
-struct TypeHandler<uint128_t> : TypeHandlerIntType<uint128_t> {};
+struct TypeHandler<js_uint128_t> : TypeHandlerIntType<js_uint128_t> {};
 #endif
 
 template <>
