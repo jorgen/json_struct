@@ -1,6 +1,6 @@
 #include "assert.h"
 #include "generated.json.h"
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 #include <chrono>
 
 #include "catch2/catch.hpp"

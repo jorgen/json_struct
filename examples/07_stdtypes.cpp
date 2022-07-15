@@ -1,5 +1,5 @@
 #include <string>
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 #include <cinttypes>
 //these two have to be ifdef guarded becuase JS support compiler versions where
 //they are not implemented, hence if you use unordered_map or optional in your code there is no need for the guards.

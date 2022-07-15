@@ -21,7 +21,7 @@
 */
 #include <string>
 #include <cstdint>
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 #include "catch2/catch.hpp"
 
 static constexpr const char* const JSON_ONE_NESTED_OBJECT = R"json(

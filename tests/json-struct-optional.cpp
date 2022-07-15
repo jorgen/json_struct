@@ -22,7 +22,7 @@
 
 #include <optional>
 #define JS_STD_OPTIONAL
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 
 #include "catch2/catch.hpp"
 #include <unordered_map>

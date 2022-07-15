@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 #include <tuple>
 
 #include "catch2/catch.hpp"

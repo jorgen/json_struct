@@ -1,6 +1,6 @@
 #include <string>
 #include <vector>
-#include <json_struct_diff.h>
+#include <json_struct/json_struct_diff.h>
 
 const char jsonBase[] = R"json(
 [

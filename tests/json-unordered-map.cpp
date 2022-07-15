@@ -1,12 +1,12 @@
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 #include "catch2/catch.hpp"
 
 #define JS_STL_UNORDERED_SET
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 
 #define JS_STL_MAP
 #define JS_STL_SET
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 namespace
 {
 

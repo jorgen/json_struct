@@ -21,7 +21,7 @@
  */
 
 #include "catch2/catch.hpp"
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 #include <string>
 
 namespace multiple_compilation_units

@@ -21,7 +21,7 @@
  */
 
 #include "catch2/catch.hpp"
-#include "json_struct_diff.h"
+#include <json_struct/json_struct_diff.h>
 #include <memory>
 
 namespace

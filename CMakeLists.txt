@@ -62,9 +62,9 @@ endif()
 
 ### clangformat
 add_custom_target(clangformat
-  COMMAND clang-format -i include/json_struct.h
+  COMMAND clang-format -i include/json_struct/json_struct.h
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-  SOURCES include/json_struct.h)
+  SOURCES include/json_struct/json_struct.h)
 
 ### INSTALL
 include(CMakePackageConfigHelpers)
@@ -94,9 +94,9 @@ if(JSON_STRUCT_OPT_INSTALL)
             NAMESPACE ${PROJECT_NAME}::
             DESTINATION lib/cmake/${PROJECT_NAME})
 
-    file(GLOB HEADERS_TO_INSTALL ${CMAKE_CURRENT_SOURCE_DIR}/include/*)
+    file(GLOB HEADERS_TO_INSTALL ${CMAKE_CURRENT_SOURCE_DIR}/include/json_struct/*)
     install(FILES ${HEADERS_TO_INSTALL}
-            DESTINATION include)
+            DESTINATION include/${PROJECT_NAME})
 
     export(EXPORT ${PROJECT_NAME}Config
             NAMESPACE ${PROJECT_NAME}::)

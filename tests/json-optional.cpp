@@ -1,4 +1,4 @@
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 #ifdef JS_STD_OPTIONAL
 #include <optional>
 #endif

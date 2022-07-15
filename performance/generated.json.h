@@ -1,5 +1,5 @@
 #pragma once
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 #include "include/nlohmann/json.hpp"
 
 struct Friends

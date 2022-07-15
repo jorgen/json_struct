@@ -1,6 +1,6 @@
 //Please see example 06_stdtypes for std::optional support
 #include <string>
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 
 const char json[] = R"json(
 {

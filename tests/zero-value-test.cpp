@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "json_struct.h"
+#include <json_struct/json_struct.h>
 
 #define CATCH_CONFIG_MAIN
 

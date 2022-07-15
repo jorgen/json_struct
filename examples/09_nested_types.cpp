@@ -1,5 +1,5 @@
 #include <string>
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 
 template<typename T>
 struct Vec3

@@ -2,7 +2,7 @@
 //THIS IS A VERY ADVANCED SAMPLE
 //PLEASE LOOK AT THE OTHER SAMPLES FIRST
 #include <string>
-#include <json_struct.h>
+#include <json_struct/json_struct.h>
 
 const char json[] = R"json(
 {
