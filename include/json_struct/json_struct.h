@@ -2683,7 +2683,7 @@ struct ParseContext
         return std::string("JSON Object contained member not found in C++ struct/class. JSON Object member is: ") + missing_members.front();
       }
       std::string member_string = missing_members.front();
-      for (int i = 1; i < missing_members.size(); i++)
+      for (int i = 1; i < int(missing_members.size()); i++)
         member_string += std::string(", ") + missing_members[i];
       return std::string("JSON Object contained members not found in C++ struct/class. JSON Object members are: ") + member_string;
     }
@@ -2698,7 +2698,7 @@ struct ParseContext
         return std::string("C++ struct/class has a required member that is not present in input JSON. The unassigned C++ member is: ") + unassigned_required_members.front();
       }
       std::string required_string = unassigned_required_members.front();
-      for (int i = 1; i< unassigned_required_members.size(); i++)
+      for (int i = 1; i< int(unassigned_required_members.size()); i++)
         required_string += std::string(", ") + unassigned_required_members[i];
       return std::string("C++ struct/class has required members that are not present in the input JSON. The unassigned C++ members are: ") + required_string;
     }
