@@ -77,8 +77,13 @@ TEST_CASE("large_number_roundtrip", "json_struct")
 
   REQUIRE(to_serialize.uint64 == to_struct.uint64);
 }
+}
 
-#if defined(JS_INT_128)
+#if defined(__SIZEOF_INT128__)
+#define JS_INT_128
+#include <json_struct/json_struct.h>
+namespace
+{
 struct very_large_int
 {
   JS::js_int128_t data;
@@ -102,5 +107,5 @@ TEST_CASE("test_128_int", "json_struct")
   REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(large_int_target.data == large_int.data);
 }
-#endif
 }
+#endif
