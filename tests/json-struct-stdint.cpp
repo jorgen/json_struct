@@ -77,4 +77,30 @@ TEST_CASE("large_number_roundtrip", "json_struct")
 
   REQUIRE(to_serialize.uint64 == to_struct.uint64);
 }
+
+#if defined(JS_INT_128)
+struct very_large_int
+{
+  JS::js_int128_t data;
+  JS_OBJ(data);
+};
+
+TEST_CASE("test_128_int", "json_struct")
+{
+  very_large_int large_int;
+  large_int.data = 1;
+  large_int.data <<= 127;
+  large_int.data = ~large_int.data;
+
+  std::string large_int_json = JS::serializeStruct(large_int);
+
+  very_large_int large_int_target;
+  JS::ParseContext pc(large_int_json);
+  pc.parseTo(large_int_target);
+
+  fprintf(stderr, "Large int\n%s\n", large_int_json.c_str());
+  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(large_int_target.data == large_int.data);
+}
+#endif
 }
