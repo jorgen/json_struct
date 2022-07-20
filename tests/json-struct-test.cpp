@@ -125,8 +125,6 @@ TEST_CASE("check_json_tree_nodes"
   JsonData1 data;
   context.parseTo(data);
 
-  for (double x : data.TestStruct.Array)
-
   data.TestStruct.optional_with_value = 5;
   REQUIRE(data.StringNode == "Some test data");
   REQUIRE(context.error == JS::Error::NoError);
@@ -489,6 +487,9 @@ struct JsonMapTest
   JS_OBJECT(JS_MEMBER(map));
 };
 
+TEST_CASE("check_json_map", "json_struct")
+{
+#ifdef JS_UNORDERED_MAP_HANDLER
 static const char jsonMapTest[] = R"json({
   "map": {
     "hello": { "some object": 3 },
@@ -496,9 +497,6 @@ static const char jsonMapTest[] = R"json({
   }
 })json";
 
-TEST_CASE("check_json_map", "json_struct")
-{
-#ifdef JS_UNORDERED_MAP_HANDLER
   JS::ParseContext context(jsonMapTest);
   JsonMapTest obj;
   context.parseTo(obj);

@@ -101,7 +101,7 @@ TEST_CASE("diff_check_empty_items", "[json_struct][diff]")
   REQUIRE(emptyDiffContext.error == JS::DiffError::EmptyString);
 
   diffPos = emptyDiffContext.diff(empty);
-  REQUIRE(diffPos == -1);
+  REQUIRE(int(diffPos) == -1);
   REQUIRE(emptyDiffContext.error == JS::DiffError::EmptyString);
 
   diffPos = emptyDiffContext.diff(emptyObject);
@@ -118,7 +118,7 @@ TEST_CASE("diff_check_empty_items", "[json_struct][diff]")
   REQUIRE(emptyObjectDiffContext.error == JS::DiffError::NoError);
 
   diffPos = emptyObjectDiffContext.diff(empty);
-  REQUIRE(diffPos == -1);
+  REQUIRE(int(diffPos) == -1);
   REQUIRE(emptyObjectDiffContext.error == JS::DiffError::EmptyString);
 
   diffPos = emptyObjectDiffContext.diff(emptyObject);
@@ -139,7 +139,7 @@ TEST_CASE("diff_check_empty_items", "[json_struct][diff]")
   REQUIRE(emptyArrayDiffContext.error == JS::DiffError::NoError);
 
   diffPos = emptyArrayDiffContext.diff(empty);
-  REQUIRE(diffPos == -1);
+  REQUIRE(int(diffPos) == -1);
   REQUIRE(emptyArrayDiffContext.error == JS::DiffError::EmptyString);
 
   diffPos = emptyArrayDiffContext.diff(emptyObject);

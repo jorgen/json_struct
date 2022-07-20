@@ -5999,6 +5999,10 @@ inline void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_sma
 template <typename T>
 inline uint64_t multiply_and_shift(uint64_t a, const uint64_t *b, int shift_right, bool round_up)
 {
+  (void) a;
+  (void) b;
+  (void) shift_right;
+  (void) round_up;
   return 0;
 }
 template <>
@@ -8144,6 +8148,7 @@ struct Map
   template <typename T>
   JS::Error setValue(const std::string &name, JS::ParseContext &parseContext, const T &value)
   {
+    (void)parseContext;
     if (tokens.data.empty())
     {
       tokens.data.reserve(10);
@@ -8175,7 +8180,7 @@ struct Map
         int to_adjust_index = it.next_meta;
         auto start_meta = meta.begin() + it.next_meta;
         meta.erase(start_meta, start_meta + theMeta.skip);
-        for (int i = to_adjust_index; i < meta.size(); i++)
+        for (int i = to_adjust_index; i < int(meta.size()); i++)
         {
           meta[i].position -= theMeta.size;
         }
@@ -8188,11 +8193,11 @@ struct Map
       }
       {
         int index_to_remove = -1;
-        for (int i = 0; i < json_data.size(); i++)
+        for (int i = 0; i < int(json_data.size()); i++)
         {
-          if (json_data[i].first == it.index)
+          if (uint32_t(json_data[i].first) == it.index)
             index_to_remove = i;
-          else if (json_data[i].first > it.index)
+          else if (uint32_t(json_data[i].first) > it.index)
             json_data[i].first -= tokens_removed;
         }
         if (index_to_remove >= 0)
@@ -8236,7 +8241,7 @@ struct Map
       meta[0].skip += new_meta[1].skip;
       int old_meta_size = meta.size();
       meta.insert(meta.end(), new_meta.begin() + 1, new_meta.end());
-      for (int new_meta_i = old_meta_size; new_meta_i < meta.size(); new_meta_i++)
+      for (int new_meta_i = old_meta_size; new_meta_i < int(meta.size()); new_meta_i++)
       {
         meta[new_meta_i].position +=
           old_tokens_size - 1 - 1; // position contains an extra and old_tokens_size has another extra

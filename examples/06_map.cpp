@@ -41,11 +41,13 @@ struct Sailboat
 
 void handle_car(Car &car)
 {
+  (void) car;
   //do stuff with the car
 }
 
 void handle_sailboat(Sailboat &sailboat)
 {
+  (void) sailboat;
   //do stuff with the sailboat
 }
 

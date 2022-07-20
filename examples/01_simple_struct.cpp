@@ -69,7 +69,7 @@ struct TypeHandler<ModuleList>
     serializer.write(token);
 
     token.name = DataRef("");
-    for (size_t i = 0; i < from_type.size; i++)
+    for (int i = 0; i < from_type.size; i++)
       TypeHandler<VecMember>::from(from_type.modules[i], token, serializer);
 
     token.name = DataRef("");

@@ -73,6 +73,7 @@ struct JsonFunctions
 
     FunctionCReturn function_c(const FunctionCArguments &arg, JS::CallFunctionErrorContext &context)
     {
+        (void)arg;
         fprintf(stderr, "Function c was called and its going to fail miserably\n");
         FunctionCReturn ret;
         context.setError(JS::Error::UserDefinedErrors, "Making the error"

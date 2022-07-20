@@ -77,7 +77,7 @@ int main()
         return -1;
     }
 
-    for(int i = 0; i < dataStruct.vector.size(); i++)
+    for(int i = 0; i < int(dataStruct.vector.size()); i++)
         fprintf(stderr, "vector: %d %d\n", i, dataStruct.vector[i]);
     fprintf(stderr, "string %s\n", dataStruct.string.c_str());
     fprintf(stderr, "tuple:\n");

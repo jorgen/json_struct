@@ -297,7 +297,8 @@ struct DiffTokens
         }
         else
         {
-            Internal::Diff::MissingTokens m = { objectMissingMember };
+            Internal::Diff::MissingTokens m;
+            m.token = objectMissingMember;
             m.missingTokens.reserve(10);
             m.missingTokens.emplace_back(missingMember);
             missingMembers.emplace_back(m);
@@ -360,7 +361,8 @@ struct DiffTokens
         }
         else
         {
-            Internal::Diff::MissingTokens m = { arrayMissingItem };
+            Internal::Diff::MissingTokens m;
+            m.token = arrayMissingItem;
             m.missingTokens.reserve(10);
             m.missingTokens.emplace_back(missingItem);
             missingArrayItems.emplace_back(m);
