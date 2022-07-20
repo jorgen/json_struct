@@ -1,6 +1,5 @@
 # **Structurize your JSON**
 
-[![Build Status](https://travis-ci.org/jorgen/json_struct.svg?branch=master)](https://travis-ci.org/jorgen/json_struct)
 [![Build status](https://ci.appveyor.com/api/projects/status/mduab0w8u12atfbu?svg=true)](https://ci.appveyor.com/project/jorgen36373/json-struct)
 
 json_struct is a single header only library that parses JSON to C++ structs/classes
