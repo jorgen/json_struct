@@ -21,8 +21,7 @@ option(JSON_STRUCT_OPT_INSTALL "Generate and install json_struct target" ${IS_TO
 
 ### Compiler
 set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Wno-c++98-compat -Wno-old-style-cast -Wno-shadow-field-in-constructor -Wno-switch-enum -Wno-padded -Wno-documentation-unknown-command -Wno-c++98-compat-pedantic")
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   add_compile_options(/permissive-)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
