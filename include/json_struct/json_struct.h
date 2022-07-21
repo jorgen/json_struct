@@ -156,7 +156,7 @@
 #if __cpp_if_constexpr
 #define JS_IF_CONSTEXPR(exp) if constexpr (exp)
 #elif defined(_MSC_VER)
-#define JS_IF_CONSTEXPR(exp) __pragma(warning(push)) __pragma(warning(disable : 4127)) if (exp) __pragma(warning(pop))
+#define JS_IF_CONSTEXPR(exp) if (([]() -> bool { return (exp); })())
 #else
 #define JS_IF_CONSTEXPR(exp) if (exp)
 #endif
@@ -6464,7 +6464,15 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
     }
     else
     {
-      if (NoDigitCount || parsedString.significand_digit_count < 19)
+      bool localNoDigitCount = false;
+
+      // Must separate this to make a constexpr if-statement and avoid warnings:
+      JS_IF_CONSTEXPR(NoDigitCount)
+      {
+        localNoDigitCount = true;
+      }
+
+      if (localNoDigitCount || parsedString.significand_digit_count < 19)
       {
         parsedString.significand = parsedString.significand * T(10) + T(int(*current) - '0');
         parsedString.significand_digit_count++;
@@ -6479,7 +6487,7 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
 
         if (biggest_multiplier >= 10)
         {
-          parsedString.significand = parsedString.significand * uint64_t(10) + digit;
+          parsedString.significand = static_cast<T>(parsedString.significand * uint64_t(10) + digit);
           parsedString.significand_digit_count++;
         }
       }
