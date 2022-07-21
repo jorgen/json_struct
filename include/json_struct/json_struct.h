@@ -6464,7 +6464,12 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
     }
     else
     {
+#ifdef _MSC_VER
+      bool localDigitCount = NoDigitCount;
+      if (localDigitCount || parsedString.significand_digit_count < 19)
+#else
       if (NoDigitCount || parsedString.significand_digit_count < 19)
+#endif
       {
         parsedString.significand = parsedString.significand * T(10) + T(int(*current) - '0');
         parsedString.significand_digit_count++;
