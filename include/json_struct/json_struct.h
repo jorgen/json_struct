@@ -2736,7 +2736,8 @@ struct JsonStructBaseDummy
 #define JS_INTERNAL__IF_1_ELSE(...)
 #define JS_INTERNAL__IF_0_ELSE(...) __VA_ARGS__
 
-#define JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(...) JS_INTERNAL_BOOL(JS_INTERNAL_SECOND(JS_INTERNAL__END_OF_ARGUMENTS_ __VA_ARGS__, 0, 0)())
+#define JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(...)                                                                        \
+  JS_INTERNAL_BOOL(JS_INTERNAL_SECOND(JS_INTERNAL__END_OF_ARGUMENTS_ __VA_ARGS__, 0, 0)())
 #define JS_INTERNAL__END_OF_ARGUMENTS_() 0
 
 #define JS_MEMBER(member) JS::makeMemberInfo(#member, &JS_OBJECT_T::member)
@@ -2751,32 +2752,30 @@ struct JsonStructBaseDummy
 #define JS_INTERNAL__MAP_MEMBER() JS_INTERNAL_MAP_MEMBER
 
 #define JS_INTERNAL_MAKE_MEMBERS(...)                                                                                  \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__)) \
-    (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_MEMBER(JS::makeMemberInfo, __VA_ARGS__)))) \
-    (JS_INTERNAL_MAP_APPLY_MEMBER(JS::makeMemberInfo, __VA_ARGS__))
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_MEMBER(JS::makeMemberInfo, __VA_ARGS__))))(                     \
+    JS_INTERNAL_MAP_APPLY_MEMBER(JS::makeMemberInfo, __VA_ARGS__))
 
 #define JS_INTERNAL_MAP_APPLY_MEMBER(m, first) m(#first, &JS_OBJECT_T::first)
 
 #define JS_INTERNAL_MAP_MEMBER(m, first, ...)                                                                          \
-  JS_INTERNAL_MAP_APPLY_MEMBER(m, first) \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__)) \
-    ( , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_MEMBER)()(m, __VA_ARGS__)) \
-    ( , JS_INTERNAL_MAP_APPLY_MEMBER(m, __VA_ARGS__) )
+  JS_INTERNAL_MAP_APPLY_MEMBER(m, first)                                                                               \
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (, JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_MEMBER)()(m, __VA_ARGS__))(, JS_INTERNAL_MAP_APPLY_MEMBER(m, __VA_ARGS__))
 
 #define JS_INTERNAL_MAP_APPLY_SUPER(m, first) m<first>(#first)
 
 #define JS_INTERNAL_MAP_SUPER(m, first, ...)                                                                           \
-  JS_INTERNAL_MAP_APPLY_SUPER(m, first) \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                            \
-    ( , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_SUPER)()(m, __VA_ARGS__)) \
-    ( , JS_INTERNAL_MAP_APPLY_SUPER(m, __VA_ARGS__) )
+  JS_INTERNAL_MAP_APPLY_SUPER(m, first)                                                                                \
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (, JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_SUPER)()(m, __VA_ARGS__))(, JS_INTERNAL_MAP_APPLY_SUPER(m, __VA_ARGS__))
 
 #define JS_INTERNAL__MAP_SUPER() JS_INTERNAL_MAP_SUPER
 
 #define JS_INTERNAL_MAKE_SUPER_CLASSES(...)                                                                            \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__)) \
-    (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_SUPER(JS::makeSuperInfo, __VA_ARGS__)))) \
-    (JS_INTERNAL_MAP_APPLY_SUPER(JS::makeSuperInfo, __VA_ARGS__))
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_SUPER(JS::makeSuperInfo, __VA_ARGS__))))(                       \
+    JS_INTERNAL_MAP_APPLY_SUPER(JS::makeSuperInfo, __VA_ARGS__))
 
 #define JS_SUPER(...) JS::makeTuple(JS_INTERNAL_EXPAND(JS_INTERNAL_MAKE_SUPER_CLASSES(__VA_ARGS__)))
 
@@ -3638,17 +3637,16 @@ struct JsonStructFunctionContainerDummy
 #define JS_INTERNAL_MAP_APPLY_FUNCTION(m, first) m(#first, &JS_CONTAINER_STRUCT_T::first)
 
 #define JS_INTERNAL_MAP_FUNCTION(m, first, ...)                                                                        \
-  JS_INTERNAL_MAP_APPLY_FUNCTION(m, first) \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__)) \
-  ( , JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_FUNCTION)()(m, __VA_ARGS__)) \
-  ( , JS_INTERNAL_MAP_APPLY_FUNCTION(m, __VA_ARGS__))
+  JS_INTERNAL_MAP_APPLY_FUNCTION(m, first)                                                                             \
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (, JS_INTERNAL_DEFER2(JS_INTERNAL__MAP_FUNCTION)()(m, __VA_ARGS__))(, JS_INTERNAL_MAP_APPLY_FUNCTION(m, __VA_ARGS__))
 
 #define JS_INTERNAL__MAP_FUNCTION() JS_INTERNAL_MAP_FUNCTION
 
 #define JS_INTERNAL_MAKE_FUNCTIONS(...)                                                                                \
-  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__)) \
-  (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_FUNCTION(JS::makeFunctionInfo, __VA_ARGS__)))) \
-  (JS_INTERNAL_MAP_APPLY_FUNCTION(JS::makeFunctionInfo, __VA_ARGS__))
+  JS_INTERNAL_IF_ELSE(JS_INTERNAL_HAS_MORE_THAN_ONE_ARGS(__VA_ARGS__))                                                 \
+  (JS_INTERNAL_EXPAND(JS_INTERNAL_EVAL(JS_INTERNAL_MAP_FUNCTION(JS::makeFunctionInfo, __VA_ARGS__))))(                 \
+    JS_INTERNAL_MAP_APPLY_FUNCTION(JS::makeFunctionInfo, __VA_ARGS__))
 
 #define JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, function_list)                                                 \
   template <typename JS_CONTAINER_STRUCT_T>                                                                            \
@@ -3695,6 +3693,8 @@ struct JsonStructFunctionContainerDummy
   JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, JS::makeTuple(JS_INTERNAL_MAKE_FUNCTIONS(__VA_ARGS__)))
 #define JS_FUNCTION_CONTAINER_WITH_SUPER(super_list, ...)                                                              \
   JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, JS::makeTuple(__VA_ARGS__))
+#define JS_FUNCTION_CONTAINER_WITH_SUPER_WITHOUT_MEMBERS(super_list)                                                   \
+  JS_FUNCTION_CONTAINER_INTERNAL_IMPL(super_list, JS::makeTuple())
 
 #define JS_FUNC_OBJ_EXTERNAL(Type, ...)                                                                                \
   JS_FUNCTION_CONTAINER_EXTERNAL_INTERNAL_IMPL(Type, JS::makeTuple(),                                                  \
@@ -3706,6 +3706,8 @@ struct JsonStructFunctionContainerDummy
 #define JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(Type, super_list, ...)                                               \
   JS_FUNCTION_CONTAINER_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple(__VA_ARGS__))
 
+#define JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER_WITHOUT_MEMBERS(Type, super_list)                                    \
+  JS_FUNCTION_CONTAINER_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple())
 namespace Internal
 {
 template <typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
@@ -5999,10 +6001,10 @@ inline void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_sma
 template <typename T>
 inline uint64_t multiply_and_shift(uint64_t a, const uint64_t *b, int shift_right, bool round_up)
 {
-  (void) a;
-  (void) b;
-  (void) shift_right;
-  (void) round_up;
+  (void)a;
+  (void)b;
+  (void)shift_right;
+  (void)round_up;
   return 0;
 }
 template <>

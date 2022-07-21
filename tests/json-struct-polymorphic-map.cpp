@@ -95,7 +95,7 @@ void verify_map_meta(const JS::Map &map)
   auto new_meta = JS::metaForTokens(map.tokens);
   REQUIRE(map.meta.size() == new_meta.size());
 
-  for (int i = 0; i < map.meta.size(); i++)
+  for (int i = 0; i < int(map.meta.size()); i++)
   {
     REQUIRE(new_meta[i].children == map.meta[i].children); 
     REQUIRE(new_meta[i].complex_children == map.meta[i].complex_children); 

@@ -98,6 +98,7 @@ struct Cover
 TEST_CASE("compiler_test", "")
 {
   Cover c;
+  JS_UNUSED(c);
   Cover::FOO<Cover>::getList();
   // Cover::FOO<Cover>::the_sublist();
   REQUIRE(true);

@@ -38,10 +38,12 @@ struct Executor
 {
   void execute_one(const ExecuteOneData &data)
   {
+    JS_UNUSED(data);
     execute_one_called = true;
   }
   ExecuterTwoReturn execute_two(const ExecuteTwoData &data)
   {
+    JS_UNUSED(data);
     execute_two_called = true;
     ExecuterTwoReturn ret;
     ret.string_data = "Ret data";

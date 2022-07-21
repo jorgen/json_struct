@@ -51,18 +51,23 @@ struct CallFunction
 {
   virtual void execute_one(const SimpleData &data)
   {
+    JS_UNUSED(data);
     called_one = true;
   }
 
   int execute_two(const double &data, JS::CallFunctionContext &context)
   {
+    JS_UNUSED(data);
+    JS_UNUSED(context);
     called_two = true;
     return 2;
   }
 
   void execute_three(const std::vector<double> &data, JS::CallFunctionContext &context)
   {
+    JS_UNUSED(context);
     for (auto x : data)
+      JS_UNUSED(x);
     called_three = true;
   }
   JS_FUNC_OBJ(execute_one, execute_two, execute_three);
@@ -91,6 +96,7 @@ struct CallFunctionSuperSuper
 {
   void execute_one(const SimpleData &data)
   {
+    JS_UNUSED(data);
     called_one = true;
   }
 
@@ -103,6 +109,7 @@ struct CallFunctionSuper
 {
   void execute_two(const double &data)
   {
+    JS_UNUSED(data);
     called_two = true;
   }
 
@@ -122,6 +129,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
   ExecuteThreeReturn execute_three(const std::vector<double> &data)
   {
     for (auto x : data)
+      JS_UNUSED(x);
     called_three = true;
     return ExecuteThreeReturn();
   }
@@ -149,6 +157,7 @@ struct CallFunctionVirtualOverload : public CallFunction
 {
   virtual void execute_one(const SimpleData &data) override
   {
+    JS_UNUSED(data);
     override_called = true;
   }
   bool override_called = false;
@@ -210,6 +219,7 @@ struct SuperParamCallable
 {
   void execute_one(const Param &param)
   {
+    JS_UNUSED(param);
     execute_one_executed = true;
   }
   bool execute_one_executed = false;
@@ -249,6 +259,7 @@ struct CallVoidStruct
 
   void call_void_context(JS::CallFunctionContext &context)
   {
+    JS_UNUSED(context);
     executed_2 = true;
   }
 
@@ -260,12 +271,14 @@ struct CallVoidStruct
 
   int call_int_void_context(JS::CallFunctionContext &context)
   {
+    JS_UNUSED(context);
     executed_4 = true;
     return 7;
   }
 
   void call_void_error(JS::CallFunctionErrorContext &error)
   {
+    JS_UNUSED(error);
     executed_6 = true;
   }
 
@@ -325,6 +338,7 @@ struct CallErrorCheck
 
   void call_with_int(int x, JS::CallFunctionErrorContext &context)
   {
+    JS_UNUSED(x);
     executed2 = true;
     context.setError(JS::Error::UserDefinedErrors, "CallWithIntCustomError problem with number");
   }
@@ -336,6 +350,7 @@ struct CallErrorCheck
 
   std::string call_with_object(const CallErrorCheckArg &arg, JS::CallFunctionErrorContext &context)
   {
+    JS_UNUSED(arg);
     executed4 = true;
     context.setError(JS::Error::UserDefinedErrors, "This functions should not serialize the string");
     return std::string("THIS SHOULD NOT BE SERIALIZED");
@@ -438,11 +453,13 @@ struct JsonWrongArgType
 
   void execute_one(const std::string &foo)
   {
+    JS_UNUSED(foo);
     executeOne = true;
   }
 
   void execute_two(const std::string &bar)
   {
+    JS_UNUSED(bar);
     executeTwo = true;
   }
 
