@@ -76,7 +76,7 @@ struct CallFunction
 };
 } // namespace
 JS_FUNCTION_CONTAINER_EXTERNAL(CallFunction, JS_FUNCTION(execute_one), JS_FUNCTION(execute_two),
-                               JS_FUNCTION(execute_three));
+                               JS_FUNCTION(execute_three))
 
 namespace
 {
@@ -106,7 +106,7 @@ struct CallFunctionSuperSuper
   bool called_one = false;
 };
 } // namespace
-JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuperSuper, JS_FUNCTION(execute_one));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuperSuper, JS_FUNCTION(execute_one))
 
 namespace
 {
@@ -121,7 +121,7 @@ struct CallFunctionSuper
   bool called_two = false;
 };
 } // namespace
-JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuper, JS_FUNCTION(execute_two));
+JS_FUNCTION_CONTAINER_EXTERNAL(CallFunctionSuper, JS_FUNCTION(execute_two))
 
 namespace
 {
@@ -148,7 +148,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
 JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER(CallFunctionSub,
                                           JS_SUPER_CLASSES(JS_SUPER_CLASS(CallFunctionSuperSuper),
                                                            JS_SUPER_CLASS(CallFunctionSuper)),
-                                          JS_FUNCTION(execute_three));
+                                          JS_FUNCTION(execute_three))
 namespace
 {
 TEST_CASE("inheritanceFunctionTestExternalRegular", "[function]")
@@ -176,7 +176,7 @@ struct CallFunctionVirtualOverload : public CallFunction
   bool override_called = false;
 };
 } // namespace
-JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER_WITHOUT_MEMBERS(CallFunctionVirtualOverload, JS_SUPER_CLASSES(JS_SUPER_CLASS(CallFunction)));
+JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER_WITHOUT_MEMBERS(CallFunctionVirtualOverload, JS_SUPER_CLASSES(JS_SUPER_CLASS(CallFunction)))
 
 namespace
 {
@@ -242,7 +242,7 @@ struct SuperParamCallable
   bool execute_one_executed = false;
 };
 } // namespace
-JS_FUNCTION_CONTAINER_EXTERNAL(SuperParamCallable, JS_FUNCTION(execute_one));
+JS_FUNCTION_CONTAINER_EXTERNAL(SuperParamCallable, JS_FUNCTION(execute_one))
 
 namespace
 {
@@ -316,7 +316,7 @@ struct CallVoidStruct
 } // namespace
 JS_FUNCTION_CONTAINER_EXTERNAL(CallVoidStruct, JS_FUNCTION(call_void), JS_FUNCTION(call_void_context),
                                JS_FUNCTION(call_int_void), JS_FUNCTION(call_int_void_context),
-                               JS_FUNCTION(call_void_with_value), JS_FUNCTION(call_void_error));
+                               JS_FUNCTION(call_void_with_value), JS_FUNCTION(call_void_error))
 
 namespace
 {
@@ -386,7 +386,7 @@ struct CallErrorCheck
 };
 } // namespace
 JS_FUNCTION_CONTAINER_EXTERNAL(CallErrorCheck, JS_FUNCTION(call_void), JS_FUNCTION(call_with_int),
-                               JS_FUNCTION(call_another_void), JS_FUNCTION(call_with_object));
+                               JS_FUNCTION(call_another_void), JS_FUNCTION(call_with_object))
 
 namespace
 {
@@ -440,7 +440,7 @@ struct JsonAlias
 };
 } // namespace
 JS_FUNCTION_CONTAINER_EXTERNAL(JsonAlias, JS_FUNCTION(execute_one),
-                               JS_FUNCTION_ALIASES(execute_two_primary, "execute_two"), JS_FUNCTION(execute_three));
+                               JS_FUNCTION_ALIASES(execute_two_primary, "execute_two"), JS_FUNCTION(execute_three))
 
 namespace
 {
@@ -500,7 +500,7 @@ struct JsonWrongArgType
 } // namespace
 
 JS_FUNCTION_CONTAINER_EXTERNAL(JsonWrongArgType, JS_FUNCTION(execute_one), JS_FUNCTION(execute_two),
-                               JS_FUNCTION(execute_three));
+                               JS_FUNCTION(execute_three))
 
 namespace
 {

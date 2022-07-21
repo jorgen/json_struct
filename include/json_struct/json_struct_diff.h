@@ -766,7 +766,7 @@ namespace Internal
                 }
             }
         }
-    };
+    }
 }
 
 struct DiffContext

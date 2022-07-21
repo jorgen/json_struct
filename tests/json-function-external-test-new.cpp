@@ -76,7 +76,7 @@ struct CallFunction
 };
 } // namespace
 
-JS_FUNC_OBJ_EXTERNAL(CallFunction, execute_one, execute_two, execute_three);
+JS_FUNC_OBJ_EXTERNAL(CallFunction, execute_one, execute_two, execute_three)
 
 namespace
 {
@@ -106,7 +106,7 @@ struct CallFunctionSuperSuper
   bool called_one = false;
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL(CallFunctionSuperSuper, execute_one);
+JS_FUNC_OBJ_EXTERNAL(CallFunctionSuperSuper, execute_one)
 
 namespace
 {
@@ -121,7 +121,7 @@ struct CallFunctionSuper
   bool called_two = false;
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL(CallFunctionSuper, execute_two);
+JS_FUNC_OBJ_EXTERNAL(CallFunctionSuper, execute_two)
 
 namespace
 {
@@ -145,7 +145,7 @@ struct CallFunctionSub : public CallFunctionSuperSuper, public CallFunctionSuper
   bool called_three = false;
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL_SUPER(CallFunctionSub, JS_SUPER(CallFunctionSuperSuper, CallFunctionSuper), execute_three);
+JS_FUNC_OBJ_EXTERNAL_SUPER(CallFunctionSub, JS_SUPER(CallFunctionSuperSuper, CallFunctionSuper), execute_three)
 
 namespace
 {
@@ -237,7 +237,7 @@ struct SuperParamCallable
   bool execute_one_executed = false;
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL(SuperParamCallable, execute_one);
+JS_FUNC_OBJ_EXTERNAL(SuperParamCallable, execute_one)
 
 namespace
 {
@@ -310,7 +310,7 @@ struct CallVoidStruct
 };
 } // namespace
 JS_FUNC_OBJ_EXTERNAL(CallVoidStruct, call_void, call_void_context, call_int_void, call_int_void_context,
-                     call_void_with_value, call_void_error);
+                     call_void_with_value, call_void_error)
 
 namespace
 {
@@ -379,7 +379,7 @@ struct CallErrorCheck
   bool executed4 = false;
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL(CallErrorCheck, call_void, call_with_int, call_another_void, call_with_object);
+JS_FUNC_OBJ_EXTERNAL(CallErrorCheck, call_void, call_with_int, call_another_void, call_with_object)
 
 namespace
 {
@@ -433,7 +433,7 @@ struct JsonAlias
 };
 } // namespace
 JS_FUNCTION_CONTAINER_EXTERNAL(JsonAlias, JS_FUNCTION(execute_one),
-                               JS_FUNCTION_ALIASES(execute_two_primary, "execute_two"), JS_FUNCTION(execute_three));
+                               JS_FUNCTION_ALIASES(execute_two_primary, "execute_two"), JS_FUNCTION(execute_three))
 
 namespace
 {
@@ -491,7 +491,7 @@ struct JsonWrongArgType
   }
 };
 } // namespace
-JS_FUNC_OBJ_EXTERNAL(JsonWrongArgType, execute_one, execute_two, execute_three);
+JS_FUNC_OBJ_EXTERNAL(JsonWrongArgType, execute_one, execute_two, execute_three)
 
 namespace
 {

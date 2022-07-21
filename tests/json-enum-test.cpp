@@ -2,7 +2,7 @@
 #include <json_struct/json_struct.h>
 #include <stdio.h>
 
-JS_ENUM(Colors, Red, Green, Blue, Yellow4, Purple);
+JS_ENUM(Colors, Red, Green, Blue, Yellow4, Purple)
 
 namespace
 {
@@ -14,7 +14,7 @@ struct TestEnumParser
 };
 } // namespace
 
-JS_ENUM_DECLARE_STRING_PARSER(Colors);
+JS_ENUM_DECLARE_STRING_PARSER(Colors)
 
 namespace
 {
@@ -53,7 +53,7 @@ namespace FOO
 {
 namespace BAR
 {
-JS_ENUM(Cars, Fiat, VW, BMW, Peugeot, Mazda);
+JS_ENUM(Cars, Fiat, VW, BMW, Peugeot, Mazda)
 }
 } // namespace FOO
 namespace One
@@ -71,7 +71,7 @@ struct CarContainer
 
 } // namespace
 
-JS_ENUM_NAMESPACE_DECLARE_STRING_PARSER(FOO::BAR, Cars);
+JS_ENUM_NAMESPACE_DECLARE_STRING_PARSER(FOO::BAR, Cars)
 
 namespace
 {

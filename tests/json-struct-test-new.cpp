@@ -164,7 +164,7 @@ TEST_CASE("short_check_json_tree_template", "json_struct")
   context.parseTo(data);
   REQUIRE(data.sub_object.more_data == "some text");
   std::string json = JS::serializeStruct(data);
-};
+}
 
 TEST_CASE("short_check_json_tree_subclass", "json_struct")
 {
@@ -812,7 +812,7 @@ TEST_CASE("short_check_json_escaped", "json_struct")
   std::string equals("more\"_te\\xt");
   REQUIRE(data.some_text == equals);
   std::string json = JS::serializeStruct(data);
-};
+}
 
 struct OutsideMeta
 {
@@ -822,7 +822,7 @@ struct OutsideMeta
 
 } // namespace json_struct_short_notation
 
-JS_OBJ_EXT(json_struct_short_notation::OutsideMeta, data, a);
+JS_OBJ_EXT(json_struct_short_notation::OutsideMeta, data, a)
 
 namespace json_struct_short_notation
 {
@@ -916,6 +916,6 @@ TEST_CASE("short_check_json_escaped_end", "json_struct")
   REQUIRE(data.strange_escape == std::string("foo\\s"));
   REQUIRE(data.pure_strange_escape == std::string("\\k"));
   std::string json = JS::serializeStruct(data);
-};
+}
 
 } // namespace json_struct_short_notation

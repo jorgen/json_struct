@@ -51,7 +51,7 @@ struct TestStructT
   int SubNumber;
 };
 } // namespace
-JS_OBJECT_EXTERNAL(TestStructT, JS_MEMBER(SubString), JS_MEMBER(SubNumber));
+JS_OBJECT_EXTERNAL(TestStructT, JS_MEMBER(SubString), JS_MEMBER(SubNumber))
 
 namespace
 {
@@ -60,7 +60,7 @@ struct TestStructSub : public TestStructT
   std::vector<int> Array;
 };
 } // namespace
-JS_OBJECT_EXTERNAL_WITH_SUPER(TestStructSub, JS_SUPER_CLASSES(JS_SUPER_CLASS(TestStructT)), JS_MEMBER(Array));
+JS_OBJECT_EXTERNAL_WITH_SUPER(TestStructSub, JS_SUPER_CLASSES(JS_SUPER_CLASS(TestStructT)), JS_MEMBER(Array))
 
 namespace
 {
@@ -74,7 +74,7 @@ struct JsonData1
 };
 } // namespace
 JS_OBJECT_EXTERNAL(JsonData1, JS_MEMBER(StringNode), JS_MEMBER(NumberNode), JS_MEMBER(BooleanTrue),
-                   JS_MEMBER(BooleanFalse), JS_MEMBER(TestStruct));
+                   JS_MEMBER(BooleanFalse), JS_MEMBER(TestStruct))
 
 namespace
 {

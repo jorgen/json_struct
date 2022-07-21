@@ -9,7 +9,7 @@ struct ColorData
 
     JS_OBJ(color);
 };
-JS_ENUM_DECLARE_STRING_PARSER(Color);
+JS_ENUM_DECLARE_STRING_PARSER(Color)
 
 const char json[] = R"json({
     "color" : "Green"

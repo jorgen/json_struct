@@ -65,7 +65,7 @@ void check_parse_nullterminated_string(const std::string jsonWithNullTerminator)
 
   REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(nullStruct.data.size() == 16);
-};
+}
 
 TEST_CASE("check_parse_nullterminated_string", "[json_struct]")
 {
