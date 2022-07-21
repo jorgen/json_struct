@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <json_struct/json_struct.h>
 
-JS_ENUM(Color, Red , Green , Blue, Yellow4 ,Purple );
+JS_ENUM(Color, Red , Green , Blue, Yellow4 , Purple )
 
 struct ColorData
 {

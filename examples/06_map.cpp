@@ -18,8 +18,8 @@ const char sailboat_json[] = R"json(
 }
 )json";
 
-JS_ENUM(VehicleType, car, sailboat);
-JS_ENUM_DECLARE_STRING_PARSER(VehicleType);
+JS_ENUM(VehicleType, car, sailboat)
+JS_ENUM_DECLARE_STRING_PARSER(VehicleType)
 
 struct Car
 {

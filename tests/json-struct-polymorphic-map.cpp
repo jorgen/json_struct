@@ -131,6 +131,7 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(pc.error == JS::Error::NoError);
   ComplexFields_t complexFields1_2;
   error = map.castToType("ComplexFields", pc, complexFields1_2);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(pc.error == JS::Error::NoError);
   REQUIRE(complexFields1.Hello == complexFields1_2.Hello);
   REQUIRE(complexFields1.World == complexFields1_2.World);

@@ -27,7 +27,7 @@
 static int assert_token(const JS::Token &token, JS::Type name_type, std::string property, JS::Type value_type, std::string value)
 {
     if (token.name_type != name_type) {
-        fprintf(stderr, "token.name_type is: %hhu, expected %hhu\n", token.name_type, name_type);
+        fprintf(stderr, "token.name_type is: %d, expected %d\n", int(token.name_type), int(name_type));
         return -1;
     }
 
@@ -43,7 +43,7 @@ static int assert_token(const JS::Token &token, JS::Type name_type, std::string 
     }
 
     if (token.value_type != value_type) {
-        fprintf(stderr, "token.value_type is: %hhu, expected %hhu\n", token.value_type, value_type);
+        fprintf(stderr, "token.value_type is: %d, expected %d\n", int(token.value_type), int(value_type));
         return -1;
     }
 

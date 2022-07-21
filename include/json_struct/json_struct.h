@@ -1252,7 +1252,6 @@ inline Error Tokenizer::findStartOfNextValue(Type *type, const DataRef &json_dat
     {
       *type = Type::Ascii;
       *chars_ahead = current_pos - cursor_index;
-      ;
       return Error::NoError;
     }
     else if (lc == 0)
@@ -8429,8 +8428,8 @@ struct TypeHandler<std::unordered_set<Key>> : TypeHandlerSet<Key, std::unordered
 #if defined(__SIZEOF_INT128__) && !defined(JS_NO_INT128_TYPEDEF)
 namespace JS
 {
-using js_int128_t = __int128;
-using js_uint128_t = unsigned __int128;
+__extension__ using js_int128_t = __int128;
+__extension__ using js_uint128_t = unsigned __int128;
 } // namespace JS
 #endif
 
