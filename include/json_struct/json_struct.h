@@ -6484,7 +6484,7 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
 
         if (biggest_multiplier >= 10)
         {
-          parsedString.significand = parsedString.significand * uint64_t(10) + digit;
+          parsedString.significand = parsedString.significand * T(10) + T(digit);
           parsedString.significand_digit_count++;
         }
       }
