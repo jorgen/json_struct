@@ -8113,7 +8113,7 @@ struct Map
   template <typename T>
   T castTo(JS::ParseContext &parseContext) const
   {
-    T t;
+    T t = {};
     castToType<T>(parseContext, t);
     return t;
   }
@@ -8121,7 +8121,7 @@ struct Map
   template <typename T>
   T castTo(const std::string &name, JS::ParseContext &parseContext) const
   {
-    T t;
+    T t = {};
     castToType<T>(name, parseContext, t);
     return t;
   }
