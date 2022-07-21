@@ -28,7 +28,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX") //need to have a windows machine to fix this
 else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
 endif()
