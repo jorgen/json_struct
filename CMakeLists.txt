@@ -1,9 +1,6 @@
-
 ### Project
-cmake_minimum_required(VERSION 3.14)
-project(json_struct VERSION "0.0.1" LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD_REQUIRED FALSE)
-set(CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.18)
+project(json_struct VERSION "1.0.0" LANGUAGES CXX)
 
 ### Misc
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -20,18 +17,13 @@ option(JSON_STRUCT_OPT_BUILD_TESTS "Build and perform json_struct tests" ${IS_TO
 option(JSON_STRUCT_OPT_INSTALL "Generate and install json_struct target" ${IS_TOPLEVEL_PROJECT})
 
 ### Compiler
-set(CMAKE_CXX_STANDARD 11)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  add_compile_options(/permissive-)
-  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-  endif()
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX") //need to have a windows machine to fix this
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
-endif()
+function(set_compiler_flags_for_target target)
+  set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
+  target_compile_options(${target} PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /permissive->
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+  )
+endfunction()
 
 ### Include
 set(JSON_STRUCT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)

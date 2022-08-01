@@ -45,10 +45,10 @@ struct FunctionCArguments
 
 struct FunctionCReturn
 {
-    int this_return;
-    int type_will_not;
-    int be_serialized;
-    int on_failure;
+    int this_return = 0;
+    int type_will_not = 0;
+    int be_serialized = 0;
+    int on_failure = 0;
     JS_OBJ(this_return, type_will_not, be_serialized, on_failure);
 };
 

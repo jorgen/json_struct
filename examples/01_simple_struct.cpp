@@ -41,7 +41,7 @@ struct TypeHandler<ModuleList>
       return JS::Error::ExpectedArrayStart;
 
     context.nextToken();
-    for (size_t i = 0; i < ModuleList::ReservedSize; i++)
+    for (int i = 0; i < int(ModuleList::ReservedSize); i++)
     {
       if (context.error != JS::Error::NoError)
         return context.error;

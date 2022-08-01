@@ -8236,8 +8236,8 @@ struct Map
     JS::ParseContext pc(out.c_str(), out.size(), new_tokens);
     auto new_meta = metaForTokens(new_tokens);
 
-    json_data.emplace_back(tokens.data.size() - 1, std::move(out));
-    int old_tokens_size = tokens.data.size();
+    json_data.emplace_back(int(tokens.data.size() - 1), std::move(out));
+    int old_tokens_size = int(tokens.data.size());
     tokens.data.insert(tokens.data.end() - 1, new_tokens.data.begin() + 1, new_tokens.data.end() - 1);
     meta[0].children++;
     if (new_meta[0].complex_children)
@@ -8245,7 +8245,7 @@ struct Map
       meta[0].complex_children++;
       meta[0].size += new_meta[1].size;
       meta[0].skip += new_meta[1].skip;
-      int old_meta_size = meta.size();
+      int old_meta_size = int(meta.size());
       meta.insert(meta.end(), new_meta.begin() + 1, new_meta.end());
       for (int new_meta_i = old_meta_size; new_meta_i < int(meta.size()); new_meta_i++)
       {

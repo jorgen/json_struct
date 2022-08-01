@@ -46,7 +46,7 @@ TEST_CASE("unordered_map_complex_value", "json_struct")
   REQUIRE(dataStruct.unordered_map["bar"].front() == 2.0);
   REQUIRE(dataStruct.map["sail"] == "boat");
   REQUIRE(dataStruct.unordered_set.find(7) != dataStruct.unordered_set.end());
-  REQUIRE(dataStruct.set.find(1.6) != dataStruct.set.end());
+  REQUIRE(dataStruct.set.find(1.6f) != dataStruct.set.end());
 
 
   std::vector<double> one;

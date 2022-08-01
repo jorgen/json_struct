@@ -156,7 +156,7 @@ TEST_CASE("polymorphic_map_basic", "json_struct")
   REQUIRE(it != map.end());
   REQUIRE(it->value_type == JS::Type::Bool);
 
-  map.setValue("HelloWorld", pc, 4567);
+  map.setValue("HelloWorld", pc, uint64_t(4567));
   REQUIRE(map.castTo<int>("HelloWorld", pc) == 4567);
   REQUIRE(pc.error == JS::Error::NoError);
   verify_map_meta(map);
