@@ -19,10 +19,13 @@ option(JSON_STRUCT_OPT_INSTALL "Generate and install json_struct target" ${IS_TO
 ### Compiler
 function(set_compiler_flags_for_target target)
   set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
-  target_compile_options(${target} PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /permissive->
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
-  )
+  if (MSVC)
+    if(MSVC_VERSION GREATER_EQUAL 1920) #VS 2019 and above
+      target_compile_options(${target} PRIVATE /W4 /WX)
+    endif()
+  else()
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  endif()
 endfunction()
 
 ### Include
