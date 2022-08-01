@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Jorgen Lind
+ * Copyright Â© 2021 Jorgen Lind
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
