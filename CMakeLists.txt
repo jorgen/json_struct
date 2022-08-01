@@ -1,5 +1,5 @@
 ### Project
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 project(json_struct VERSION "1.0.0" LANGUAGES CXX)
 
 ### Misc
