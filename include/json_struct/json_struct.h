@@ -2888,7 +2888,7 @@ constexpr const Internal::SuperInfo<T> makeSuperInfo(const char (&name)[NAME_SIZ
   return Internal::SuperInfo<T>(DataRef(name));
 }
 
-template <typename T>
+template <typename T, typename Enable = void>
 struct TypeHandler
 {
   static inline Error to(T &to_type, ParseContext &context);
@@ -4307,8 +4307,8 @@ void populateEnumNames(std::vector<DataRef> &names, const char (&data)[N])
 
 namespace JS
 {
-template <typename T>
-inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
+template <typename T, typename Enable>
+inline Error TypeHandler<T, Enable>::to(T &to_type, ParseContext &context)
 {
   if (context.token.value_type != JS::Type::ObjectStart)
     return Error::ExpectedObjectStart;
@@ -4367,8 +4367,8 @@ inline Error TypeHandler<T>::to(T &to_type, ParseContext &context)
   return error;
 }
 
-template <typename T>
-void TypeHandler<T>::from(const T &from_type, Token &token, Serializer &serializer)
+template <typename T, typename Enable>
+void TypeHandler<T, Enable>::from(const T &from_type, Token &token, Serializer &serializer)
 {
   static const char objectStart[] = "{";
   static const char objectEnd[] = "}";
