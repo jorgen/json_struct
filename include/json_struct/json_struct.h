@@ -152,6 +152,11 @@
 #include <optional>
 #endif
 
+#ifdef JS_STD_TIMEPOINT
+#include <chrono>
+#include <type_traits>
+#endif
+
 #ifndef JS_IF_CONSTEXPR
 #if __cpp_if_constexpr
 #define JS_IF_CONSTEXPR(exp) if constexpr (exp)
@@ -7178,6 +7183,53 @@ struct TypeHandler<bool>
     serializer.write(token);
   }
 };
+
+#ifdef JS_STD_TIMEPOINT
+/// \private
+namespace Internal
+{
+    template <class T, template <class...> class Template>
+    struct is_specialization : std::false_type {};
+
+    template <template <class...> class Template, class... Args>
+    struct is_specialization<Template<Args...>, Template> : std::true_type {};
+}
+
+/// \private
+template <class T>
+struct TypeHandler<T, typename std::enable_if_t<Internal::is_specialization<T, std::chrono::time_point>::value>>
+{
+    static inline Error to(T& to_type, ParseContext &context)
+    {
+        uint64_t t;
+        Error err = TypeHandler<uint64_t>::to(t, context);
+        if (err != Error::NoError)
+            return err;
+
+        if (t <= 1e11) // Seconds => 10 digits, normally
+            to_type = T{std::chrono::seconds{t}};
+        else if (t <= 1e14) // Milliseconds => 13 digits, normally
+            to_type = T{std::chrono::milliseconds{t}};
+        else if (t <= 1e17) // Microseconds
+            to_type = T{std::chrono::microseconds{t}};
+        else if (t <= 1e20) // Nanoseconds
+            if constexpr (std::is_same_v<std::chrono::high_resolution_clock::time_point, T>)
+                to_type = T{std::chrono::nanoseconds{t}};
+            else
+                return JS::Error::IllegalDataValue;
+        else
+            return JS::Error::IllegalDataValue;
+
+        return JS::Error::NoError;
+    }
+
+    static inline void from(const T& val, Token &token, Serializer &serializer)
+    {
+        uint64_t t = std::chrono::duration_cast<std::chrono::microseconds>(val.time_since_epoch()).count();
+        TypeHandler<uint64_t>::from(t, token, serializer);
+    }
+};
+#endif
 
 /// \private
 template <typename T>
