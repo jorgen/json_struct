@@ -7230,6 +7230,8 @@ struct TypeHandler<T, typename std::enable_if_t<Internal::is_specialization<T, s
         	t = std::chrono::duration_cast<std::chrono::nanoseconds>(val.time_since_epoch()).count();
 		else
         	t = std::chrono::duration_cast<std::chrono::microseconds>(val.time_since_epoch()).count();
+		while (t % 1000 == 0 && t > (uint64_t)1e10)
+			t /= 1000;
         TypeHandler<uint64_t>::from(t, token, serializer);
     }
 };
