@@ -78,7 +78,7 @@ else()
 endif()
 
 if ("${CMAKE_CXX_COMPILE_FEATURES}" MATCHES ".*cxx_std_17.*")
-  add_executable(unit-tests-cxx17 json-optional.cpp)
+  add_executable(unit-tests-cxx17 json-optional.cpp json-timepoint.cpp)
   set_compiler_flags_for_target(unit-tests-cxx17)
   set_property(TARGET unit-tests-cxx17 PROPERTY CXX_STANDARD 17)
   target_compile_features(unit-tests-cxx17 PUBLIC cxx_std_17)
