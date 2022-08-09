@@ -37,7 +37,6 @@ const char json[] = "{"
   "\"tp_4_ns\": " _STR(TP_4_NS)
 "}";
 
-#ifdef JS_STD_TIMEPOINT
 struct JsonData
 {
   sys_tp_t tp_0_s;
@@ -50,19 +49,21 @@ struct JsonData
   hpc_tp_t tp_4_ns;
   JS_OBJ(tp_0_s, tp_0_ms, tp_0_us, tp_0_ns, tp_1_s, tp_2_ms, tp_3_us, tp_4_ns);
 };
-#endif
 
-unsigned long long ToU64(sys_tp_t tp)
+// Since tp_0_* have trailing zeroes, they should be removed when serializing,
+// parse the result of serializeStruct<JsonData> with keys that hold uint64_t values to check that.
+struct JsonData2
 {
-	return (unsigned long long)
-		std::chrono::duration_cast<std::chrono::microseconds>(tp.time_since_epoch()).count();
-}
-
-unsigned long long ToU64(hpc_tp_t tp)
-{
-	return (unsigned long long)
-		std::chrono::duration_cast<std::chrono::nanoseconds>(tp.time_since_epoch()).count();
-}
+  uint64_t tp_0_s;
+  uint64_t tp_0_ms;
+  uint64_t tp_0_us;
+  uint64_t tp_0_ns;
+  uint64_t tp_1_s;
+  uint64_t tp_2_ms;
+  uint64_t tp_3_us;
+  uint64_t tp_4_ns;
+  JS_OBJ(tp_0_s, tp_0_ms, tp_0_us, tp_0_ns, tp_1_s, tp_2_ms, tp_3_us, tp_4_ns);
+};
 
 TEST_CASE("time_point", "json_struct")
 {
@@ -79,11 +80,6 @@ TEST_CASE("time_point", "json_struct")
   REQUIRE(dataStruct.tp_3_us == sys_tp_t{t_us{TP_3_US}});
   REQUIRE(dataStruct.tp_4_ns == hpc_tp_t{t_ns{TP_4_NS}});
 
-  // Check if integers with differing number of decimal digits that represent the same time are all parsed to equal timepoints
-  REQUIRE(dataStruct.tp_0_s == dataStruct.tp_0_ms);
-  REQUIRE(dataStruct.tp_0_s == dataStruct.tp_0_us);
-  REQUIRE(ToU64(dataStruct.tp_0_us)*1000 == ToU64(dataStruct.tp_0_ns));
-
   std::string genjson = JS::serializeStruct(dataStruct);
   JsonData dataStruct2;
   REQUIRE(memcmp(&dataStruct2, &dataStruct, sizeof(JsonData)));
@@ -97,5 +93,17 @@ TEST_CASE("time_point", "json_struct")
   REQUIRE(dataStruct2.tp_2_ms == sys_tp_t{t_ms{TP_2_MS}});
   REQUIRE(dataStruct2.tp_3_us == sys_tp_t{t_us{TP_3_US}});
   REQUIRE(dataStruct2.tp_4_ns == hpc_tp_t{t_ns{TP_4_NS}});
+
+  JsonData2 dataStruct3;
+  JS::ParseContext parseContext3(genjson);
+  REQUIRE(parseContext3.parseTo(dataStruct3) == JS::Error::NoError);
+  REQUIRE(dataStruct3.tp_0_s  == TP_0_S);
+  REQUIRE(dataStruct3.tp_0_ms == TP_0_S);
+  REQUIRE(dataStruct3.tp_0_us == TP_0_S);
+  REQUIRE(dataStruct3.tp_0_ns == TP_0_S);
+  REQUIRE(dataStruct3.tp_1_s  == TP_1_S );
+  REQUIRE(dataStruct3.tp_2_ms == TP_2_MS);
+  REQUIRE(dataStruct3.tp_3_us == TP_3_US);
+  REQUIRE(dataStruct3.tp_4_ns == TP_4_NS);
 }
 } // namespace
