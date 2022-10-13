@@ -8496,6 +8496,55 @@ __extension__ using js_uint128_t = unsigned __int128;
 } // namespace JS
 #endif
 
+#if defined(JS_STL_ARRAY) && !defined(JS_STL_ARRAY_INCLUDE)
+#define JS_STL_ARRAY_INCLUDE
+#include <array>
+namespace JS
+{
+template <typename T, size_t N>
+struct TypeHandler<std::array<T,N>>
+{
+public:
+  static inline Error to(std::array<T,N> &to_type, ParseContext &context)
+  {
+    if (context.token.value_type != Type::ArrayStart)
+      return JS::Error::ExpectedArrayStart;
+
+    context.nextToken();
+    for (size_t i = 0; i < N; i++)
+    {
+      if (context.error != JS::Error::NoError)
+        return context.error;
+      context.error = TypeHandler<T>::to(to_type[i], context);
+      if (context.error != JS::Error::NoError)
+        return context.error;
+
+      context.nextToken();
+    }
+
+    if (context.token.value_type != Type::ArrayEnd)
+      return JS::Error::ExpectedArrayEnd;
+    return context.error;
+  }
+  static void from(const std::array<T,N> &from, Token &token, Serializer &serializer)
+  {
+    token.value_type = Type::ArrayStart;
+    token.value = DataRef("[");
+    serializer.write(token);
+
+    token.name = DataRef("");
+    for (size_t i = 0; i < N; i++)
+      TypeHandler<T>::from(from[i], token, serializer);
+
+    token.name = DataRef("");
+    token.value_type = Type::ArrayEnd;
+    token.value = DataRef("]");
+    serializer.write(token);
+  }
+};
+} // namespace JS
+#endif
+
 namespace JS
 {
 /// \private
