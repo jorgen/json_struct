@@ -8485,17 +8485,6 @@ struct TypeHandler<std::unordered_set<Key>> : TypeHandlerSet<Key, std::unordered
 } // namespace JS
 #endif
 
-#if defined(JS_INT_128) && !defined(JS_INT_128_INCLUDE)
-#define JS_INT_128_INCLUDE 1
-// Compiler support check
-#if defined(__SIZEOF_INT128__) && !defined(JS_NO_INT128_TYPEDEF)
-namespace JS
-{
-__extension__ using js_int128_t = __int128;
-__extension__ using js_uint128_t = unsigned __int128;
-} // namespace JS
-#endif
-
 #if defined(JS_STL_ARRAY) && !defined(JS_STL_ARRAY_INCLUDE)
 #define JS_STL_ARRAY_INCLUDE
 #include <array>
@@ -8542,6 +8531,17 @@ public:
     serializer.write(token);
   }
 };
+} // namespace JS
+#endif
+
+#if defined(JS_INT_128) && !defined(JS_INT_128_INCLUDE)
+#define JS_INT_128_INCLUDE 1
+// Compiler support check
+#if defined(__SIZEOF_INT128__) && !defined(JS_NO_INT128_TYPEDEF)
+namespace JS
+{
+__extension__ using js_int128_t = __int128;
+__extension__ using js_uint128_t = unsigned __int128;
 } // namespace JS
 #endif
 
