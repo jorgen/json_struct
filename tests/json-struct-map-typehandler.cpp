@@ -67,68 +67,72 @@ namespace
 {
 const char json[] = R"json(
 {
-    "15": {
-        "88": {
-            "List": {
-                "-1": {
-                    "1": {
-                        "List2": {
+    "1": {
+        "2": {
+            "Foo": {
+                "3": {
+                    "4": {
+                        "Bar": {
                             "1": "1",
                             "2": "2",
                             "3": "3"
                         },
-                        "Val": "private",
-                        "Val2": "private"
+                        "Hello": "World",
+                        "World": "Hello",
+                        "Value": 10.0
                     }
                 },
-                "3366": {
-                    "1": {
-                        "List2": {
+                "5": {
+                    "6": {
+                        "Bar": {
                             "1": "1",
                             "2": "2",
                             "3": "3"
                         },
-                        "Val": "private",
-                        "Val2": "private"
+                        "Hello": "World",
+                        "World": "Hello",
+                        "Value": 10.0
                     }
                 }
             },
-            "Val": "private"
+            "Baz": "FooBarBaz"
         },
-        "89": {
-            "List": {
-                "-1": {
-                    "1": {
-                        "List2": null,
-                        "Val": "private",
-                        "Val2": "private"
+        "7": {
+            "Foo": {
+                "8": {
+                    "9": {
+                        "Bar": null,
+                        "Hello": "World",
+                        "World": "Hello",
+                        "Value": 11.0
                     }
                 }
             },
-            "Val": "private"
+            "Baz": "FooBarBaz"
         }
     }
 }
 )json";
 
-struct One
+struct HelloWorldContainer
 {
-  JS::Nullable<std::unordered_map<int, std::string>> List2;
-  std::string Val;
-  std::string Val2;
-  JS_OBJ(List2, Val, Val2);
+  JS::Nullable<std::unordered_map<int, std::string>> Bar;
+  std::string Hello;
+  std::string World;
+  float Value;
+  JS_OBJ(Bar, Hello, World, Value);
 };
 
-struct ListVal
+struct ParentContainer
 {
-  std::unordered_map<int, std::unordered_map<int, One>> List;
-  std::string Val;
-  JS_OBJ(List, Val);
+  std::unordered_map<int, std::unordered_map<int, HelloWorldContainer>> Foo;
+  std::string Baz;
+  JS_OBJ(Foo, Baz);
 };
 
 TEST_CASE("map_typehandler", "json_struct")
 {
-  std::unordered_map<int, std::unordered_map<int, ListVal>> obj;
+  std::unordered_map<int, std::unordered_map<int, ParentContainer>> obj;
   JS::ParseContext pc(json);
   auto error = pc.parseTo(obj);
   if (error != JS::Error::NoError)
@@ -136,7 +140,14 @@ TEST_CASE("map_typehandler", "json_struct")
     auto errorStr = pc.makeErrorString();
     fprintf(stderr, "%s\n", errorStr.c_str());
   }
+  for (auto &unassigned : pc.unassigned_required_members)
+    fprintf(stderr, "Unnassigned: %s\n", unassigned.c_str());
+  for (auto &missing : pc.missing_members)
+    fprintf(stderr, "Missing: %s\n", missing.c_str());
   REQUIRE(error == JS::Error::NoError);
+  REQUIRE(pc.unassigned_required_members.size() == 0);
+
+  REQUIRE(pc.missing_members.size() == 0);
 
 }
 }
