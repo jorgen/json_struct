@@ -1,6 +1,10 @@
 add_executable(benchmark 
     benchmark.cpp
-    include/simdjson/simdjson.cpp)
+    glaze_benchmark.cpp
+    include/simdjson/simdjson.cpp
+    )
+target_link_libraries(benchmark profiler)
+target_link_options(benchmark PRIVATE -L/usr/local/lib)
 target_compile_definitions(benchmark PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING)
 target_include_directories(benchmark PRIVATE ${PROJECT_SOURCE_DIR}/include)
 if (MSVC)
