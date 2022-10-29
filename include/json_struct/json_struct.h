@@ -713,6 +713,16 @@ const static SerializerOptions DEFAULT_OPS =
 class SerializerBuffer
 {
 public:
+  SerializerBuffer()
+    : buffer(nullptr)
+    , size(0)
+    , used(0)
+  {}
+  SerializerBuffer(char *buffer, size_t size)
+    : buffer(buffer)
+    , size(size)
+    , used(0)
+  {}
   bool free() const
   {
     return size - used != 0;
@@ -746,7 +756,7 @@ public:
   }
 
   const BufferRequestCBRef addRequestBufferCallback(std::function<void(Serializer &)> callback);
-  const std::vector<SerializerBuffer> &buffers() const;
+  const SerializerBuffer &currentBuffer() const;
   void clearBuffers();
 
 private:
@@ -756,7 +766,8 @@ private:
   bool write(Type type, const DataRef &data);
 
   Internal::CallbackContainer<void(Serializer &)> m_request_buffer_callbacks;
-  std::vector<SerializerBuffer *> m_unused_buffers;
+  SerializerBuffer m_current_buffer;
+  std::vector<SerializerBuffer> m_unused_buffers;
   std::vector<SerializerBuffer> m_all_buffers;
 
   bool m_first : 1;
@@ -1865,8 +1876,10 @@ inline Serializer::Serializer(char *buffer, size_t size)
 
 inline void Serializer::appendBuffer(char *buffer, size_t size)
 {
-  m_all_buffers.push_back({buffer, size, 0});
-  m_unused_buffers.push_back(&m_all_buffers.back());
+  m_all_buffers.push_back({buffer, size});
+  m_unused_buffers.push_back(m_all_buffers.back());
+  if (m_unused_buffers.size() == 1)
+    m_current_buffer = m_unused_buffers.front();
 }
 
 inline void Serializer::setOptions(const SerializerOptions &option)
@@ -1930,9 +1943,9 @@ inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::functi
   return m_request_buffer_callbacks.addCallback(callback);
 }
 
-inline const std::vector<SerializerBuffer> &Serializer::buffers() const
+inline const SerializerBuffer &Serializer::currentBuffer() const
 {
-  return m_all_buffers;
+  return m_current_buffer;
 }
 
 inline void Serializer::clearBuffers()
@@ -1950,7 +1963,14 @@ inline void Serializer::markCurrentSerializerBufferFull()
 {
   m_unused_buffers.erase(m_unused_buffers.begin());
   if (m_unused_buffers.size() == 0)
+  {
     askForMoreBuffers();
+    m_current_buffer = SerializerBuffer();
+  }
+  else
+  {
+    m_current_buffer = m_unused_buffers.front();
+  }
 }
 
 inline bool Serializer::writeAsString(const DataRef &data)
@@ -2002,15 +2022,14 @@ inline bool Serializer::write(const char *data, size_t size)
   size_t written = 0;
   while (m_unused_buffers.size() && written < size)
   {
-    SerializerBuffer *first = m_unused_buffers.front();
-    size_t free = first->free();
+    size_t free = m_current_buffer.free();
     if (!free)
     {
       markCurrentSerializerBufferFull();
       continue;
     }
     size_t to_write = std::min(size, free);
-    first->append(data + written, to_write);
+    m_current_buffer.append(data + written, to_write);
     written += to_write;
   }
   return written == size;
@@ -2044,7 +2063,7 @@ static inline JS::Error reformat(const char *data, size_t size, std::string &out
       break;
     serializer.write(token);
   }
-  out.resize(last_pos + serializer.buffers().back().used);
+  out.resize(last_pos + serializer.currentBuffer().used);
   if (error == Error::NeedMoreData)
     return Error::NoError;
 
@@ -3320,9 +3339,9 @@ struct SerializerContext
 
   void flush()
   {
-    if (serializer.buffers().empty() || !serializer.buffers().back().used)
-      return;
-    json_out.resize(last_pos + serializer.buffers().back().used);
+    json_out.resize(last_pos + serializer.currentBuffer().used);
+
+
     serializer.clearBuffers();
   }
 
