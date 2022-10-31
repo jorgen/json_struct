@@ -2668,8 +2668,8 @@ struct ParseContext
   explicit ParseContext(const char *data, size_t size, T &to_type)
   {
     tokenizer.addData(data, size);
-    auto error = parseTo(to_type);
-    (void)error;
+    auto this_error = parseTo(to_type);
+    (void)this_error;
   }
   template <size_t SIZE>
   explicit ParseContext(const char (&data)[SIZE])
