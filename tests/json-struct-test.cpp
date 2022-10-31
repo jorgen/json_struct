@@ -123,11 +123,11 @@ TEST_CASE("check_json_tree_nodes"
 {
   JS::ParseContext context(json_data1);
   JsonData1 data;
-  context.parseTo(data);
+  auto error = context.parseTo(data);
 
   data.TestStruct.optional_with_value = 5;
   REQUIRE(data.StringNode == "Some test data");
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(data.Field3 == 243);
 
@@ -165,7 +165,8 @@ TEST_CASE("check_json_tree_template", "json_struct")
 {
   JS::ParseContext context(json_data2);
   OuterStruct<SubObject> data;
-  context.parseTo(data);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.sub_object.more_data == "some text");
   std::string json = JS::serializeStruct(data);
 }
@@ -174,7 +175,8 @@ TEST_CASE("check_json_tree_subclass", "json_struct")
 {
   JS::ParseContext context(sub_struct3_data);
   SubStruct3 substruct3;
-  context.parseTo(substruct3);
+  auto error = context.parseTo(substruct3);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(substruct3.Field3 == std::string("432"));
 }
 
@@ -206,7 +208,8 @@ TEST_CASE("check_json_tree_deep_tree", "json_struct")
 {
   JS::ParseContext context(json_data3);
   RegularClass regular;
-  context.parseTo(regular);
+  auto error = context.parseTo(regular);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(regular.SuperSuper == 5);
   REQUIRE(regular.Super == "This is in the Superclass");
   REQUIRE(regular.Regular == 42);
@@ -232,7 +235,8 @@ TEST_CASE("check_json_missing_object", "json_struct")
 {
   JS::ParseContext context(missing_object_def);
   MissingObjectDef missing;
-  context.parseTo(missing);
+  auto error = context.parseTo(missing);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(context.error == JS::Error::NoError);
   REQUIRE(missing.fourth == 33);
@@ -267,8 +271,8 @@ TEST_CASE("check_json_error_in_sub", "json_struct")
 {
   JS::ParseContext context(error_in_sub);
   ErrorInSub sub;
-  context.parseTo(sub);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(sub);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(sub.second == "hello world");
   REQUIRE(sub.third == 33);
   REQUIRE(sub.not_assigned.data == 999);
@@ -324,8 +328,8 @@ TEST_CASE("check_json_object", "json_struct")
 {
   JS::ParseContext context(jsonObjectTest);
   JsonObjectTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.field == "hello");
   REQUIRE(obj.obj.data.size() > 0);
   REQUIRE(obj.number == 43);
@@ -338,8 +342,8 @@ TEST_CASE("check_json_object_or_array_object", "json_struct")
 {
   JS::ParseContext context(jsonObjectTest);
   JsonObjectOrArrayObjectTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.field == "hello");
   REQUIRE(obj.obj.data.size() > 0);
   REQUIRE(obj.number == 43);
@@ -352,8 +356,8 @@ TEST_CASE("check_json_object_ref", "json_struct")
 {
   JS::ParseContext context(jsonObjectTest);
   JsonObjectRefTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.field == "hello");
   REQUIRE(obj.obj.ref.size > 0);
   REQUIRE(obj.number == 43);
@@ -366,8 +370,8 @@ TEST_CASE("check_json_object_or_array_object_ref", "json_struct")
 {
   JS::ParseContext context(jsonObjectTest);
   JsonObjectOrArrayObjectRefTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.field == "hello");
   REQUIRE(obj.obj.ref.size > 0);
   REQUIRE(obj.number == 43);
@@ -428,8 +432,8 @@ TEST_CASE("check_json_array", "json_struct")
 {
   JS::ParseContext context(jsonArrayTest);
   JsonArrayTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.string == "foo");
   REQUIRE(obj.array.data.size() > 0);
   REQUIRE(obj.number == 43);
@@ -442,8 +446,8 @@ TEST_CASE("check_json_object_or_array_array", "json_struct")
 {
   JS::ParseContext context(jsonArrayTest);
   JsonObjectOrArrayArrayTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.string == "foo");
   REQUIRE(obj.array.data.size() > 0);
   REQUIRE(obj.number == 43);
@@ -456,8 +460,8 @@ TEST_CASE("check_json_array_ref", "json_struct")
 {
   JS::ParseContext context(jsonArrayTest);
   JsonArrayRefTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.string == "foo");
   REQUIRE(obj.array.ref.size > 0);
   REQUIRE(obj.number == 43);
@@ -470,8 +474,8 @@ TEST_CASE("check_json_object_or_array_array_ref", "json_struct")
 {
   JS::ParseContext context(jsonArrayTest);
   JsonObjectOrArrayArrayRefTester obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(obj.string == "foo");
   REQUIRE(obj.array.ref.size > 0);
   REQUIRE(obj.number == 43);
@@ -547,8 +551,8 @@ TEST_CASE("check_json_type_handler_types", "json_struct")
 {
   JS::ParseContext context(jsonTypeHandlerTypes);
   TypeHandlerTypes obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
 }
 
 struct TypeHandlerIntTypes
@@ -590,15 +594,15 @@ TEST_CASE("check_json_type_handler_integer_types", "json_struct")
 {
   JS::ParseContext context(jsonTypeHandlerIntTypes);
   TypeHandlerIntTypes obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
 
   std::string serialized = JS::serializeStruct(obj);
 
   JS::ParseContext context2(serialized);
   TypeHandlerIntTypes obj2;
-  context2.parseTo(obj2);
-  REQUIRE(context2.error == JS::Error::NoError);
+  error = context2.parseTo(obj2);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(obj.intN == -345);
   REQUIRE(obj.uintN == 567);
@@ -643,8 +647,8 @@ TEST_CASE("check_json_array_test", "json_struct")
 {
   JS::ParseContext context(arrayTestJson);
   ArrayTest obj;
-  context.parseTo(obj);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(obj);
+  REQUIRE(error == JS::Error::NoError);
 }
 
 struct SkipTestBase
@@ -745,15 +749,15 @@ TEST_CASE("check_json_skip_test", "json_struct")
 {
   JS::ParseContext base_context(jsonSkipTest);
   SkipTestBase base;
-  base_context.parseTo(base);
-  REQUIRE(base_context.error == JS::Error::NoError);
+  auto error = base_context.parseTo(base);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(base.name == "base_name");
   REQUIRE(base.id == 444);
 
   JS::ParseContext sub_context(jsonSkipTest);
   SkipTestSubClass sub;
-  sub_context.parseTo(sub);
-  REQUIRE(sub_context.error == JS::Error::NoError);
+  error = sub_context.parseTo(sub);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(sub.skip_test_list_01[2].name == "list03");
   REQUIRE(sub.skip_test_list_02[1].name == "list02");
   REQUIRE(sub.name == "base_name");
@@ -775,7 +779,8 @@ TEST_CASE("check_multi_top_level_json", "json_struct")
   for (int i = 0; i < 3; i++)
   {
     REQUIRE(pc.tokenizer.currentPosition() < multi_top_level_json + sizeof(multi_top_level_json) - 1);
-    pc.parseTo(t);
+    auto error = pc.parseTo(t);
+    REQUIRE(error == JS::Error::NoError);
     REQUIRE(t.a == i + 1);
   }
   REQUIRE(pc.tokenizer.currentPosition() == multi_top_level_json + sizeof(multi_top_level_json) - 1);
@@ -812,8 +817,8 @@ TEST_CASE("check_json_escaped", "json_struct")
 {
   JS::ParseContext context(escapedJson);
   EscapedOuterStruct<EscapedSubObject> data;
-  context.parseTo(data);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   std::string equals("more\"_te\\xt");
   REQUIRE(data.some_text == equals);
   std::string json = JS::serializeStruct(data);
@@ -841,8 +846,8 @@ TEST_CASE("check_json_meta_outside", "json_struct")
 {
   JS::ParseContext context(outside_json);
   OutsideMeta data;
-  context.parseTo(data);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.data == "this is some text");
   REQUIRE(data.a == 44.5);
 }
@@ -864,8 +869,8 @@ TEST_CASE("check_short_floating_point", "json_struct")
 {
   JS::ParseContext context(short_floating_at_the_end);
   FloatingPointAtTheEnd data;
-  context.parseTo(data);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
 }
 
 struct InvalidFloating
@@ -884,8 +889,8 @@ TEST_CASE("check_invalid_floating_point", "json_struct")
 {
   JS::ParseContext context(invalid_floating);
   FloatingPointAtTheEnd data;
-  context.parseTo(data);
-  REQUIRE(context.error == JS::Error::FailedToParseFloat);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::FailedToParseFloat);
 }
 
 static const char moreEscapedJsonAtEnd[] = R"json({
@@ -914,8 +919,8 @@ TEST_CASE("check_json_escaped_end", "json_struct")
 {
   JS::ParseContext context(moreEscapedJsonAtEnd);
   MoreEscapedStruct data;
-  context.parseTo(data);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.some_text == std::string("more\n"));
   REQUIRE(data.some_other == std::string("tests\""));
   REQUIRE(data.pure_escape == std::string("\n"));

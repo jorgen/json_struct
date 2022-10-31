@@ -45,7 +45,8 @@ TEST_CASE("json_struct_float", "[json_struct][float]")
 {
   JS::ParseContext context(json_data);
   Json1 json;
-  context.parseTo(json);
+  auto error = context.parseTo(json);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(json.num1 == 32587.403333333333333333f);
   REQUIRE(json.num2 == 32587.403333333333333333);
   // context.parseTo(missing);

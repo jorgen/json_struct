@@ -33,8 +33,8 @@ TEST_CASE("testMetaForTokens", "[meta]")
 {
   JS::ParseContext context(json_string);
   JS::JsonTokens tokens;
-  context.parseTo(tokens);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(tokens);
+  REQUIRE(error == JS::Error::NoError);
 
   std::vector<JS::JsonMeta> metaInfo = JS::metaForTokens(tokens);
   REQUIRE(metaInfo.size());

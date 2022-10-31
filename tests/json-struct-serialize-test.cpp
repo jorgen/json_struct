@@ -164,16 +164,16 @@ TEST_CASE("test_serialize_big", "[json_struct][serialize]")
   JS::JsonObjectOrArrayRef objOrArr;
   {
     JS::ParseContext pc(generated.begin(), generated.size());
-    pc.parseTo(objOrArr);
-    REQUIRE(pc.error == JS::Error::NoError);
+    auto error = pc.parseTo(objOrArr);
+    REQUIRE(error == JS::Error::NoError);
   }
 
   std::string serialized_json = JS::serializeStruct(objOrArr);
 
   {
     JS::ParseContext pc(serialized_json.data(), serialized_json.size());
-    pc.parseTo(objOrArr);
-    REQUIRE(pc.error == JS::Error::NoError);
+    auto error = pc.parseTo(objOrArr);
+    REQUIRE(error == JS::Error::NoError);
   }
 }
 
@@ -195,13 +195,13 @@ TEST_CASE("test_serialize_empty_string", "[json_struct][serialize]")
 {
   JS::JsonTokens tokens;
   JS::ParseContext context(empty_string_json);
-  context.parseTo(tokens);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(tokens);
+  REQUIRE(error == JS::Error::NoError);
 
   empty_string_struct empty_struct;
   JS::ParseContext context2(empty_string_json);
-  context2.parseTo(empty_struct);
-  REQUIRE(context2.error == JS::Error::NoError);
+  error = context2.parseTo(empty_struct);
+  REQUIRE(error == JS::Error::NoError);
 
   std::string out = JS::serializeStruct(tokens);
 

@@ -33,8 +33,8 @@ TEST_CASE("serialize_tuple", "[json_struct][tuple]")
 
   Foo in;
   JS::ParseContext context(json);
-  context.parseTo(in);
-  REQUIRE(context.error == JS::Error::NoError);
+  auto error = context.parseTo(in);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(in.data.get<0>() == 9876);
   REQUIRE(std::string("Tuples are cool") == in.data.get<1>());
   REQUIRE(in.data.get<2>() > 3.14);

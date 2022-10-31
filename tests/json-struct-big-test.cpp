@@ -371,7 +371,8 @@ TEST_CASE("big_struct", "json_struct")
 
   JS::ParseContext context(json);
   BigStruct data;
-  context.parseTo(data);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.Ea == 8);
 }
 TEST_CASE("big_struct_short", "json_struct")
@@ -379,7 +380,8 @@ TEST_CASE("big_struct_short", "json_struct")
 
   JS::ParseContext context(json);
   BigStructShort data;
-  context.parseTo(data);
+  auto error = context.parseTo(data);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.Ea == 8);
 }
 

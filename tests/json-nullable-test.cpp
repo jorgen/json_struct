@@ -39,14 +39,14 @@ TEST_CASE("test_nullable", "[json_struct]")
   {
     JS::ParseContext context(json);
     SmallStructWithoutNullable data;
-    context.parseTo(data);
-    REQUIRE(context.error != JS::Error::NoError);
+    auto error = context.parseTo(data);
+    REQUIRE(error != JS::Error::NoError);
   }
   {
     JS::ParseContext context(json);
     SmallStruct data;
-    context.parseTo(data);
-    REQUIRE(context.error == JS::Error::NoError);
+    auto error = context.parseTo(data);
+    REQUIRE(error == JS::Error::NoError);
     REQUIRE(data.a == 1);
     REQUIRE(data.b() > 2.199);
     REQUIRE(data.b() < 2.201);
@@ -54,8 +54,8 @@ TEST_CASE("test_nullable", "[json_struct]")
   {
     JS::ParseContext context(json);
     SmallStructNullableChecked data;
-    context.parseTo(data);
-    REQUIRE(context.error == JS::Error::NoError);
+    auto error = context.parseTo(data);
+    REQUIRE(error == JS::Error::NoError);
     REQUIRE(data.a == 1);
     REQUIRE(data.b.null);
     REQUIRE(data.b() > 2.199);

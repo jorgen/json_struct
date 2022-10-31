@@ -49,9 +49,9 @@ TEST_CASE("test_simple_utf8", "[json_struct][utf-8]")
 {
   JS::ParseContext context(json_data1);
   Struct substruct;
-  context.parseTo(substruct);
+  auto error = context.parseTo(substruct);
 
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(substruct.One == u8"j\u00f8rgen");
   REQUIRE(substruct.Two == u8"j\u00f8rgen\u00f8");
   REQUIRE(substruct.Three == u8"j\u00f8rgen\\u012");

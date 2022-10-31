@@ -16,8 +16,8 @@ TEST_CASE("find_first_child_with_data", "[json_struct][meta]")
 {
   JS::ParseContext pc(first_child_with_data_json);
   JS::JsonTokens tokens;
-  pc.parseTo(tokens);
-  REQUIRE(pc.error == JS::Error::NoError);
+  auto error = pc.parseTo(tokens);
+  REQUIRE(error == JS::Error::NoError);
   std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
   size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
   REQUIRE(first_child == 2);
@@ -35,8 +35,8 @@ TEST_CASE("find_first_child_with_data_last", "[json_struct][meta]")
 {
   JS::ParseContext pc(first_child_with_data_json_last);
   JS::JsonTokens tokens;
-  pc.parseTo(tokens);
-  REQUIRE(pc.error == JS::Error::NoError);
+  auto error = pc.parseTo(tokens);
+  REQUIRE(error == JS::Error::NoError);
   std::vector<JS::JsonMeta> meta = JS::metaForTokens(tokens);
   size_t first_child = JS::Internal::findFirstChildWithData(meta, 0);
   REQUIRE(first_child == 3);

@@ -79,9 +79,9 @@ void js_validate_json(JS::Tokenizer &tokenizer)
 
   JS::ParseContext context(buffer.c_str(), buffer.size());
   SubObject subObj;
-  context.parseTo(subObj);
+  error = context.parseTo(subObj);
 
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(subObj.number == 45);
   REQUIRE(subObj.valid == false);
 }
@@ -184,9 +184,9 @@ TEST_CASE("copy_test_js_copy_parsed", "[tokenizer]")
   JS::ParseContext context;
   context.tokenizer.addData(&tokens);
   Parent parent;
-  context.parseTo(parent);
+  error = context.parseTo(parent);
 
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(parent.test == true);
   REQUIRE(parent.more.sub_object_prop1 == true);
   REQUIRE(parent.more.sub_object_prop2 == 456);
@@ -227,15 +227,16 @@ TEST_CASE("copy_test_js_copy_tokens", "[tokenizer]")
 {
   SecondParent parent;
   JS::ParseContext parseContext(json_token_copy);
-  parseContext.parseTo(parent);
+  auto error = parseContext.parseTo(parent);
 
-  REQUIRE(parseContext.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(parent.child.data.size() == 4);
 
   JS::ParseContext childContext;
   childContext.tokenizer.addData(&parent.child.data);
   SecondChild child;
-  childContext.parseTo(child);
+  error = childContext.parseTo(child);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(child.another_int == 495);
   REQUIRE(child.some_more == "world");
 }

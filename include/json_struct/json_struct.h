@@ -167,6 +167,16 @@
 #endif
 #endif
 
+#if JS_NO_NODISCARD
+#define JS_NODISCARD
+#else
+#if __cplusplus >= 201703L
+#define JS_NODISCARD [[nodiscard]]
+#else
+#define JS_NODISCARD
+#endif
+#endif
+
 #if defined(min) || defined(max)
 #error min or max macro is defined. Make sure these are not defined before including json_struct.h.\
  Use "#define NOMINMAX 1" before including Windows.h
@@ -2551,7 +2561,8 @@ struct ParseContext
   explicit ParseContext(const char *data, size_t size, T &to_type)
   {
     tokenizer.addData(data, size);
-    parseTo(to_type);
+    auto error = parseTo(to_type);
+    (void)error;
   }
   template <size_t SIZE>
   explicit ParseContext(const char (&data)[SIZE])
@@ -3268,7 +3279,7 @@ static bool skipArrayOrObject(ParseContext &context)
 } // namespace Internal
 
 template <typename T>
-inline Error ParseContext::parseTo(T &to_type)
+JS_NODISCARD inline Error ParseContext::parseTo(T &to_type)
 {
   missing_members.reserve(10);
   unassigned_required_members.reserve(10);
@@ -3326,7 +3337,7 @@ struct SerializerContext
 };
 
 template <typename T>
-std::string serializeStruct(const T &from_type)
+JS_NODISCARD std::string serializeStruct(const T &from_type)
 {
   std::string ret_string;
   SerializerContext serializeContext(ret_string);
@@ -3337,7 +3348,7 @@ std::string serializeStruct(const T &from_type)
 }
 
 template <typename T>
-std::string serializeStruct(const T &from_type, const SerializerOptions &options)
+JS_NODISCARD std::string serializeStruct(const T &from_type, const SerializerOptions &options)
 {
   std::string ret_string;
   SerializerContext serializeContext(ret_string);
@@ -8193,8 +8204,8 @@ struct Map
     tokens.data.clear();
     meta.clear();
     json_data.clear();
-    parseContext.parseTo(tokens);
-    if (parseContext.error == JS::Error::NoError)
+    auto error = parseContext.parseTo(tokens);
+    if (error == JS::Error::NoError)
       assert(tokens.data.size() && tokens.data[0].value_type == JS::Type::ObjectStart);
 
     meta = metaForTokens(tokens);

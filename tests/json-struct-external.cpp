@@ -82,9 +82,9 @@ TEST_CASE("json_struct_external", "[json_struct]")
 {
   JS::ParseContext context(json_data1);
   JsonData1 data;
-  context.parseTo(data);
+  auto error = context.parseTo(data);
 
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.StringNode == "Some test data");
   REQUIRE(data.TestStruct.SubNumber == 500);
   REQUIRE(data.TestStruct.Array.size() == 4);

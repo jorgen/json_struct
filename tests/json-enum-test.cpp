@@ -26,7 +26,8 @@ TEST_CASE("check_enum_parser", "[json_struct][enum]")
 {
   JS::ParseContext pc(json);
   TestEnumParser ep;
-  pc.parseTo(ep);
+  auto error = pc.parseTo(ep);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(ep.colors == Colors::Green);
 
@@ -42,9 +43,9 @@ TEST_CASE("check_enum_number_parser", "[json_struct][enum]")
 {
   JS::ParseContext pc(json_number);
   TestEnumParser ep;
-  pc.parseTo(ep);
+  auto error = pc.parseTo(ep);
 
-  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(ep.colors == Colors::Blue);
 }
@@ -83,7 +84,8 @@ TEST_CASE("check_enum_parser_namespace", "[json_struct][enum]")
 {
   JS::ParseContext pc(car_json);
   One::Two::CarContainer cc;
-  pc.parseTo(cc);
+  auto error = pc.parseTo(cc);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(cc.car == FOO::BAR::Cars::BMW);
 

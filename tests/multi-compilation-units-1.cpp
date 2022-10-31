@@ -44,8 +44,8 @@ bool deserialize_json1(const std::string &json)
 {
   JS::ParseContext pc(json);
   Json1 json1;
-  pc.parseTo(json1);
-  REQUIRE(pc.error == JS::Error::NoError);
+  auto error = pc.parseTo(json1);
+  REQUIRE(error == JS::Error::NoError);
   return pc.error == JS::Error::NoError;
 }
 } // namespace multiple_compilation_units

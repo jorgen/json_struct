@@ -58,8 +58,8 @@ TEST_CASE("js_std_int", "json_struct")
   context.allow_unnasigned_required_members = false;
 
   stdinttypes to_struct;
-  context.parseTo(to_struct);
-
+  auto error = context.parseTo(to_struct);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(to_struct.int8 == 4);
   REQUIRE(to_struct.uint32 == 9);
 }
@@ -73,7 +73,8 @@ TEST_CASE("large_number_roundtrip", "json_struct")
   JS::ParseContext context(serialized);
 
   stdinttypes to_struct;
-  context.parseTo(to_struct);
+  auto error = context.parseTo(to_struct);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(to_serialize.uint64 == to_struct.uint64);
 }
@@ -101,10 +102,9 @@ TEST_CASE("test_128_int", "json_struct")
 
   very_large_int large_int_target;
   JS::ParseContext pc(large_int_json);
-  pc.parseTo(large_int_target);
+  auto error = pc.parseTo(large_int_target);
 
-  fprintf(stderr, "Large int\n%s\n", large_int_json.c_str());
-  REQUIRE(pc.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(large_int_target.data == large_int.data);
 }
 }

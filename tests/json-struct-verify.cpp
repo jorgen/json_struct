@@ -50,7 +50,8 @@ TEST_CASE("testSimpleOneMember", "[json_struct][json_struct_verify]")
 {
   JS::ParseContext context(json_data1);
   SubStructVerify substruct;
-  context.parseTo(substruct);
+  auto error = context.parseTo(substruct);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(substruct.StringNode == "Some test data");
   REQUIRE(substruct.NumberNode == 4676);
@@ -58,14 +59,15 @@ TEST_CASE("testSimpleOneMember", "[json_struct][json_struct_verify]")
 
 static const char json_data2[] = "{\n"
                                  "\"ThisWillBeUnassigned\": \"Some data\",\n"
-                                 "\"StringNode\": \"Some test data\",\n"
+                                 "\"StringNode\": \"Some test data\"\n"
                                  "}\n";
 
 TEST_CASE("testSimpleVerifyMissingMemberInStruct", "[json_struct][json_struct_verify]")
 {
   JS::ParseContext context(json_data2);
   ContainsStringNode containsString;
-  context.parseTo(containsString);
+  auto error = context.parseTo(containsString);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(containsString.StringNode == "Some test data");
   REQUIRE(context.missing_members.size() == 1);
@@ -90,7 +92,8 @@ TEST_CASE("testSimpleVerifyMissingRequiredMemberInStruct", "[json_struct][json_s
 {
   JS::ParseContext context(json_data3);
   RequiredMemberStruct requiredMemberStruct;
-  context.parseTo(requiredMemberStruct);
+  auto error = context.parseTo(requiredMemberStruct);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(requiredMemberStruct.Field3 == 3);
   REQUIRE(context.unassigned_required_members.size() == 1);
@@ -121,7 +124,8 @@ TEST_CASE("testClassHirarchyVerifyMissingMemberInStruct", "[json_struct][json_st
 {
   JS::ParseContext context(json_data4);
   SubClass subClass;
-  context.parseTo(subClass);
+  auto error = context.parseTo(subClass);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(subClass.NumberNode == 342);
   REQUIRE(subClass.SubNode == "This should be in subclass");
@@ -156,7 +160,8 @@ TEST_CASE("testClassHIrarchyVerifyMissingDataForStruct", "[json_struct][json_str
 {
   JS::ParseContext context(json_data5);
   RegularClass regular;
-  context.parseTo(regular);
+  auto error = context.parseTo(regular);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(context.unassigned_required_members.size() == 1);
   REQUIRE(context.unassigned_required_members.front() == "SuperClass2::Super");
@@ -173,7 +178,8 @@ TEST_CASE("testClassHirarchyVerifyMissingMemberInStruct2", "[json_struct][json_s
 {
   JS::ParseContext context(json_data6);
   RegularClass regular;
-  context.parseTo(regular);
+  auto error = context.parseTo(regular);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(context.missing_members.size() == 1);
   REQUIRE(context.missing_members.front() == "SuperSuperSuper");
@@ -233,7 +239,8 @@ TEST_CASE("testClassHirarchyVerifyMissingDataForStructDeep", "[json_struct][json
 {
   JS::ParseContext context(json_data7);
   Subclass subclass;
-  context.parseTo(subclass);
+  auto error = context.parseTo(subclass);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(context.unassigned_required_members.size() == 1);
   REQUIRE(context.unassigned_required_members.front() == "E::e");

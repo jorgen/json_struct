@@ -46,7 +46,8 @@ TEST_CASE("struct_aliases_checkPlain", "[json_struct][aliases]")
 {
   JS::ParseContext context(json_data1);
   FirstAlias fa;
-  context.parseTo(fa);
+  auto error = context.parseTo(fa);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(fa.ThePrimary == 55);
   REQUIRE(fa.SomeOtherValue == 44);
@@ -64,7 +65,8 @@ TEST_CASE("struct_aliases_checkPlainShadow", "[json_struct][aliases]")
 {
   JS::ParseContext context(json_data1);
   ShadowAlias sa;
-  context.parseTo(sa);
+  auto error = context.parseTo(sa);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(sa.TheAlias == 55);
   REQUIRE(sa.SomeOtherValue == 44);
@@ -93,14 +95,16 @@ TEST_CASE("struct_aliases_checkSuperShadow", "[json_struct][aliases]")
 {
   JS::ParseContext context(json_data1);
   TheSub sa;
-  context.parseTo(sa);
+  auto error = context.parseTo(sa);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(sa.TheAlias == 55);
   REQUIRE(sa.SomeOtherValue == 44);
 
   context = JS::ParseContext(json_data2);
   sa = TheSub();
-  context.parseTo(sa);
+  error = context.parseTo(sa);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(sa.TheAlias == 55);
   REQUIRE(sa.SomeOtherValue == 44);
@@ -138,7 +142,8 @@ TEST_CASE("struct_aliases_checkRecursiveShadow", "[json_struct][aliases]")
 {
   JS::ParseContext context(recursive_alias);
   First f;
-  context.parseTo(f);
+  auto error = context.parseTo(f);
+  REQUIRE(error == JS::Error::NoError);
 
   REQUIRE(f.first == "first");
   REQUIRE(f.second.two_primary == "two");

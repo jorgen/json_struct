@@ -160,12 +160,13 @@ TEST_CASE("mias_mat_special_unit_test", "[json_struct]")
 {
   IngredientCPP ingredient;
   JS::ParseContext pc(ingredientJsonError);
-  pc.parseTo(ingredient);
-  REQUIRE(pc.error == JS::Error::ExpectedDelimiter);
+  auto error = pc.parseTo(ingredient);
+  REQUIRE(error == JS::Error::ExpectedDelimiter);
 
   ShoppingListFileBase fileBase;
   JS::ParseContext nameContext(shoppingListNameSkipJson);
-  nameContext.parseTo(fileBase);
+  error = nameContext.parseTo(fileBase);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(fileBase.name == "Handleliste");
 }
 } // namespace

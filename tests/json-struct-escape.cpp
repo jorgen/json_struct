@@ -43,9 +43,9 @@ TEST_CASE("test_forward_slash", "[json_struct][escape]")
 {
   JS::ParseContext context(json_data1);
   Struct substruct;
-  context.parseTo(substruct);
+  auto error = context.parseTo(substruct);
 
-  REQUIRE(context.error == JS::Error::NoError);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(substruct.One == "foo / bar");
   REQUIRE(substruct.Two == "foo / bar");
 
@@ -53,8 +53,8 @@ TEST_CASE("test_forward_slash", "[json_struct][escape]")
 
   Struct second_struct;
   JS::ParseContext context2(out);
-  context2.parseTo(second_struct);
-  REQUIRE(context2.error == JS::Error::NoError);
+  error = context2.parseTo(second_struct);
+  REQUIRE(error == JS::Error::NoError);
   REQUIRE(substruct.One == second_struct.One);
   REQUIRE(substruct.Two == second_struct.Two);
 
