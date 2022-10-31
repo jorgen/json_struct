@@ -2223,7 +2223,15 @@ struct Nullable
     : data(t)
   {
   }
+  Nullable(T &&t)
+    : data(std::move(t))
+  {
+  }
 
+  Nullable(Nullable<T> &&t)
+    : data(std::move(t.data))
+  {
+  }
   Nullable(const Nullable<T> &t)
     : data(t.data)
   {
@@ -2232,6 +2240,22 @@ struct Nullable
   Nullable<T> &operator=(const T &other)
   {
     data = other;
+    return *this;
+  }
+  Nullable<T> &operator=(T &&other)
+  {
+    data = std::move(other);
+    return *this;
+  }
+
+  Nullable<T> &operator=(const Nullable<T> &other)
+  {
+    data = other.data;
+    return *this;
+  }
+  Nullable<T> &operator=(Nullable<T> &&other)
+  {
+    data = std::move(other.data);
     return *this;
   }
 
@@ -2259,8 +2283,18 @@ struct NullableChecked
     , null(false)
   {
   }
+  NullableChecked(T &&t)
+    : data(std::move(t))
+    , null(false)
+  {
+  }
   NullableChecked(const NullableChecked<T> &t)
     : data(t.data)
+    , null(t.null)
+  {
+  }
+  NullableChecked(NullableChecked<T> &&t)
+    : data(std::move(t.data))
     , null(t.null)
   {
   }
@@ -2268,6 +2302,25 @@ struct NullableChecked
   {
     data = other;
     null = false;
+    return *this;
+  }
+  NullableChecked<T> &operator=(T &&other)
+  {
+    data = std::move(other);
+    null = false;
+    return *this;
+  }
+
+  NullableChecked<T> &operator=(const NullableChecked<T> &other)
+  {
+    data = other.data;
+    null = other.null;
+    return *this;
+  }
+  NullableChecked<T> &operator=(NullableChecked<T> &&other)
+  {
+    data = std::move(other.data);
+    null = other.null;
     return *this;
   }
 
@@ -2294,14 +2347,40 @@ struct Optional
     : data(t)
   {
   }
+  Optional(T &&t)
+    : data(std::move(t))
+  {
+  }
 
   Optional(const Optional<T> &t)
     : data(t.data)
   {
   }
+  Optional(Optional<T> &&t)
+    : data(std::move(t.data))
+  {
+  }
   Optional<T> &operator=(const T &other)
   {
     data = other;
+    return *this;
+  }
+
+  Optional<T> &operator=(T &&other)
+  {
+    data = std::move(other);
+    return *this;
+  }
+
+  Optional<T> &operator=(const Optional<T> &other)
+  {
+    data = other.data;
+    return *this;
+  }
+
+  Optional<T> &operator=(Optional<T> &&other)
+  {
+    data = std::move(other.data);
     return *this;
   }
 
@@ -2330,8 +2409,18 @@ struct OptionalChecked
     , assigned(true)
   {
   }
+  OptionalChecked(T &&t)
+    : data(std::move(t))
+    , assigned(true)
+  {
+  }
   OptionalChecked(const OptionalChecked<T> &t)
     : data(t.data)
+    , assigned(t.assigned)
+  {
+  }
+  OptionalChecked(OptionalChecked<T> &&t)
+    : data(std::move(t.data))
     , assigned(t.assigned)
   {
   }
@@ -2339,6 +2428,24 @@ struct OptionalChecked
   {
     data = other;
     assigned = true;
+    return *this;
+  }
+  OptionalChecked<T> &operator=(T &&other)
+  {
+    data = std::move(other);
+    assigned = true;
+    return *this;
+  }
+  OptionalChecked<T> &operator=(const OptionalChecked<T> &other)
+  {
+    data = other.data;
+    assigned = other.assigned;
+    return *this;
+  }
+  OptionalChecked<T> &operator=(OptionalChecked<T> &&other)
+  {
+    data = std::move(other.data);
+    assigned = other.assigned;
     return *this;
   }
 
