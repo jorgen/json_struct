@@ -55,7 +55,7 @@ TEST_CASE("js_std_int", "json_struct")
 {
   JS::ParseContext context(json, sizeof(json));
   context.allow_missing_members = false;
-  context.allow_unnasigned_required_members = false;
+  context.allow_unasigned_required_members = false;
 
   stdinttypes to_struct;
   auto error = context.parseTo(to_struct);

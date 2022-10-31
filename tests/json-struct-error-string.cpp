@@ -60,7 +60,7 @@ TEST_CASE("test_make_error_string_unnasigned_required_member", "[json_struct][er
 
   JS::ParseContext context(json_data);
   context.allow_missing_members = false;
-  context.allow_unnasigned_required_members = false;
+  context.allow_unasigned_required_members = false;
   Struct substruct;
   auto error = context.parseTo(substruct);
 
@@ -80,7 +80,7 @@ TEST_CASE("test_make_error_string_missing_member", "[json_struct][error]")
 
   JS::ParseContext context(json_data);
   context.allow_missing_members = false;
-  context.allow_unnasigned_required_members = false;
+  context.allow_unasigned_required_members = false;
   Struct substruct;
   auto error = context.parseTo(substruct);
   (void) error;
@@ -103,7 +103,7 @@ TEST_CASE("test_make_error_string_missing_members", "[json_struct][error]")
 
   JS::ParseContext context(json_data);
   context.allow_missing_members = true;
-  context.allow_unnasigned_required_members = false;
+  context.allow_unasigned_required_members = false;
   Struct substruct;
   auto error = context.parseTo(substruct);
   (void)error;

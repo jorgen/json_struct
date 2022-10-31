@@ -35,7 +35,7 @@ int main()
 
     //default values, but can be set to false to make parseTo return an error value
     parseContext.allow_missing_members = true;
-    parseContext.allow_unnasigned_required_members = true;
+    parseContext.allow_unasigned_required_members = true;
 
     //JS::ParseContext has the member
     if (parseContext.parseTo(dataStruct) != JS::Error::NoError)

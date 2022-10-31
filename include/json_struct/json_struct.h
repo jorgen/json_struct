@@ -2742,7 +2742,7 @@ struct ParseContext
   std::vector<std::string> missing_members;
   std::vector<std::string> unassigned_required_members;
   bool allow_missing_members = true;
-  bool allow_unnasigned_required_members = true;
+  bool allow_unasigned_required_members = true;
   bool track_member_assignement_state = true;
   void *user_data = nullptr;
 };
@@ -4477,7 +4477,7 @@ inline Error TypeHandler<T, Enable>::to(T &to_type, ParseContext &context)
       context.unassigned_required_members.insert(context.unassigned_required_members.end(),
                                                  unassigned_required_members.begin(),
                                                  unassigned_required_members.end());
-    if (context.allow_unnasigned_required_members)
+    if (context.allow_unasigned_required_members)
       error = Error::NoError;
   }
   return error;
