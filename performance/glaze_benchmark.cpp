@@ -3,6 +3,10 @@
 
 #include "catch2/catch.hpp"
 
+//Attribution:
+//The json and the parsable structuress are taken from Stephen Berry's json_performance test. Please see here:
+//https://github.com/stephenberry/json_performance
+
 namespace
 {
 static const char json[] = R"(
@@ -113,6 +117,6 @@ TEST_CASE("glaze_json_benchmark", "[performance]")
      {
        fprintf(stderr, "json_struct error: %s\n", context.makeErrorString().c_str());
      }
-     meter.measure([&obj] { return JS::serializeStruct(obj); });
+     meter.measure([&obj] { return JS::serializeStruct(obj, JS::SerializerOptions(JS::SerializerOptions::Compact));});
    };
 }

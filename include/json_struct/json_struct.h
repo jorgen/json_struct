@@ -669,6 +669,24 @@ private:
   Internal::ErrorContext error_context;
 };
 
+namespace Internal
+{
+template <size_t SIZE>
+struct StringLiteral
+{
+  const char *data;
+  enum size_enum
+  {
+    size = SIZE
+  };
+};
+template <size_t SIZE>
+constexpr StringLiteral<SIZE - 1> makeStringLiteral(const char (&literal)[SIZE])
+{
+  return {literal};
+}
+}
+
 class SerializerOptions
 {
 public:
@@ -700,8 +718,8 @@ public:
   const std::string &postfix() const;
 
 private:
-  unsigned char m_shift_size;
-  unsigned char m_depth;
+  uint8_t m_shift_size;
+  uint8_t m_depth;
   Style m_style;
   bool m_convert_ascii_to_string;
 
@@ -738,6 +756,8 @@ public:
     return size - used;
   }
   void append(const char *data, size_t size);
+  template<size_t SIZE>
+  void append(const char *data);
   char *buffer;
   size_t size;
   size_t used;
@@ -764,6 +784,8 @@ public:
   {
     return write(str.c_str(), str.size());
   }
+  template<size_t SIZE>
+  inline bool write(const Internal::StringLiteral<SIZE> &strLiteral);
 
   const BufferRequestCBRef addRequestBufferCallback(std::function<void(Serializer &)> callback);
   const SerializerBuffer &currentBuffer() const;
@@ -777,8 +799,8 @@ private:
   Internal::CallbackContainer<void(Serializer &)> m_request_buffer_callbacks;
   SerializerBuffer m_current_buffer;
 
-  bool m_first : 1;
-  bool m_token_start : 1;
+  bool m_first;
+  bool m_token_start;
   SerializerOptions m_option;
 };
 
@@ -1776,252 +1798,6 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
   return error;
 }
 
-inline SerializerOptions::SerializerOptions(Style style)
-
-  : m_shift_size(style == Compact ? 0 : 2)
-  , m_depth(0)
-  , m_style(style)
-  , m_convert_ascii_to_string(true)
-  , m_token_delimiter(",")
-  , m_value_delimiter(style == Pretty ? ": " : ":")
-  , m_postfix(style == Pretty ? "\n" : "")
-{
-}
-
-inline int SerializerOptions::shiftSize() const
-{
-  return m_shift_size;
-}
-
-inline void SerializerOptions::setShiftSize(unsigned char set)
-{
-  m_shift_size = set;
-}
-
-inline unsigned char SerializerOptions::depth() const
-{
-  return m_depth;
-}
-
-inline SerializerOptions::Style SerializerOptions::style() const
-{
-  return m_style;
-}
-
-inline bool SerializerOptions::convertAsciiToString() const
-{
-  return m_convert_ascii_to_string;
-}
-
-inline void SerializerOptions::setConvertAsciiToString(bool set)
-{
-  m_convert_ascii_to_string = set;
-}
-
-inline void SerializerOptions::setStyle(Style style)
-{
-  m_style = style;
-  m_postfix = m_style == Pretty ? std::string("\n") : std::string("");
-  m_value_delimiter = m_style == Pretty ? std::string(" : ") : std::string(":");
-  setDepth(m_depth);
-}
-
-inline void SerializerOptions::skipDelimiter(bool skip)
-{
-  if (skip)
-    m_token_delimiter = "";
-  else
-    m_token_delimiter = ",";
-}
-
-inline void SerializerOptions::setDepth(int depth)
-{
-  m_depth = (unsigned char)depth;
-  m_prefix = m_style == Pretty ? std::string(depth * size_t(m_shift_size), ' ') : std::string();
-}
-
-inline const std::string &SerializerOptions::prefix() const
-{
-  return m_prefix;
-}
-inline const std::string &SerializerOptions::tokenDelimiter() const
-{
-  return m_token_delimiter;
-}
-inline const std::string &SerializerOptions::valueDelimiter() const
-{
-  return m_value_delimiter;
-}
-inline const std::string &SerializerOptions::postfix() const
-{
-  return m_postfix;
-}
-
-inline void SerializerBuffer::append(const char *data, size_t data_size)
-{
-  assert(used + data_size <= size);
-  memcpy(buffer + used, data, data_size);
-  used += data_size;
-}
-
-inline Serializer::Serializer()
-  : m_first(true)
-  , m_token_start(true)
-{
-}
-
-inline Serializer::Serializer(char *buffer, size_t size)
-  : m_current_buffer(buffer,size)
-  , m_first(true)
-  , m_token_start(true)
-
-{
-}
-
-inline void Serializer::setBuffer(char *buffer, size_t size)
-{
-  m_current_buffer = SerializerBuffer(buffer, size);
-}
-
-inline void Serializer::setOptions(const SerializerOptions &option)
-{
-  m_option = option;
-}
-
-inline bool Serializer::write(const Token &in_token)
-{
-  const Token &token = in_token;
-  if (!m_token_start)
-  {
-    if (token.value_type != Type::ObjectEnd && token.value_type != Type::ArrayEnd)
-    {
-      if (!write(m_option.tokenDelimiter()))
-        return false;
-    }
-  }
-
-  if (m_first)
-  {
-    m_first = false;
-  }
-  else
-  {
-    if (!write(m_option.postfix()))
-      return false;
-  }
-
-  if (token.value_type == Type::ObjectEnd || token.value_type == Type::ArrayEnd)
-  {
-    assert(m_option.depth() > 0);
-    m_option.setDepth(m_option.depth() - 1);
-  }
-
-  if (!write(m_option.prefix()))
-    return false;
-
-  if (token.name.size)
-  {
-    if (!write(token.name_type, token.name))
-      return false;
-
-    if (!write(m_option.valueDelimiter()))
-      return false;
-  }
-
-  if (!write(token.value_type, token.value))
-    return false;
-
-  m_token_start = (token.value_type == Type::ObjectStart || token.value_type == Type::ArrayStart);
-  if (m_token_start)
-  {
-    m_option.setDepth(m_option.depth() + 1);
-  }
-  return true;
-}
-
-inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::function<void(Serializer &)> callback)
-{
-  return m_request_buffer_callbacks.addCallback(callback);
-}
-
-inline const SerializerBuffer &Serializer::currentBuffer() const
-{
-  return m_current_buffer;
-}
-
-inline void Serializer::askForMoreBuffers()
-{
-  m_request_buffer_callbacks.invokeCallbacks(*this);
-}
-
-inline void Serializer::markCurrentSerializerBufferFull()
-{
-  m_current_buffer = SerializerBuffer();
-  askForMoreBuffers();
-}
-
-inline bool Serializer::writeAsString(const DataRef &data)
-{
-  bool written;
-  written = write("\"", 1);
-  if (!written)
-    return false;
-
-  written = write(data.data, data.size);
-  if (!written)
-    return false;
-
-  written = write("\"", 1);
-
-  return written;
-}
-
-inline bool Serializer::write(Type type, const DataRef &data)
-{
-  bool written;
-  switch (type)
-  {
-  case Type::String:
-    written = writeAsString(data);
-    break;
-  case Type::Ascii:
-    if (m_option.convertAsciiToString())
-      written = writeAsString(data);
-    else
-      written = write(data.data, data.size);
-    break;
-  case Type::Null:
-    written = write("null", 4);
-    break;
-  default:
-    written = write(data.data, data.size);
-    break;
-  }
-  return written;
-}
-
-inline bool Serializer::write(const char *data, size_t size)
-{
-  if (!size)
-    return true;
-  size_t written = 0;
-  while (written < size)
-  {
-    size_t free = m_current_buffer.free();
-    if (free == 0)
-    {
-      markCurrentSerializerBufferFull();
-      if (!m_current_buffer.free())
-        return false;
-      continue;
-    }
-    size_t to_write = std::min(size - written, free);
-    m_current_buffer.append(data + written, to_write);
-    written += to_write;
-  }
-  return written == size;
-}
-
 static inline JS::Error reformat(const char *data, size_t size, std::string &out,
                                  const SerializerOptions &options = SerializerOptions())
 {
@@ -2211,6 +1987,329 @@ constexpr Tuple<Ts...> makeTuple(Ts... args)
   return Tuple<Ts...>(args...);
 }
 // Tuple end
+
+inline SerializerOptions::SerializerOptions(Style style)
+
+  : m_shift_size(style == Compact ? 0 : 2)
+  , m_depth(0)
+  , m_style(style)
+  , m_convert_ascii_to_string(true)
+  , m_token_delimiter(",")
+  , m_value_delimiter(style == Pretty ? ": " : ":")
+  , m_postfix(style == Pretty ? "\n" : "")
+{
+}
+
+inline int SerializerOptions::shiftSize() const
+{
+  return m_shift_size;
+}
+
+inline void SerializerOptions::setShiftSize(unsigned char set)
+{
+  m_shift_size = set;
+}
+
+inline unsigned char SerializerOptions::depth() const
+{
+  return m_depth;
+}
+
+inline SerializerOptions::Style SerializerOptions::style() const
+{
+  return m_style;
+}
+
+inline bool SerializerOptions::convertAsciiToString() const
+{
+  return m_convert_ascii_to_string;
+}
+
+inline void SerializerOptions::setConvertAsciiToString(bool set)
+{
+  m_convert_ascii_to_string = set;
+}
+
+inline void SerializerOptions::setStyle(Style style)
+{
+  m_style = style;
+  m_postfix = m_style == Pretty ? std::string("\n") : std::string("");
+  m_value_delimiter = m_style == Pretty ? std::string(" : ") : std::string(":");
+  setDepth(m_depth);
+}
+
+inline void SerializerOptions::skipDelimiter(bool skip)
+{
+  if (skip)
+    m_token_delimiter = "";
+  else
+    m_token_delimiter = ",";
+}
+
+inline void SerializerOptions::setDepth(int depth)
+{
+  m_depth = (unsigned char)depth;
+  m_prefix = m_style == Pretty ? std::string(depth * size_t(m_shift_size), ' ') : std::string();
+}
+
+inline const std::string &SerializerOptions::prefix() const
+{
+  return m_prefix;
+}
+inline const std::string &SerializerOptions::tokenDelimiter() const
+{
+  return m_token_delimiter;
+}
+inline const std::string &SerializerOptions::valueDelimiter() const
+{
+  return m_value_delimiter;
+}
+inline const std::string &SerializerOptions::postfix() const
+{
+  return m_postfix;
+}
+
+inline void SerializerBuffer::append(const char *data, size_t data_size)
+{
+  assert(used + data_size <= size);
+  memcpy(buffer + used, data, data_size);
+  used += data_size;
+}
+
+template<size_t SIZE>
+inline void SerializerBuffer::append(const char *data)
+{
+  assert(used + SIZE <= size);
+  memcpy(buffer + used, data, SIZE);
+  used += SIZE;
+}
+
+inline Serializer::Serializer()
+  : m_first(true)
+  , m_token_start(true)
+{
+}
+
+inline Serializer::Serializer(char *buffer, size_t size)
+  : m_current_buffer(buffer,size)
+  , m_first(true)
+  , m_token_start(true)
+
+{
+}
+
+inline void Serializer::setBuffer(char *buffer, size_t size)
+{
+  m_current_buffer = SerializerBuffer(buffer, size);
+}
+
+inline void Serializer::setOptions(const SerializerOptions &option)
+{
+  m_option = option;
+}
+
+
+inline bool Serializer::write(const Token &in_token)
+{
+  auto begining_literals = makeTuple( JS::Internal::makeStringLiteral("\n  "),
+                                      Internal::makeStringLiteral("\n    "),
+                                      Internal::makeStringLiteral("\n      "),
+                                      Internal::makeStringLiteral("\n        "),
+                                      Internal::makeStringLiteral("\n          "),
+                                      Internal::makeStringLiteral(",\n  "),
+                                      Internal::makeStringLiteral(",\n    "),
+                                      Internal::makeStringLiteral(",\n      "),
+                                      Internal::makeStringLiteral(",\n        "),
+                                      Internal::makeStringLiteral(",\n          "));
+  //auto begining_literals_compat = makeTuple( Internal::makeStringLiteral(",\""));
+  const Token &token = in_token;
+
+  bool isEnd = token.value_type == Type::ObjectEnd || token.value_type == Type::ArrayEnd;
+  if (isEnd)
+  {
+    assert(m_option.depth() > 0);
+    m_option.setDepth(m_option.depth() - 1);
+  }
+
+  bool shortcut_front = false;
+  if (m_option.shiftSize() == 2 && !m_first)
+  {
+    if (!m_token_start && !isEnd)
+    {
+      if (m_option.depth() == 1)
+        shortcut_front = write(begining_literals.get<5>());
+      else if (m_option.depth() == 2)
+        shortcut_front = write(begining_literals.get<6>());
+      else if (m_option.depth() == 3)
+        shortcut_front = write(begining_literals.get<7>());
+      else if (m_option.depth() == 4)
+        shortcut_front = write(begining_literals.get<8>());
+      else if (m_option.depth() == 5)
+        shortcut_front = write(begining_literals.get<9>());
+    }
+    else
+    {
+      if (m_option.depth() == 1)
+        shortcut_front = write(begining_literals.get<0>());
+      else if (m_option.depth() == 2)
+        shortcut_front = write(begining_literals.get<1>());
+      else if (m_option.depth() == 3)
+        shortcut_front = write(begining_literals.get<2>());
+      else if (m_option.depth() == 4)
+        shortcut_front = write(begining_literals.get<3>());
+      else if (m_option.depth() == 5)
+        shortcut_front = write(begining_literals.get<4>());
+
+    }
+  }
+
+  if (!shortcut_front)
+  {
+    if (!m_token_start)
+    {
+      if (!isEnd)
+      {
+        if (!write(m_option.tokenDelimiter()))
+          return false;
+      }
+    }
+
+    if (m_first)
+    {
+      m_first = false;
+    }
+    else
+    {
+      if (!write(m_option.postfix()))
+        return false;
+    }
+
+
+    if (!write(m_option.prefix()))
+      return false;
+
+  }
+  if (token.name.size)
+  {
+    if (!write(token.name_type, token.name))
+      return false;
+
+    if (m_option.style() == SerializerOptions::Pretty)
+    {
+      if (!write(Internal::makeStringLiteral(": ")))
+        return false;
+    }
+    else
+    {
+      if (!write(Internal::makeStringLiteral(":")))
+        return false;
+    }
+  }
+
+  if (!write(token.value_type, token.value))
+    return false;
+
+  m_token_start = (token.value_type == Type::ObjectStart || token.value_type == Type::ArrayStart);
+  if (m_token_start)
+  {
+    m_option.setDepth(m_option.depth() + 1);
+  }
+  return true;
+}
+
+inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::function<void(Serializer &)> callback)
+{
+  return m_request_buffer_callbacks.addCallback(callback);
+}
+
+inline const SerializerBuffer &Serializer::currentBuffer() const
+{
+  return m_current_buffer;
+}
+
+inline void Serializer::askForMoreBuffers()
+{
+  m_request_buffer_callbacks.invokeCallbacks(*this);
+}
+
+inline void Serializer::markCurrentSerializerBufferFull()
+{
+  m_current_buffer = SerializerBuffer();
+  askForMoreBuffers();
+}
+
+inline bool Serializer::writeAsString(const DataRef &data)
+{
+  bool written;
+  written = write(Internal::makeStringLiteral("\""));
+  if (!written)
+    return false;
+
+  written = write(data.data, data.size);
+  if (!written)
+    return false;
+
+  written = write(Internal::makeStringLiteral("\""));
+
+  return written;
+}
+
+inline bool Serializer::write(Type type, const DataRef &data)
+{
+  bool written;
+  switch (type)
+  {
+  case Type::String:
+    written = writeAsString(data);
+    break;
+  case Type::Ascii:
+    if (m_option.convertAsciiToString())
+      written = writeAsString(data);
+    else
+      written = write(data.data, data.size);
+    break;
+  case Type::Null:
+    written = write("null", 4);
+    break;
+  default:
+    written = write(data.data, data.size);
+    break;
+  }
+  return written;
+}
+
+inline bool Serializer::write(const char *data, size_t size)
+{
+  if (!size)
+    return true;
+  size_t written = 0;
+  while (written < size)
+  {
+    size_t free = m_current_buffer.free();
+    if (free == 0)
+    {
+      markCurrentSerializerBufferFull();
+      if (!m_current_buffer.free())
+        return false;
+      continue;
+    }
+    size_t to_write = std::min(size - written, free);
+    m_current_buffer.append(data + written, to_write);
+    written += to_write;
+  }
+  return written == size;
+}
+
+template<size_t SIZE>
+inline bool Serializer::write(const Internal::StringLiteral<SIZE> &strLiteral)
+{
+  if (m_current_buffer.free() < SIZE)
+    return write(strLiteral.data, SIZE);
+
+  m_current_buffer.append<SIZE>(strLiteral.data);
+  return true;
+}
+
 
 template <typename T>
 struct Nullable
@@ -2963,18 +3062,6 @@ struct MI
 
 namespace Internal
 {
-template <size_t SIZE>
-struct StringLiteral
-{
-  const char *data;
-  static constexpr const size_t size = SIZE;
-};
-template <size_t SIZE>
-constexpr StringLiteral<SIZE - 1> makeStringLiteral(const char (&literal)[SIZE])
-{
-  return {literal};
-}
-
 template <typename T, typename U, typename NAMETUPLE>
 using MemberInfo = MI<T, U, NAMETUPLE>;
 
