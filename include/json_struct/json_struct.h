@@ -2169,8 +2169,11 @@ inline bool Serializer::write(const Token &in_token)
     {
       if (!isEnd)
       {
-        if (!write(m_option.tokenDelimiter()))
-          return false;
+        if (!m_option.tokenDelimiter().empty())
+        {
+          if (!write(Internal::makeStringLiteral(",")))
+            return false;
+        }
       }
     }
 
@@ -2180,13 +2183,15 @@ inline bool Serializer::write(const Token &in_token)
     }
     else
     {
-      if (!write(m_option.postfix()))
-        return false;
+      if (!m_option.postfix().empty())
+        if (!write(m_option.postfix()))
+          return false;
     }
 
 
-    if (!write(m_option.prefix()))
-      return false;
+    if (!m_option.prefix().empty())
+      if (!write(m_option.prefix()))
+        return false;
 
   }
   if (token.name.size)
