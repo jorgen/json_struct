@@ -41,4 +41,25 @@ TEST_CASE("serialize_tuple", "[json_struct][tuple]")
   REQUIRE(in.data.get<2>() < 3.15);
 }
 
+struct TestInt {
+  std::tuple<int32_t> member;
+  JS_OBJ(member);
+};
+
+struct TestBool {
+  std::tuple<bool> member;
+  JS_OBJ(member);
+};
+
+TEST_CASE("bool_tuple", "[json_struct][tuple]")
+{
+  TestInt tiStruct;
+  JS::ParseContext intContext(R"({ "member": [5] })");
+  REQUIRE(intContext.parseTo(tiStruct) == JS::Error::NoError);
+
+  TestBool tbStruct;
+  JS::ParseContext boolContext(R"({ "member": [true] })");
+  REQUIRE(boolContext.parseTo(tbStruct) == JS::Error::NoError);
+}
+
 } // namespace json_struct_serialize_tuple
