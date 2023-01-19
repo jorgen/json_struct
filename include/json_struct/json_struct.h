@@ -1741,10 +1741,10 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
   {
     if (*(json_data.data + cursor_back) == '\n')
     {
-      lines.front().start = cursor_back + 1;
+      lines.front().start = size_t(cursor_back + 1);
       lines_back++;
       if (lines_back == 1)
-        error_context.character = real_cursor_index - cursor_back;
+        error_context.character = size_t(real_cursor_index - cursor_back);
       if (lines_back == int64_t(line_context))
       {
         lines_back--;
@@ -1755,7 +1755,7 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     }
   }
   if (lines.front().start == 0)
-    lines.front().start = cursor_back;
+    lines.front().start = size_t(cursor_back);
   bool add_new_line = false;
   for (cursor_forward = real_cursor_index; cursor_forward < stop_forward; cursor_forward++)
   {
@@ -1766,7 +1766,7 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     }
     if (*(json_data.data + cursor_forward) == '\n')
     {
-      lines.back().end = cursor_forward;
+      lines.back().end = size_t(cursor_forward);
       lines_forward++;
       if (lines_forward == int64_t(line_context))
         break;
@@ -1774,7 +1774,7 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     }
   }
   if (lines.back().end == 0)
-    lines.back().end = cursor_forward - 1;
+    lines.back().end = size_t(cursor_forward - 1);
 
   if (lines.size() > 1)
   {
@@ -1783,7 +1783,7 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     {
       error_context.lines.push_back(std::string(json_data.data + line.start, line.end - line.start));
     }
-    error_context.line = lines_back;
+    error_context.line = size_t(lines_back);
   }
   else
   {
@@ -1792,8 +1792,8 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
     int64_t left = real_cursor_index > int64_t(range_context) ? real_cursor_index - int64_t(range_context) : 0;
     int64_t right =
       real_cursor_index + int64_t(range_context) > int64_t(json_data.size) ? int64_t(json_data.size) : real_cursor_index + int64_t(range_context);
-    error_context.character = real_cursor_index - left;
-    error_context.lines.push_back(std::string(json_data.data + left, right - left));
+    error_context.character = size_t(real_cursor_index - left);
+    error_context.lines.push_back(std::string(json_data.data + left, size_t(right - left)));
   }
   return error;
 }
