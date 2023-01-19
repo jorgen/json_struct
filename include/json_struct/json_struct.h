@@ -1725,18 +1725,18 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
       ? DataRef(parsed_data_vector->front().value.data,
                 size_t(parsed_data_vector->back().value.data - parsed_data_vector->front().value.data))
       : data_list.front();
-  size_t real_cursor_index = parsed_data_vector && parsed_data_vector->size()
-                               ? size_t(parsed_data_vector->at(cursor_index).value.data - json_data.data)
-                               : cursor_index;
-  const size_t stop_back = real_cursor_index - std::min(real_cursor_index, line_range_context);
-  const size_t stop_forward = std::min(real_cursor_index + line_range_context, json_data.size);
+  int64_t real_cursor_index = parsed_data_vector && parsed_data_vector->size()
+                               ? int64_t (parsed_data_vector->at(cursor_index).value.data - json_data.data)
+                               : int64_t(cursor_index);
+  const int64_t stop_back = real_cursor_index - std::min(int64_t(real_cursor_index), int64_t(line_range_context));
+  const int64_t stop_forward = std::min(real_cursor_index + int64_t(line_range_context), int64_t(json_data.size));
   std::vector<Internal::Lines> lines;
-  lines.push_back({0, real_cursor_index});
-  assert(real_cursor_index <= json_data.size);
-  size_t lines_back = 0;
-  size_t lines_forward = 0;
-  size_t cursor_back;
-  size_t cursor_forward;
+  lines.push_back({0, size_t(real_cursor_index)});
+  assert(real_cursor_index <= int64_t(json_data.size));
+  int64_t lines_back = 0;
+  int64_t lines_forward = 0;
+  int64_t cursor_back;
+  int64_t cursor_forward;
   for (cursor_back = real_cursor_index - 1; cursor_back > stop_back; cursor_back--)
   {
     if (*(json_data.data + cursor_back) == '\n')
@@ -1745,13 +1745,13 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
       lines_back++;
       if (lines_back == 1)
         error_context.character = real_cursor_index - cursor_back;
-      if (lines_back == line_context)
+      if (lines_back == int64_t(line_context))
       {
         lines_back--;
         break;
       }
 
-      lines.insert(lines.begin(), {0, cursor_back});
+      lines.insert(lines.begin(), {0, size_t(cursor_back)});
     }
   }
   if (lines.front().start == 0)
@@ -1761,14 +1761,14 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
   {
     if (add_new_line)
     {
-      lines.push_back({cursor_forward, 0});
+      lines.push_back({size_t(cursor_forward), 0});
       add_new_line = false;
     }
     if (*(json_data.data + cursor_forward) == '\n')
     {
       lines.back().end = cursor_forward;
       lines_forward++;
-      if (lines_forward == line_context)
+      if (lines_forward == int64_t(line_context))
         break;
       add_new_line = true;
     }
@@ -1789,9 +1789,9 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
   {
     error_context.line = 0;
 
-    size_t left = real_cursor_index > range_context ? real_cursor_index - range_context : 0;
-    size_t right =
-      real_cursor_index + range_context > json_data.size ? json_data.size : real_cursor_index + range_context;
+    int64_t left = real_cursor_index > int64_t(range_context) ? real_cursor_index - int64_t(range_context) : 0;
+    int64_t right =
+      real_cursor_index + int64_t(range_context) > int64_t(json_data.size) ? int64_t(json_data.size) : real_cursor_index + int64_t(range_context);
     error_context.character = real_cursor_index - left;
     error_context.lines.push_back(std::string(json_data.data + left, right - left));
   }

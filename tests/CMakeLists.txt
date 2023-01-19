@@ -53,6 +53,7 @@ set(unit_test_sources
                            json-struct-stdint.cpp
                            json-struct-nested.cpp
                            json-struct-map-typehandler.cpp
+                           json-tokenizer-invalid-json.cpp
                            )
 
 add_executable(unit-tests ${unit_test_sources})
