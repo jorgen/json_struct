@@ -3915,6 +3915,12 @@ struct JsonStructFunctionContainerDummy
 
 #define JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER_WITHOUT_MEMBERS(Type, super_list)                                    \
   JS_FUNCTION_CONTAINER_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple())
+
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 11
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 namespace Internal
 {
 template <typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
@@ -4145,6 +4151,11 @@ struct FunctionCaller<T, U, void, void, NAME_COUNT, 2>
   }
 };
 } // namespace Internal
+
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 11
+#pragma GCC diagnostic pop
+#endif
+
 template <typename T, typename U, typename Ret, typename Arg, size_t NAME_COUNT, size_t TAKES_CONTEXT>
 Error matchAndCallFunction(T &container, CallFunctionContext &context,
                            FunctionInfo<U, Ret, Arg, NAME_COUNT, TAKES_CONTEXT> &functionInfo, bool primary)
