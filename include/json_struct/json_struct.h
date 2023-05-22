@@ -8053,7 +8053,7 @@ struct StdTupleTypeHandler
     return StdTupleTypeHandler<INDEX - 1, Ts...>::to(to_type, context);
   }
 
-  static inline void from(const JS::Tuple<Ts...> &from_type, Token &token, Serializer &serializer)
+  static inline void from(const std::tuple<Ts...> &from_type, Token &token, Serializer &serializer)
   {
     using Type = typename std::tuple_element<sizeof...(Ts) - INDEX, std::tuple<Ts...>>::type;
     TypeHandler<Type>::from(std::get<sizeof...(Ts) - INDEX>(from_type), token, serializer);

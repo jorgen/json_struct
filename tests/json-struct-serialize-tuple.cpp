@@ -60,6 +60,9 @@ TEST_CASE("bool_tuple", "[json_struct][tuple]")
   TestBool tbStruct;
   JS::ParseContext boolContext(R"({ "member": [true] })");
   REQUIRE(boolContext.parseTo(tbStruct) == JS::Error::NoError);
+
+  std::string serializedTbStruct = JS::serializeStruct(tbStruct);
+  REQUIRE(serializedTbStruct.size() != 0);
 }
 
 } // namespace json_struct_serialize_tuple
