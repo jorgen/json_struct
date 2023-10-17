@@ -4524,6 +4524,88 @@ void populateEnumNames(std::vector<DataRef> &names, const char (&data)[N])
   };                                                                                                                   \
   }
 
+#define JS_ENUM_DECLARE_VALUE_PARSER(name)                                                                             \
+  namespace JS                                                                                                         \
+  {                                                                                                                    \
+  template <>                                                                                                          \
+  struct TypeHandler<name>                                                                                             \
+  {                                                                                                                    \
+    static inline Error to(name &to_type, ParseContext &context)                                                       \
+    {                                                                                                                  \
+      if (std::is_unsigned<name>::value)                                                                               \
+      {                                                                                                                \
+        unsigned int to_value;                                                                                         \
+        JS::Error result = TypeHandler<unsigned int>::to(to_value, context);                                           \
+        if (result == JS::Error::NoError)                                                                              \
+          to_type = static_cast<name>(to_value);                                                                       \
+        return result;                                                                                                 \
+      }                                                                                                                \
+      else                                                                                                             \
+      {                                                                                                                \
+        int to_value;                                                                                                  \
+        JS::Error result = TypeHandler<int>::to(to_value, context);                                                    \
+        if (result == JS::Error::NoError)                                                                              \
+          to_type = static_cast<name>(to_value);                                                                       \
+        return result;                                                                                                 \
+      }                                                                                                                \
+    }                                                                                                                  \
+    static inline void from(const name &from_type, Token &token, Serializer &serializer)                               \
+    {                                                                                                                  \
+      if (std::is_unsigned<name>::value)                                                                               \
+      {                                                                                                                \
+        const unsigned int from_value = static_cast<uint64_t>(from_type);                                              \
+        TypeHandler<uint64_t>::from(from_value, token, serializer);                                                    \
+      }                                                                                                                \
+      else                                                                                                             \
+      {                                                                                                                \
+        const int from_value = static_cast<int>(from_type);                                                            \
+        TypeHandler<int64_t>::from(from_value, token, serializer);                                                     \
+      }                                                                                                                \
+    }                                                                                                                  \
+  };                                                                                                                   \
+  }
+
+#define JS_ENUM_NAMESPACE_DECLARE_VALUE_PARSER(ns, name)                                                               \
+  namespace JS                                                                                                         \
+  {                                                                                                                    \
+  template <>                                                                                                          \
+  struct TypeHandler<ns::name>                                                                                         \
+  {                                                                                                                    \
+    static inline Error to(ns::name &to_type, ParseContext &context)                                                   \
+    {                                                                                                                  \
+      if (std::is_unsigned<ns::name>::value)                                                                           \
+      {                                                                                                                \
+        unsigned int to_value;                                                                                         \
+        JS::Error result = TypeHandler<unsigned int>::to(to_value, context);                                           \
+        if (result == JS::Error::NoError)                                                                              \
+          to_type = static_cast<ns::name>(to_value);                                                                   \
+        return result;                                                                                                 \
+      }                                                                                                                \
+      else                                                                                                             \
+      {                                                                                                                \
+        int to_value;                                                                                                  \
+        JS::Error result = TypeHandler<int>::to(to_value, context);                                                    \
+        if (result == JS::Error::NoError)                                                                              \
+          to_type = static_cast<ns::name>(to_value);                                                                   \
+        return result;                                                                                                 \
+      }                                                                                                                \
+    }                                                                                                                  \
+    static inline void from(const ns::name &from_type, Token &token, Serializer &serializer)                           \
+    {                                                                                                                  \
+      if (std::is_unsigned<ns::name>::value)                                                                           \
+      {                                                                                                                \
+        const unsigned int from_value = static_cast<uint64_t>(from_type);                                              \
+        TypeHandler<uint64_t>::from(from_value, token, serializer);                                                    \
+      }                                                                                                                \
+      else                                                                                                             \
+      {                                                                                                                \
+        const int from_value = static_cast<int>(from_type);                                                            \
+        TypeHandler<int64_t>::from(from_value, token, serializer);                                                     \
+      }                                                                                                                \
+    }                                                                                                                  \
+  };                                                                                                                   \
+  }
+
 namespace JS
 {
 template <typename T, typename Enable>
