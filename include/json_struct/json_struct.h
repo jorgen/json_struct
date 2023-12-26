@@ -365,6 +365,8 @@ enum class Error : unsigned char
   ExpectedObjectEnd,
   ExpectedArrayStart,
   ExpectedArrayEnd,
+  UnexpectedArrayEnd,
+  UnexpectedObjectEnd,
   IllegalPropertyName,
   IllegalPropertyType,
   IllegalDataValue,
@@ -959,12 +961,22 @@ inline Error Tokenizer::nextToken(Token &next_token)
       container_stack.push_back(next_token.value_type);
     if (next_token.value_type == Type::ArrayEnd)
     {
-      assert(container_stack.size() && container_stack.back() == JS::Type::ArrayStart);
+      if (!container_stack.size() || container_stack.back() != JS::Type::ArrayStart)
+      {
+        error = Error::UnexpectedArrayEnd;
+        updateErrorContext(error);
+        return error;
+      }
       container_stack.pop_back();
     }
     if (next_token.value_type == Type::ObjectEnd)
     {
-      assert(container_stack.size() && container_stack.back() == JS::Type::ObjectStart);
+      if (!container_stack.size() || container_stack.back() != JS::Type::ObjectStart)
+      {
+        error = Error::UnexpectedObjectEnd;
+        updateErrorContext(error);
+        return error;
+      }
       container_stack.pop_back();
     }
     if (scope_counter.size())
@@ -1059,6 +1071,8 @@ static const char *error_strings[] = {
   "ExpectedObjectEnd",
   "ExpectedArrayStart",
   "ExpectedArrayEnd",
+  "UnexpectedArrayEnd",
+  "UnexpectedObjectEnd",
   "IllegalPropertyName",
   "IllegalPropertyType",
   "IllegalDataValue",
@@ -1819,7 +1833,7 @@ static inline JS::Error reformat(const char *data, size_t size, std::string &out
     out.resize(4096);
   serializer.setBuffer(&out[0], out.size());
 
-  while (true)
+  while (error == Error::NoError)
   {
     error = tokenizer.nextToken(token);
     if (error != Error::NoError)
@@ -2127,7 +2141,10 @@ inline bool Serializer::write(const Token &in_token)
   bool isEnd = token.value_type == Type::ObjectEnd || token.value_type == Type::ArrayEnd;
   if (isEnd)
   {
-    assert(m_option.depth() > 0);
+    if (m_option.depth() <= 0)
+    {
+      return false;
+    }
     m_option.setDepth(m_option.depth() - 1);
   }
 
