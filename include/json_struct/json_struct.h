@@ -1768,8 +1768,8 @@ inline Error Tokenizer::updateErrorContext(Error error, const std::string &custo
       lines.insert(lines.begin(), {0, size_t(cursor_back)});
     }
   }
-  if (lines.front().start == 0)
-    lines.front().start = size_t(cursor_back);
+  if (lines.front().start == 0 && cursor_back > 0)
+      lines.front().start = size_t(cursor_back);
   bool add_new_line = false;
   for (cursor_forward = real_cursor_index; cursor_forward < stop_forward; cursor_forward++)
   {
