@@ -1,6 +1,8 @@
 name: ClusterFuzzLite PR fuzzing
 on:
   workflow_dispatch:
+  push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 permissions: read-all
