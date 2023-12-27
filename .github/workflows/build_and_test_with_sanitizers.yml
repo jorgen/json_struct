@@ -1,0 +1,45 @@
+name: Build and Test with Clang sanitizers
+
+on: [push, pull_request]
+
+jobs:
+  build-and-push-docker-image:
+    runs-on: ubuntu-latest
+    outputs:
+      imageTag: ${{ steps.docker-build.outputs.imageTag }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and Push Docker Image
+        id: docker-build
+        uses: ./.github/actions/docker-build-action
+        with:
+          imageName: json_struct_sanitizer_docker_1
+          dockerFile: docker/ubuntu22.04/Dockerfile
+          user: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+  test-address-sanitizer:
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker-image
+    container: ${{ needs.build-and-push-docker-image.outputs.imageTag }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run AddressSanitizer
+      run: |
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined" -GNinja ..
+        ninja
+        ctest .
+
+  test-memory-sanitizer:
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker-image
+    container: ${{ needs.build-and-push-docker-image.outputs.imageTag }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run MemorySanitizer
+      run: |
+        mkdir build && cd build
+        cmake -DCMAKE_CXX_FLAGS="$MSAN_CFLAGS" -DCMAKE_EXE_LINKER_FLAGS="$MSAN_LFLAGS" -DCMAKE_BUILD_TYPE=Debug -GNinja ..
+        ninja
+        ctest .

@@ -57,7 +57,7 @@ TEST_CASE("js_std_int", "json_struct")
   context.allow_missing_members = false;
   context.allow_unasigned_required_members = false;
 
-  stdinttypes to_struct;
+  stdinttypes to_struct = {};
   auto error = context.parseTo(to_struct);
   REQUIRE(error == JS::Error::NoError);
   REQUIRE(to_struct.int8 == 4);
@@ -66,7 +66,7 @@ TEST_CASE("js_std_int", "json_struct")
 
 TEST_CASE("large_number_roundtrip", "json_struct")
 {
-  stdinttypes to_serialize;
+  stdinttypes to_serialize = {};
   to_serialize.uint64 = 0;
   to_serialize.uint64 = ~to_serialize.uint64;
   std::string serialized = JS::serializeStruct(to_serialize);

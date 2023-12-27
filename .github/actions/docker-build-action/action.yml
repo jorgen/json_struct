@@ -1,0 +1,41 @@
+name: 'Docker Build and Push'
+description: 'Builds and pushes Docker images to GitHub Container Registry'
+inputs:
+  imageName:
+    description: 'Name of the image to build and push'
+    required: true
+  dockerFile:
+    description: 'Filepath relative to the repository root'
+    required: true
+  user:
+    description: 'User name used for ghcr'
+    required: true
+  password:
+    description: 'Password for user when logging in to ghcr'
+    required: true
+outputs:
+  imageTag:
+    description: 'The tag of the built Docker image'
+    value: "ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}"
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Log in to GitHub Container Registry
+      shell: bash
+      run: docker login ghcr.io -u ${{ inputs.user }} -p ${{ inputs.password }}
+
+    - name: Pull existing Docker image
+      shell: bash
+      run: docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }} || true
+
+    - name: Build Docker image
+      shell: bash
+      run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }} -f ${{ inputs.dockerFile }} .
+
+    - name: Push Docker image
+      shell: bash
+      run: docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}
+

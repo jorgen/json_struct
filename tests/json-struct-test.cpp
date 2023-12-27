@@ -107,7 +107,7 @@ struct JsonData1
   /// Test structur comment
   SubStruct TestStruct;
   JS::Optional<std::vector<double>> OptionalButWithData;
-  float unassigned_value;
+  float unassigned_value = 32.f;
   std::unique_ptr<SubStruct2> subStruct2;
 
   int Field3 = 243;
