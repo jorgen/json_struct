@@ -274,3 +274,7 @@ https://github.com/jorgen/json_struct/tree/master/tests
 
 [PVS-Studio](https://pvs-studio.com/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
 
+## DAST Tools
+All tests are run with Clang Address Sanitizer and Memory Sanitizers on pull requests.
+[Clang Address Sanitizer](https://clang.llvm.org/docs/AddressSanitizer.html)
+[Clang Memory Sanitizer](https://clang.llvm.org/docs/MemorySanitizer.html)
