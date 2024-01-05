@@ -101,7 +101,6 @@ struct JsonData1
    *}
    **/
   bool BooleanFalse = false;
- ;
   JS::Optional<int> OptionalInt;
   /// Test structur comment
   SubStruct TestStruct;
