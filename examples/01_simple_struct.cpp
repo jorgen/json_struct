@@ -14,7 +14,7 @@ const char json[] = R"json(
 struct VecMember
 {
   std::string key;
-  double value;
+  double value = 0.0;
 
   JS_OBJ(key, value);
 };

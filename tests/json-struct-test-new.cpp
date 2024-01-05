@@ -58,7 +58,7 @@ static const char json_data1[] = "{\n"
 struct SubStruct
 {
   std::string SubString;
-  int SubNumber;
+  int SubNumber = 0;
   std::vector<double> Array;
   JS::OptionalChecked<float> optional_float;
   JS::OptionalChecked<double> optional_double;
@@ -90,8 +90,8 @@ struct SubStruct3 : public SubStruct2
 struct JsonData1
 {
   std::string StringNode;
-  double NumberNode;
-  bool BooleanTrue;
+  double NumberNode = 0.0;
+  bool BooleanTrue = false;
   /*!
    *very special comment for BooleanFalse
    *
@@ -100,7 +100,8 @@ struct JsonData1
    *   json
    *}
    **/
-  bool BooleanFalse;
+  bool BooleanFalse = false;
+ ;
   JS::Optional<int> OptionalInt;
   /// Test structur comment
   SubStruct TestStruct;
@@ -253,7 +254,7 @@ static const char error_in_sub[] = R"json(
 
 struct ErrorInSubChild
 {
-  int ffirst;
+  int ffirst = 0;
   JS_OBJ(ffirst);
 };
 
@@ -261,7 +262,7 @@ struct ErrorInSub
 {
   ErrorInSubChild first;
   std::string second;
-  int third;
+  int third = 0;
   JS::Optional<int> not_assigned = 999;
   JS_OBJ(first, second, third);
 };
@@ -843,7 +844,7 @@ TEST_CASE("short_check_json_meta_outside", "json_struct")
   auto error = context.parseTo(data);
   REQUIRE(error == JS::Error::NoError);
   REQUIRE(data.data == "this is some text");
-  REQUIRE(data.a == 44.5);
+  REQUIRE(data.a == 44.5);//-V550
 }
 
 struct FloatingPointAtTheEnd

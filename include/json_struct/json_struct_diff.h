@@ -98,6 +98,7 @@ namespace Internal
 struct DiffTokens
 {
     DiffTokens()
+        : error(DiffError::NoError)
     {}
 
     explicit DiffTokens(const char* json, size_t size)
@@ -462,7 +463,7 @@ namespace Internal
             }
             else
             {
-                if (baseValue == diffValue)
+                if (baseValue == diffValue)//-V550
                     diff.set(diffPos, DiffType::NoDiff);
                 else
                     diff.set(diffPos, DiffType::ValueDiff);
@@ -739,9 +740,9 @@ namespace Internal
             }
             else if (base.tokens.data.size() && diff.tokens.data.empty())
             {
-                if (diff.tokens.data[0].value_type == Type::ObjectStart)
+                if (base.tokens.data[0].value_type == Type::ObjectStart)
                     diff.addMissingMembers(0, base, 0);
-                else if (diff.tokens.data[0].value_type == Type::ArrayStart)
+                else if (base.tokens.data[0].value_type == Type::ArrayStart)
                     diff.addMissingArrayItems(0, base, 0);
                 else
                     setStateForEntireToken(diff, 0, DiffType::ErroneousRootItem);

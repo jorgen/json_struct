@@ -8,7 +8,7 @@ namespace
 {
 struct SmallStructWithoutOptional
 {
-  int a;
+  int a = 0;
   float b = 2.2f;
   std::string d;
 
@@ -18,7 +18,7 @@ struct SmallStructWithoutOptional
 #ifdef JS_STD_OPTIONAL
 struct SmallStructStd
 {
-  int a;
+  int a = 0;
   std::optional<float> b = 2.2f;
   std::optional<std::string> c;
   std::optional<std::string> d;

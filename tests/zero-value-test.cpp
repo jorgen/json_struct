@@ -81,10 +81,10 @@ void test_zero_value_parse(const char *const json)
   pc.parseTo(zero);
   REQUIRE(pc.error == JS::Error::NoError);
 
-  REQUIRE(zero.f_pos_zero == f_pos_zero);
-  REQUIRE(zero.f_neg_zero == f_neg_zero);
-  REQUIRE(zero.d_pos_zero == d_pos_zero);
-  REQUIRE(zero.d_neg_zero == d_neg_zero);
+  REQUIRE(zero.f_pos_zero == f_pos_zero);//-V550
+  REQUIRE(zero.f_neg_zero == f_neg_zero);//-V550
+  REQUIRE(zero.d_pos_zero == d_pos_zero);//-V550
+  REQUIRE(zero.d_neg_zero == d_neg_zero);//-V550
 
   REQUIRE(memcmp(&f_pos_zero, &zero.f_pos_zero, sizeof(float)) == 0);
   REQUIRE(memcmp(&f_neg_zero, &zero.f_neg_zero, sizeof(float)) == 0);

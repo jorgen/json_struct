@@ -38,14 +38,14 @@ static const char json[] = R"json(
 
 struct ComplexFields_t
 {
-  int Hello;
-  int World;
+  int Hello = 0;
+  int World = 0;
   JS_OBJ(Hello, World);
 };
 
 struct SubObject_t
 {
-  bool SimpleMember;
+  bool SimpleMember = false;
   std::vector<std::string> MoreValues;
   JS_OBJ(SimpleMember, MoreValues);
 };
@@ -67,10 +67,10 @@ struct Root_t
     : ComplexFields2(true)
   {
   }
-  int Field1;
-  bool Field2;
+  int Field1 = 0;
+  bool Field2 = false;
   std::string Field3;
-  int Field4;
+  int Field4 = 0;
   ComplexFields_t ComplexFields;
   ComplexFields2_t ComplexFields2;
   JS_OBJ(Field1, Field2, Field3, Field4, ComplexFields, ComplexFields2);

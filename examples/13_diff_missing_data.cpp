@@ -117,10 +117,13 @@ int main()
             case JS::DiffType::MissingMembers:
             {
                 const auto* missingMembers = diffTokens.getMissingMembers(diffToken);
-                for (const auto& m : *missingMembers)
+                if (missingMembers)
                 {
-                    std::string missingStr = "\"" + std::string(m.name.data, m.name.size) + "\"";
-                    fprintf(stdout, "Missing member: %s\n", missingStr.c_str());
+                    for (const auto &m : *missingMembers)
+                    {
+                      std::string missingStr = "\"" + std::string(m.name.data, m.name.size) + "\"";
+                      fprintf(stdout, "Missing member: %s\n", missingStr.c_str());
+                    }
                 }
                 break;
             }

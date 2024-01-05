@@ -15,8 +15,8 @@ const char json[] = R"json(
 struct JsonData
 {
     std::string key;
-    int number;
-    bool boolean;
+    int number = 0;
+    bool boolean = false;
     //sizeof(JS::Optional<double>) == sizeof(double) however if you want to see
     //if it has been modified there is the JS::OptionalChecked. It has an "assigned" member
     //allowing the user to inspect if the type has been assigned

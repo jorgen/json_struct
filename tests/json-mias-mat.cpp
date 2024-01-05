@@ -69,7 +69,7 @@ struct RecipeNameIdItem
   }
 
   std::string recipe_name;
-  int recipe_id;
+  int recipe_id = 0;
 
   JS_OBJECT(JS_MEMBER(recipe_name), JS_MEMBER(recipe_id));
 };

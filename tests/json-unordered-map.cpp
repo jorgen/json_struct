@@ -43,7 +43,7 @@ TEST_CASE("unordered_map_complex_value", "json_struct")
   JS::ParseContext parseContext(json);
   REQUIRE(parseContext.parseTo(dataStruct) == JS::Error::NoError);
 
-  REQUIRE(dataStruct.unordered_map["bar"].front() == 2.0);
+  REQUIRE(dataStruct.unordered_map["bar"].front() == 2.0);//-V550
   REQUIRE(dataStruct.map["sail"] == "boat");
   REQUIRE(dataStruct.unordered_set.find(7) != dataStruct.unordered_set.end());
   REQUIRE(dataStruct.set.find(1.6f) != dataStruct.set.end());

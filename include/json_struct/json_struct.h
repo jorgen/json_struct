@@ -429,6 +429,7 @@ public:
   }
   RefCounter(const RefCounter<T> &other)
     : callbackContainer(other.callbackContainer)
+    , index(other.index)
   {
     inc();
   }
@@ -3345,7 +3346,7 @@ struct MemberChecker<T, Members, PAGE, 0>
     using Super = decltype(Internal::template JsonStructBaseDummy<T, T>::js_static_meta_super_info());
     Error superError = StartSuperRecursion<T, PAGE + Members::size, Super::size>::verifyMembers(
       assigned_members, track_missing_members, missing_members);
-    if (memberError != Error::NoError)
+    if (memberError != Error::NoError)//-V1051 memberError is correct, but we have to allways call supers verifyMembers first
       return memberError;
     return superError;
   }
@@ -4382,13 +4383,13 @@ inline Error CallFunctionContext::callFunctions(T &container)
 struct DefaultCallFunctionContext : public CallFunctionContext
 {
   DefaultCallFunctionContext(std::string &json_out)
-    : CallFunctionContext(p_context, s_context.serializer)
+    : CallFunctionContext(p_context, s_context.serializer)//-V1050 The super class only store the reference so we don't mind its not initialized
     , s_context(json_out)
   {
   }
 
   DefaultCallFunctionContext(const char *data, size_t size, std::string &json_out)
-    : CallFunctionContext(p_context, s_context.serializer)
+    : CallFunctionContext(p_context, s_context.serializer)//-V1050 The super class only store the reference so we don't mind its not initialized
     , p_context(data, size)
     , s_context(json_out)
   {
@@ -4960,10 +4961,7 @@ inline void left_shift(uint64_t (&a)[2], int shift)
   if (shift > int(sizeof(*a)) * 8)
   {
     auto shift_0 = (int(sizeof(uint64_t) * 8) - shift);
-    if (shift_0 > 0)
-      a[1] = a[0] >> shift_0;
-    else
-      a[1] = a[0] << -shift_0;
+    a[1] = a[0] << -shift_0;
 
     a[0] = 0;
   }
@@ -6715,7 +6713,7 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
   int desimal_position = -1;
   bool increase_significand = true;
 
-  parsedString.negative = false;
+  parsedString.negative = 0;
   parsedString.inf = 0;
   parsedString.nan = 0;
   parsedString.significand_digit_count = 0;
@@ -6730,7 +6728,7 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
   }
   if (*current == '-')
   {
-    parsedString.negative = true;
+    parsedString.negative = 1;
     current++;
   }
   while (current < number_end)
@@ -6777,8 +6775,6 @@ inline parse_string_error parseNumber(const char *number, size_t size, parsed_st
   {
     if (desimal_position >= 0)
       parsedString.exp = desimal_position - parsedString.significand_digit_count;
-    else
-      parsedString.exp = 0;
     return parse_string_error::ok;
   }
   current++;
@@ -8621,7 +8617,7 @@ struct TypeHandler<Map>
 };
 
 template <typename T, size_t COUNT>
-struct ArrayVariableContent
+struct ArrayVariableContent//-V730
 {
   T data[COUNT];
   size_t size = 0;
