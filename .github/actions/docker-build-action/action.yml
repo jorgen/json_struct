@@ -1,5 +1,9 @@
 name: 'Docker Build and Push'
 description: 'Builds and pushes Docker images to GitHub Container Registry'
+
+env:
+  FULL_IMAGE_NAME: "ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}"
+
 inputs:
   imageName:
     description: 'Name of the image to build and push'
@@ -16,7 +20,7 @@ inputs:
 outputs:
   imageTag:
     description: 'The tag of the built Docker image'
-    value: "ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}"
+    value: ${{ env.FULL_IMAGE_NAME }}
 runs:
   using: 'composite'
   steps:
@@ -27,15 +31,23 @@ runs:
       shell: bash
       run: docker login ghcr.io -u ${{ inputs.user }} -p ${{ inputs.password }}
 
-    - name: Pull existing Docker image
+    - name: Check if Docker image exists
+      id: check_image
       shell: bash
-      run: docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }} || true
+      run: |
+        if docker manifest inspect $FULL_IMAGE_NAME; then
+          echo "IMAGE_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "IMAGE_EXISTS=false" >> $GITHUB_ENV
+        fi
 
     - name: Build Docker image
+      if: env.IMAGE_EXISTS == 'false'
       shell: bash
-      run: docker build --cache-from=ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }} -t ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }} -f ${{ inputs.dockerFile }} .
+      run: docker build -t $FULL_IMAGE_NAME -f ${{ inputs.dockerFile }} .
 
     - name: Push Docker image
+      if: env.IMAGE_EXISTS == 'false'
       shell: bash
-      run: docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}
+      run: docker push $FULL_IMAGE_NAME 
 
