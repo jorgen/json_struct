@@ -13,7 +13,7 @@ jobs:
         id: docker-build
         uses: ./.github/actions/docker-build-action
         with:
-          imageName: json_struct_sanitizer_docker:1
+          imageName: json_struct_sanitizer_docker:2
           dockerFile: docker/ubuntu22.04/Dockerfile
           user: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
