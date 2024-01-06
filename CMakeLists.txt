@@ -18,7 +18,7 @@ endif()
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ### Options
-option(JSON_STRUCT_OPT_BUILD_BENCHMARKS "Build json_struct benchmarks" ${IS_TOPLEVEL_PROJECT})
+option(JSON_STRUCT_OPT_BUILD_BENCHMARKS "Build json_struct benchmarks" OFF)
 option(JSON_STRUCT_OPT_BUILD_EXAMPLES "Build json_struct examples" ${IS_TOPLEVEL_PROJECT})
 option(JSON_STRUCT_OPT_BUILD_TESTS "Build and perform json_struct tests" ${IS_TOPLEVEL_PROJECT})
 option(JSON_STRUCT_OPT_INSTALL "Generate and install json_struct target" ${IS_TOPLEVEL_PROJECT})
