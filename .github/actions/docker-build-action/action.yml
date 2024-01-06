@@ -1,9 +1,6 @@
 name: 'Docker Build and Push'
 description: 'Builds and pushes Docker images to GitHub Container Registry'
 
-env:
-  FULL_IMAGE_NAME: "ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}"
-
 inputs:
   imageName:
     description: 'Name of the image to build and push'
@@ -24,6 +21,10 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Set up environment variables
+      shell: bash
+      run: echo "FULL_IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ inputs.imageName }}" >> $GITHUB_ENV
+
     - name: Checkout code
       uses: actions/checkout@v2
 
