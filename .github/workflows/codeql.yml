@@ -11,6 +11,9 @@
 #
 name: "CodeQL"
 
+env:
+  JSON_STRUCT_DISABLE_PCH: ON
+
 on:
   push:
     branches: [ "master" ]
@@ -38,10 +41,6 @@ jobs:
       fail-fast: false
       matrix:
         language: [ 'c-cpp' ]
-        # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
-        # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
-        # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
     - name: Checkout repository

@@ -59,8 +59,8 @@ set(unit_test_sources
 add_executable(unit-tests ${unit_test_sources})
 set_compiler_flags_for_target(unit-tests)
 target_link_libraries(unit-tests PRIVATE catch_main external_json::rc)
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-target_precompile_headers(unit-tests PRIVATE ../include/json_struct/json_struct.h catch2/catch.hpp)
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0" AND NOT JSON_STRUCT_OPT_DISABLE_PCH)
+  target_precompile_headers(unit-tests PRIVATE ../include/json_struct/json_struct.h catch2/catch.hpp)
 endif()
 add_test(NAME unit-tests COMMAND unit-tests)
 

@@ -17,11 +17,18 @@ else()
 endif()
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
+if (DEFINED ENV{JSON_STRUCT_DISABLE_PCH})
+  set(JSON_STRUCT_OPT_DISABLE_PCH_DEFAULT "$ENV{JSON_STRUCT_DISABLE_PCH}")
+else()
+  set(JSON_STRUCT_OPT_DISABLE_PCH_DEFAULT "OFF")
+endif()
+
 ### Options
 option(JSON_STRUCT_OPT_BUILD_BENCHMARKS "Build json_struct benchmarks" OFF)
 option(JSON_STRUCT_OPT_BUILD_EXAMPLES "Build json_struct examples" ${IS_TOPLEVEL_PROJECT})
 option(JSON_STRUCT_OPT_BUILD_TESTS "Build and perform json_struct tests" ${IS_TOPLEVEL_PROJECT})
 option(JSON_STRUCT_OPT_INSTALL "Generate and install json_struct target" ${IS_TOPLEVEL_PROJECT})
+option(JSON_STRUCT_OPT_DISABLE_PCH "Disable precompiled headers" ${JSON_STRUCT_OPT_DISABLE_PCH_DEFAULT})
 
 ### Compiler
 function(set_compiler_flags_for_target target)
