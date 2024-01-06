@@ -326,27 +326,4 @@ TEST_CASE("check_json_partial_8", "[tokenizer]")
   REQUIRE(error == JS::Error::NeedMoreData);
 }
 
-TEST_CASE("check_remove_callback", "[tokenizer]")
-{
-  JS::Error error = JS::Error::NoError;
-  JS::Tokenizer tokenizer;
-  tokenizer.allowAsciiType(true);
-  tokenizer.allowNewLineAsTokenDelimiter(true);
-  tokenizer.addData(json_data_partial_8_1, sizeof(json_data_partial_8_1));
-  tokenizer.addData(json_data_partial_8_2, sizeof(json_data_partial_8_2));
-  JS::Token token;
-  bool has_been_called = false;
-  {
-    auto ref = tokenizer.registerNeedMoreDataCallback([&has_been_called](const JS::Tokenizer &) {
-      has_been_called = true;
-    });
-    error = tokenizer.nextToken(token);
-  }
-
-  while (error == JS::Error::NoError && token.value_type != JS::Type::ObjectEnd)
-    error = tokenizer.nextToken(token);
-
-  REQUIRE(error == JS::Error::NoError);
-  REQUIRE(has_been_called == false);
-}
 } // namespace json_tokenizer_partial_test

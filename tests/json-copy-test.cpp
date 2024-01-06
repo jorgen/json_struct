@@ -116,7 +116,7 @@ TEST_CASE("copy_test_js_partial_2", "[tokenizer]")
       offset += 2;
     }
   };
-  auto ref = tokenizer.registerNeedMoreDataCallback(func);
+  tokenizer.setNeedMoreDataCallback(func);
 
   js_validate_json(tokenizer);
 }
@@ -137,7 +137,7 @@ TEST_CASE("copy_test_js_partial_3", "[tokenizer]")
       offset += 1;
     }
   };
-  auto ref = tokenizer.registerNeedMoreDataCallback(func);
+  tokenizer.setNeedMoreDataCallback(func);
 
   js_validate_json(tokenizer);
 }

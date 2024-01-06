@@ -407,140 +407,10 @@ public:
   }
 };
 
-template <typename T>
-struct CallbackContainer;
 } // namespace Internal
-
-template <typename T>
-class RefCounter
-{
-public:
-  RefCounter()
-    : callbackContainer(nullptr)
-    , index(0)
-  {
-  }
-
-  RefCounter(size_t index, Internal::CallbackContainer<T> *callbackContainer)
-    : callbackContainer(callbackContainer)
-    , index(index)
-  {
-    inc();
-  }
-  RefCounter(const RefCounter<T> &other)
-    : callbackContainer(other.callbackContainer)
-    , index(other.index)
-  {
-    inc();
-  }
-
-  RefCounter<T> &operator=(const RefCounter<T> &other)
-  {
-    dec();
-    callbackContainer = other.callbackContainer;
-    index = other.index;
-    inc();
-    return *this;
-  }
-
-  ~RefCounter()
-  {
-    dec();
-  }
-
-private:
-  void inc();
-  void dec();
-  Internal::CallbackContainer<T> *callbackContainer;
-  size_t index;
-};
-
-template <typename T>
-class Callback
-{
-public:
-  Callback()
-    : ref(0)
-  {
-  }
-
-  Callback(std::function<T> &callback)
-    : ref(0)
-    , callback(callback)
-  {
-  }
-  Callback(const Callback<T> &other)
-    : ref(other.ref.load())
-    , callback(other.callback)
-  {
-  }
-  Callback &operator=(const Callback<T> &other)
-  {
-    ref.store(other.ref.load());
-    callback = other.callback;
-    return *this;
-  }
-
-  void inc()
-  {
-    ++ref;
-  }
-  void dec()
-  {
-    --ref;
-  }
-
-  std::atomic<int> ref;
-  std::function<T> callback;
-};
 
 namespace Internal
 {
-template <typename T>
-struct CallbackContainer
-{
-public:
-  const RefCounter<T> addCallback(std::function<T> &callback)
-  {
-    for (size_t i = 0; i < vec.size(); i++)
-    {
-      if (vec[i].ref.load() == 0)
-      {
-        vec[i].callback = callback;
-        return RefCounter<T>(i, this);
-      }
-    }
-    vec.push_back(Callback<T>(callback));
-    return RefCounter<T>(vec.size() - 1, this);
-  }
-
-  template <typename... Ts>
-  void invokeCallbacks(Ts &...args)
-  {
-    for (auto &callbackHandler : vec)
-    {
-      if (callbackHandler.ref.load())
-      {
-        callbackHandler.callback(args...);
-      }
-    }
-  }
-  void inc(size_t index)
-  {
-    assert(index < vec.size());
-    ++vec[index].ref;
-  }
-  void dec(size_t index)
-  {
-    assert(index < vec.size());
-    assert(vec[index].ref.load() != 0);
-    --vec[index].ref;
-  }
-
-private:
-  std::vector<Callback<T>> vec;
-};
-
 struct ScopeCounter
 {
   JS::Type type;
@@ -562,24 +432,6 @@ struct ScopeCounter
 };
 } // namespace Internal
 
-template <typename T>
-inline void RefCounter<T>::inc()
-{
-  if (callbackContainer)
-    callbackContainer->inc(index);
-}
-
-template <typename T>
-inline void RefCounter<T>::dec()
-{
-  if (callbackContainer)
-    callbackContainer->dec(index);
-}
-
-class Tokenizer;
-typedef RefCounter<void(const char *)> ReleaseCBRef;
-typedef RefCounter<void(Tokenizer &)> NeedMoreDataCBRef;
-
 class Tokenizer
 {
 public:
@@ -597,8 +449,8 @@ public:
   void resetData(const std::vector<Token> *parsedData, size_t index);
   size_t registeredBuffers() const;
 
-  NeedMoreDataCBRef registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
-  ReleaseCBRef registerReleaseCallback(std::function<void(const char *)> &callback);
+  void setNeedMoreDataCallback(std::function<void(Tokenizer &)> callback);
+  void setReleaseCallback(std::function<void(const char *)> &callback);
   Error nextToken(Token &next_token);
   const char *currentPosition() const;
 
@@ -665,8 +517,8 @@ private:
   std::vector<DataRef> data_list;
   std::vector<Internal::ScopeCounter> scope_counter;
   std::vector<Type> container_stack;
-  Internal::CallbackContainer<void(const char *)> release_callbacks;
-  Internal::CallbackContainer<void(Tokenizer &)> need_more_data_callbacks;
+  std::function<void(const char *)> release_callback;
+  std::function<void(Tokenizer &)> need_more_data_callback;
   std::vector<std::pair<size_t, std::string *>> copy_buffers;
   const std::vector<Token> *parsed_data_vector;
   Internal::ErrorContext error_context;
@@ -732,15 +584,6 @@ private:
   std::string m_postfix;
 };
 
-#if __cplusplus >= 201403L
-template <SerializerOptions::Style S = SerializerOptions::Style::Pretty>
-const static SerializerOptions DEFAULT_OPS =
-  []() { // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp)
-    SerializerOptions ops(S);
-    return ops;
-  }();
-#endif
-
 class SerializerBuffer
 {
 public:
@@ -766,8 +609,6 @@ public:
   size_t used;
 };
 
-class Serializer;
-typedef RefCounter<void(Serializer &)> BufferRequestCBRef;
 class Serializer
 {
 public:
@@ -790,7 +631,7 @@ public:
   template<size_t SIZE>
   inline bool write(const Internal::StringLiteral<SIZE> &strLiteral);
 
-  const BufferRequestCBRef addRequestBufferCallback(std::function<void(Serializer &)> callback);
+  void setRequestBufferCallback(std::function<void(Serializer &)> callback);
   const SerializerBuffer &currentBuffer() const;
 
 private:
@@ -799,7 +640,7 @@ private:
   bool writeAsString(const DataRef &data);
   bool write(Type type, const DataRef &data);
 
-  Internal::CallbackContainer<void(Serializer &)> m_request_buffer_callbacks;
+  std::function<void(Serializer &)> m_request_buffer_callback;
   SerializerBuffer m_current_buffer;
 
   bool m_first;
@@ -869,8 +710,11 @@ inline void Tokenizer::addData(const std::vector<Token> *parsedData)
 inline void Tokenizer::resetData(const char *data, size_t size, size_t index)
 {
 
-  for (auto &data_buffer : data_list)
-    release_callbacks.invokeCallbacks(data_buffer.data);
+  if (release_callback)
+  {
+    for (auto &data_buffer : data_list)
+      release_callback(data_buffer.data);
+  }
   data_list.clear();
   parsed_data_vector = nullptr;
   cursor_index = index;
@@ -880,8 +724,11 @@ inline void Tokenizer::resetData(const char *data, size_t size, size_t index)
 
 inline void Tokenizer::resetData(const std::vector<Token> *parsedData, size_t index)
 {
-  for (auto &data_buffer : data_list)
-    release_callbacks.invokeCallbacks(data_buffer.data);
+  if (release_callback)
+  {
+    for (auto &data_buffer : data_list)
+      release_callback(data_buffer.data);
+  }
   data_list.clear();
   parsed_data_vector = parsedData;
   cursor_index = index;
@@ -893,14 +740,14 @@ inline size_t Tokenizer::registeredBuffers() const
   return data_list.size();
 }
 
-inline NeedMoreDataCBRef Tokenizer::registerNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
+inline void Tokenizer::setNeedMoreDataCallback(std::function<void(Tokenizer &)> callback)
 {
-  return need_more_data_callbacks.addCallback(callback);
+  need_more_data_callback = callback;
 }
 
-inline ReleaseCBRef Tokenizer::registerReleaseCallback(std::function<void(const char *)> &callback)
+inline void Tokenizer::setReleaseCallback(std::function<void(const char *)> &callback)
 {
-  return release_callbacks.addCallback(callback);
+  release_callback = callback;
 }
 
 inline Error Tokenizer::nextToken(Token &next_token)
@@ -1403,7 +1250,8 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
 
 inline void Tokenizer::requestMoreData()
 {
-  need_more_data_callbacks.invokeCallbacks(*this);
+  if (need_more_data_callback)
+    need_more_data_callback(*this);
 }
 
 inline void Tokenizer::releaseFirstDataRef()
@@ -1425,7 +1273,8 @@ inline void Tokenizer::releaseFirstDataRef()
 
   const char *data_to_release = json_data.data;
   data_list.erase(data_list.begin());
-  release_callbacks.invokeCallbacks(data_to_release);
+  if (release_callback)
+    release_callback(data_to_release);
 }
 
 inline Error Tokenizer::populateFromDataRef(DataRef &data, Type &type, const DataRef &json_data)
@@ -1824,7 +1673,7 @@ static inline JS::Error reformat(const char *data, size_t size, std::string &out
   Serializer serializer;
   serializer.setOptions(options);
   size_t last_pos = 0;
-  auto cbref = serializer.addRequestBufferCallback([&out, &last_pos](Serializer &serializer_p) {
+  serializer.setRequestBufferCallback([&out, &last_pos](Serializer &serializer_p) {
     size_t end = out.size();
     out.resize(end * 2);
     serializer_p.setBuffer(&out[0] + end, end);
@@ -2240,9 +2089,9 @@ inline bool Serializer::write(const Token &in_token)
   return true;
 }
 
-inline const BufferRequestCBRef Serializer::addRequestBufferCallback(std::function<void(Serializer &)> callback)
+inline void Serializer::setRequestBufferCallback(std::function<void(Serializer &)> callback)
 {
-  return m_request_buffer_callbacks.addCallback(callback);
+  m_request_buffer_callback = callback;
 }
 
 inline const SerializerBuffer &Serializer::currentBuffer() const
@@ -2252,7 +2101,8 @@ inline const SerializerBuffer &Serializer::currentBuffer() const
 
 inline void Serializer::askForMoreBuffers()
 {
-  m_request_buffer_callbacks.invokeCallbacks(*this);
+  if (m_request_buffer_callback)
+    m_request_buffer_callback(*this);
 }
 
 inline void Serializer::markCurrentSerializerBufferFull()
@@ -3515,18 +3365,18 @@ struct SerializerContext
 {
   SerializerContext(std::string &json_out_p)
     : serializer()
-    , cb_ref(serializer.addRequestBufferCallback([this](Serializer &serializer_p) {
-      size_t end = this->json_out.size();
-      this->json_out.resize(end * 2);
-      serializer_p.setBuffer(&(this->json_out[0]) + end, end);
-      this->last_pos = end;
-    }))
     , json_out(json_out_p)
     , last_pos(0)
   {
     if (json_out.empty())
       json_out.resize(4096);
     serializer.setBuffer(&json_out[0], json_out.size());
+    serializer.setRequestBufferCallback([this](Serializer &serializer_p) {
+      size_t end = this->json_out.size();
+      this->json_out.resize(end * 2);
+      serializer_p.setBuffer(&(this->json_out[0]) + end, end);
+      this->last_pos = end;
+    });
   }
 
   ~SerializerContext()
@@ -3548,7 +3398,6 @@ struct SerializerContext
   }
 
   Serializer serializer;
-  BufferRequestCBRef cb_ref;
   std::string &json_out;
   size_t last_pos;
 };
@@ -7678,15 +7527,10 @@ public:
     }
     to_type.clear();
     to_type.push_back(context.token);
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer) {
-      JS_UNUSED(tokenizer);
-      buffer_change = true;
-    });
 
     size_t level = 1;
     Error error = Error::NoError;
-    while (error == JS::Error::NoError && level && buffer_change == false)
+    while (error == JS::Error::NoError && level)
     {
       error = context.nextToken();
       to_type.push_back(context.token);
@@ -7695,8 +7539,6 @@ public:
       else if (context.token.value_type == Type::ArrayEnd || context.token.value_type == Type::ObjectEnd)
         level--;
     }
-    if (buffer_change)
-      return Error::NonContigiousMemory;
 
     return error;
   }
@@ -7735,17 +7577,11 @@ struct TypeHandler<JsonArrayRef>
     if (context.token.value_type != JS::Type::ArrayStart)
       return Error::ExpectedArrayStart;
 
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer) {
-      JS_UNUSED(tokenizer);
-      buffer_change = true;
-    });
-
     to_type.ref.data = context.token.value.data;
 
     size_t level = 1;
     Error error = Error::NoError;
-    while (error == JS::Error::NoError && level && buffer_change == false)
+    while (error == JS::Error::NoError && level)
     {
       error = context.nextToken();
       if (context.token.value_type == Type::ArrayStart)
@@ -7753,8 +7589,6 @@ struct TypeHandler<JsonArrayRef>
       else if (context.token.value_type == Type::ArrayEnd)
         level--;
     }
-    if (buffer_change)
-      return Error::NonContigiousMemory;
 
     to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
 
@@ -7824,16 +7658,10 @@ struct TypeHandler<JsonObjectRef>
     if (context.token.value_type != JS::Type::ObjectStart)
       return Error::ExpectedObjectStart;
 
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer) {
-      JS_UNUSED(tokenizer);
-      buffer_change = true;
-    });
-
     to_type.ref.data = context.token.value.data;
     size_t level = 1;
     Error error = Error::NoError;
-    while (error == JS::Error::NoError && level && buffer_change == false)
+    while (error == JS::Error::NoError && level)
     {
       error = context.nextToken();
       if (context.token.value_type == Type::ObjectStart)
@@ -7841,8 +7669,6 @@ struct TypeHandler<JsonObjectRef>
       else if (context.token.value_type == Type::ObjectEnd)
         level--;
     }
-    if (buffer_change)
-      return Error::NonContigiousMemory;
 
     to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
     return error;
@@ -7924,16 +7750,10 @@ struct TypeHandler<JsonObjectOrArrayRef>
       return Error::ExpectedObjectStart;
     }
 
-    bool buffer_change = false;
-    auto ref = context.tokenizer.registerNeedMoreDataCallback([&buffer_change](JS::Tokenizer &tokenizer) {
-      JS_UNUSED(tokenizer);
-      buffer_change = true;
-    });
-
     to_type.ref.data = context.token.value.data;
     size_t level = 1;
     Error error = Error::NoError;
-    while (error == JS::Error::NoError && level && buffer_change == false)
+    while (error == JS::Error::NoError && level)
     {
       error = context.nextToken();
       if (context.token.value_type == openType)
@@ -7941,8 +7761,6 @@ struct TypeHandler<JsonObjectOrArrayRef>
       else if (context.token.value_type == closeType)
         level--;
     }
-    if (buffer_change)
-      return Error::NonContigiousMemory;
 
     to_type.ref.size = size_t(context.token.value.data + context.token.value.size - to_type.ref.data);
     return error;
