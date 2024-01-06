@@ -69,12 +69,6 @@ if(JSON_STRUCT_OPT_BUILD_BENCHMARKS)
   add_subdirectory(performance)
 endif()
 
-### clangformat
-add_custom_target(clangformat
-  COMMAND clang-format -i include/json_struct/json_struct.h
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-  SOURCES include/json_struct/json_struct.h)
-
 ### INSTALL
 include(GNUInstallDirs)
 include(GenPkgConfig)

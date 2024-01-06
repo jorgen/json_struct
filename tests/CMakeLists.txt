@@ -93,8 +93,3 @@ endif()
 #add_executable(unit-tests-experimental json-struct-array-varlength.cpp)
 #target_link_libraries(unit-tests-experimental PRIVATE catch_main)
 
-add_custom_target(clangformat_tests
-  COMMAND clang-format -i ${unit_test_sources}
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
-  SOURCES ${unit_test_sources}
-  )
