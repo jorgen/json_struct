@@ -8087,7 +8087,9 @@ struct TypeHandlerMap
       return error;
     while (context.token.value_type != Type::ObjectEnd)
     {
-      Key key(context.token.name.data, context.token.name.size);
+      std::string str;
+      Internal::handle_json_escapes_in(context.token.name, str);
+      Key key(str.data(), str.size());
       Value v;
       error = TypeHandler<Value>::to(v, context);
       to_type[std::move(key)] = std::move(v);
