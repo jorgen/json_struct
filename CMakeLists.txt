@@ -37,6 +37,8 @@ function(set_compiler_flags_for_target target)
     if(MSVC_VERSION GREATER_EQUAL 1920) #VS 2019 and above
       target_compile_options(${target} PRIVATE /W4 /WX)
     endif()
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-array-bounds)
   else()
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
   endif()

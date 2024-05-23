@@ -3783,9 +3783,10 @@ struct JsonStructFunctionContainerDummy
 #define JS_FUNCTION_CONTAINER_EXTERNAL_WITH_SUPER_WITHOUT_MEMBERS(Type, super_list)                                    \
   JS_FUNCTION_CONTAINER_EXTERNAL_INTERNAL_IMPL(Type, super_list, JS::makeTuple())
 
-#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 11
+#if !defined(__clang__) && defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
 
 namespace Internal
@@ -4019,7 +4020,7 @@ struct FunctionCaller<T, U, void, void, NAME_COUNT, 2>
 };
 } // namespace Internal
 
-#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 11
+#if !defined(__clang__) && defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
 
