@@ -21,7 +21,7 @@ class JsonStructLibrary(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     pacgake_type = "header-library"
     implements = ["auto_header_only"]
-    exports_sources = "include/*", "cmake/*" "CMakeLists.txt"
+    exports_sources = "include/*", "cmake/*", "CMakeLists.txt", "COPYING", "README.md", "package.xml"
 
     options = {
         "opt_build_benchmarks": [True, False],
@@ -62,6 +62,3 @@ class JsonStructLibrary(ConanFile):
 
     def layout(self):
         cmake_layout(self)
-
-    def package_id(self):
-        self.info.clear()
