@@ -29,3 +29,5 @@ tests/json-tokenizer-partial-test
 tests/json-tree-test
 tests/json-tree-printer-test
 
+*CMakeUserPresets.json
+build/
