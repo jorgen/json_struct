@@ -10,7 +10,9 @@ struct MyTestStruct
 
 int main()
 {
-    MyTestStruct person{.name="Jonh", .age=23};
+    MyTestStruct person;
+    person.name="Jonh";
+    person.age=23;
 
     std::string person_json = JS::serializeStruct(person);
     std::cout << person_json << std::endl;
