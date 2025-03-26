@@ -7361,10 +7361,10 @@ struct TypeHandler<T, typename std::enable_if_t<Internal::is_specialization<T, s
 #endif
 
 /// \private
-template <typename T>
-struct TypeHandler<std::vector<T>>
+template <typename T, typename A>
+struct TypeHandler<std::vector<T, A>>
 {
-  static inline Error to(std::vector<T> &to_type, ParseContext &context)
+  static inline Error to(std::vector<T, A> &to_type, ParseContext &context)
   {
     if (context.token.value_type != JS::Type::ArrayStart)
       return Error::ExpectedArrayStart;
@@ -7387,7 +7387,7 @@ struct TypeHandler<std::vector<T>>
     return error;
   }
 
-  static inline void from(const std::vector<T> &vec, Token &token, Serializer &serializer)
+  static inline void from(const std::vector<T, A> &vec, Token &token, Serializer &serializer)
   {
     token.value_type = Type::ArrayStart;
     token.value = DataRef("[");
@@ -7409,11 +7409,11 @@ struct TypeHandler<std::vector<T>>
 };
 
 /// \private
-template <>
-struct TypeHandler<std::vector<bool>>
+template <typename A>
+struct TypeHandler<std::vector<bool, A>>
 {
 public:
-  static inline Error to(std::vector<bool> &to_type, ParseContext &context)
+  static inline Error to(std::vector<bool, A> &to_type, ParseContext &context)
   {
     if (context.token.value_type != JS::Type::ArrayStart)
       return Error::ExpectedArrayStart;
@@ -7438,7 +7438,7 @@ public:
     return error;
   }
 
-  static inline void from(const std::vector<bool> &vec, Token &token, Serializer &serializer)
+  static inline void from(const std::vector<bool, A> &vec, Token &token, Serializer &serializer)
   {
     token.value_type = Type::ArrayStart;
     token.value = DataRef("[");
@@ -7477,20 +7477,20 @@ struct TypeHandler<SilentString>
 };
 
 /// \private
-template <typename T>
-struct TypeHandler<SilentVector<T>>
+template <typename T, typename A>
+struct TypeHandler<SilentVector<T, A>>
 {
 public:
-  static inline Error to(SilentVector<T> &to_type, ParseContext &context)
+  static inline Error to(SilentVector<T, A> &to_type, ParseContext &context)
   {
-    return TypeHandler<std::vector<T>>::to(to_type.data, context);
+    return TypeHandler<std::vector<T, A>>::to(to_type.data, context);
   }
 
-  static inline void from(const SilentVector<T> &vec, Token &token, Serializer &serializer)
+  static inline void from(const SilentVector<T, A> &vec, Token &token, Serializer &serializer)
   {
     if (vec.data.size())
     {
-      TypeHandler<std::vector<T>>::from(vec.data, token, serializer);
+      TypeHandler<std::vector<T, A>>::from(vec.data, token, serializer);
     }
   }
 };
@@ -7515,11 +7515,11 @@ public:
 };
 
 /// \private
-template <>
-struct TypeHandler<std::vector<Token>>
+template <typename A>
+struct TypeHandler<std::vector<Token, A>>
 {
 public:
-  static inline Error to(std::vector<Token> &to_type, ParseContext &context)
+  static inline Error to(std::vector<Token, A> &to_type, ParseContext &context)
   {
     if (context.token.value_type != JS::Type::ArrayStart && context.token.value_type != JS::Type::ObjectStart)
     {
@@ -7544,7 +7544,7 @@ public:
     return error;
   }
 
-  static inline void from(const std::vector<Token> &from_type, Token &token, Serializer &serializer)
+  static inline void from(const std::vector<Token, A> &from_type, Token &token, Serializer &serializer)
   {
     for (auto &t : from_type)
     {
