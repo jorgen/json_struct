@@ -358,9 +358,8 @@ enum Lookup
   NumberEnd = 64
 };
 
-static inline const unsigned char *lookup()
-{
-  static const unsigned char tmp[] = {
+// Constexpr lookup table for better compiler optimization
+static constexpr unsigned char lookup_table[256] = {
     /*0*/ 4,        0,       0,       0,       0,       0,       0,       0,
     /*8*/ 0,        4,       4,       0,       0,       4,       0,       0,
     /*16*/ 0,       0,       0,       0,       0,       0,       0,       0,
@@ -393,7 +392,10 @@ static inline const unsigned char *lookup()
     /*232*/ 0,      0,       0,       0,       0,       0,       0,       0,
     /*240*/ 0,      0,       0,       0,       0,       0,       0,       0,
     /*248*/ 0,      0,       0,       0,       0,       0,       0,       0};
-  return tmp;
+
+static inline const unsigned char *lookup()
+{
+  return lookup_table;
 }
 
 #ifdef JSON_STRUCT_HAS_SSE2
@@ -894,6 +896,50 @@ inline size_t skipCommentSIMD(const char* data, size_t length)
 
   return current - data;
 }
+
+inline size_t skipWhitespaceSIMD(const char* data, size_t length)
+{
+  const char* current = data;
+  const char* end = data + length;
+
+  const __m128i space = _mm_set1_epi8(' ');
+  const __m128i tab = _mm_set1_epi8('\t');
+  const __m128i newline = _mm_set1_epi8('\n');
+  const __m128i carriage = _mm_set1_epi8('\r');
+
+  while (current + 16 <= end) {
+    __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+
+    __m128i is_space = _mm_cmpeq_epi8(chunk, space);
+    __m128i is_tab = _mm_cmpeq_epi8(chunk, tab);
+    __m128i is_newline = _mm_cmpeq_epi8(chunk, newline);
+    __m128i is_carriage = _mm_cmpeq_epi8(chunk, carriage);
+
+    __m128i whitespace = _mm_or_si128(is_space, is_tab);
+    whitespace = _mm_or_si128(whitespace, is_newline);
+    whitespace = _mm_or_si128(whitespace, is_carriage);
+
+    int mask = _mm_movemask_epi8(whitespace);
+
+    if (JSON_STRUCT_LIKELY(mask != 0xFFFF)) {
+      mask = ~mask & 0xFFFF;
+      int offset = bit_scan_forward(mask);
+      current += offset;
+      return current - data;
+    }
+    current += 16;
+  }
+
+  while (current < end) {
+    char c = *current;
+    if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+      break;
+    }
+    current++;
+  }
+
+  return current - data;
+}
 #endif
 
 } // namespace Internal
@@ -1221,10 +1267,12 @@ inline Tokenizer::Tokenizer()
   , range_context(38)
   , parsed_data_vector(nullptr)
 {
-  container_stack.reserve(16);
+  // Reserve capacity based on typical JSON nesting depth
+  // Most JSON has < 8 levels of nesting, but we reserve for 32 to avoid reallocation
+  container_stack.reserve(32);
   data_list.reserve(4);
   copy_buffers.reserve(8);
-  scope_counter.reserve(16);
+  scope_counter.reserve(32);
 }
 
 inline void Tokenizer::allowAsciiType(bool allow)
@@ -1718,12 +1766,30 @@ inline Error Tokenizer::findStartOfNextValue(Type *type, const DataRef &json_dat
 
   assert(property_state == InPropertyState::NoStartFound);
 
-  for (size_t current_pos = cursor_index; current_pos < json_data.size; current_pos++)
+  // Skip whitespace using SIMD if available
+  size_t current_pos = cursor_index;
+#ifdef JSON_STRUCT_HAS_NEON
+  if (JSON_STRUCT_LIKELY(json_data.size - current_pos >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceNEON(
+      json_data.data + current_pos,
+      json_data.size - current_pos);
+    current_pos += ws_skipped;
+  }
+#elif defined(JSON_STRUCT_HAS_SSE2)
+  if (JSON_STRUCT_LIKELY(json_data.size - current_pos >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceSIMD(
+      json_data.data + current_pos,
+      json_data.size - current_pos);
+    current_pos += ws_skipped;
+  }
+#endif
+
+  for (; current_pos < json_data.size; current_pos++)
   {
     const char c = json_data.data[current_pos];
     unsigned char lc = Internal::lookup()[(unsigned char)c];
 
-    if (allow_comments && c == '/' && current_pos + 1 < json_data.size && json_data.data[current_pos + 1] == '/')
+    if (JSON_STRUCT_UNLIKELY(allow_comments && c == '/' && current_pos + 1 < json_data.size && json_data.data[current_pos + 1] == '/'))
     {
       cursor_index = current_pos + 2;
       size_t comment_skip;
@@ -1736,49 +1802,49 @@ inline Error Tokenizer::findStartOfNextValue(Type *type, const DataRef &json_dat
       continue;
     }
 
-    if (c == '"')
+    if (JSON_STRUCT_LIKELY(c == '"'))
     {
       *type = Type::String;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (c == '{')
+    else if (JSON_STRUCT_LIKELY(c == '{'))
     {
       *type = Type::ObjectStart;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (c == '}')
+    else if (JSON_STRUCT_LIKELY(c == '}'))
     {
       *type = Type::ObjectEnd;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (c == '[')
+    else if (JSON_STRUCT_LIKELY(c == '['))
     {
       *type = Type::ArrayStart;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (c == ']')
+    else if (JSON_STRUCT_LIKELY(c == ']'))
     {
       *type = Type::ArrayEnd;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (lc & (Internal::PlusOrMinus | Internal::Digits))
+    else if (JSON_STRUCT_LIKELY(lc & (Internal::PlusOrMinus | Internal::Digits)))
     {
       *type = Type::Number;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (lc & Internal::AsciiLetters)
+    else if (JSON_STRUCT_LIKELY(lc & Internal::AsciiLetters))
     {
       *type = Type::Ascii;
       *chars_ahead = current_pos - cursor_index;
       return Error::NoError;
     }
-    else if (lc == 0)
+    else if (JSON_STRUCT_UNLIKELY(lc == 0))
     {
       *chars_ahead = current_pos - cursor_index;
       return Error::EncounteredIllegalChar;
@@ -1789,13 +1855,32 @@ inline Error Tokenizer::findStartOfNextValue(Type *type, const DataRef &json_dat
 
 inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ahead)
 {
-  if (container_stack.empty())
+  if (JSON_STRUCT_UNLIKELY(container_stack.empty()))
     return Error::IllegalPropertyType;
-  for (size_t end = cursor_index; end < json_data.size; end++)
+
+  // Skip whitespace using SIMD if available
+  size_t end = cursor_index;
+#ifdef JSON_STRUCT_HAS_NEON
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceNEON(
+      json_data.data + end,
+      json_data.size - end);
+    end += ws_skipped;
+  }
+#elif defined(JSON_STRUCT_HAS_SSE2)
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceSIMD(
+      json_data.data + end,
+      json_data.size - end);
+    end += ws_skipped;
+  }
+#endif
+
+  for (; end < json_data.size; end++)
   {
     const char c = json_data.data[end];
 
-    if (allow_comments && c == '/' && end + 1 < json_data.size && json_data.data[end + 1] == '/')
+    if (JSON_STRUCT_UNLIKELY(allow_comments && c == '/' && end + 1 < json_data.size && json_data.data[end + 1] == '/'))
     {
       cursor_index = end + 2;
       size_t comment_skip;
@@ -1808,31 +1893,34 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
       continue;
     }
 
-    if (c == ':')
+    // Cache container type to avoid multiple back() calls
+    Type container_type = container_stack.back();
+
+    if (JSON_STRUCT_LIKELY(c == ':'))
     {
-      if (container_stack.back() != Type::ObjectStart)
+      if (JSON_STRUCT_UNLIKELY(container_type != Type::ObjectStart))
         return Error::ExpectedDelimiter;
       token_state = InTokenState::FindingData;
       *chars_ahead = end + 1 - cursor_index;
       return Error::NoError;
     }
-    else if (c == ',')
+    else if (JSON_STRUCT_LIKELY(c == ','))
     {
-      if (container_stack.back() != Type::ArrayStart)
+      if (JSON_STRUCT_UNLIKELY(container_type != Type::ArrayStart))
         return Error::ExpectedDelimiter;
       token_state = InTokenState::FindingName;
       *chars_ahead = end + 1 - cursor_index;
       return Error::NoError;
     }
-    else if (c == ']')
+    else if (JSON_STRUCT_LIKELY(c == ']'))
     {
-      if (container_stack.back() != Type::ArrayStart)
+      if (JSON_STRUCT_UNLIKELY(container_type != Type::ArrayStart))
         return Error::ExpectedDelimiter;
       token_state = InTokenState::FindingName;
       *chars_ahead = end - cursor_index;
       return Error::NoError;
     }
-    else if (!(Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull))
+    else if (JSON_STRUCT_LIKELY(!(Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull)))
     {
       return Error::ExpectedDelimiter;
     }
@@ -1842,13 +1930,32 @@ inline Error Tokenizer::findDelimiter(const DataRef &json_data, size_t *chars_ah
 
 inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahead)
 {
-  if (container_stack.empty())
+  if (JSON_STRUCT_UNLIKELY(container_stack.empty()))
     return Error::NoError;
-  for (size_t end = cursor_index; end < json_data.size; end++)
+
+  // Skip whitespace using SIMD if available
+  size_t end = cursor_index;
+#ifdef JSON_STRUCT_HAS_NEON
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceNEON(
+      json_data.data + end,
+      json_data.size - end);
+    end += ws_skipped;
+  }
+#elif defined(JSON_STRUCT_HAS_SSE2)
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16)) {
+    size_t ws_skipped = Internal::skipWhitespaceSIMD(
+      json_data.data + end,
+      json_data.size - end);
+    end += ws_skipped;
+  }
+#endif
+
+  for (; end < json_data.size; end++)
   {
     const char c = json_data.data[end];
 
-    if (allow_comments && c == '/' && end + 1 < json_data.size && json_data.data[end + 1] == '/')
+    if (JSON_STRUCT_UNLIKELY(allow_comments && c == '/' && end + 1 < json_data.size && json_data.data[end + 1] == '/'))
     {
       cursor_index = end + 2;
       size_t comment_skip;
@@ -1861,18 +1968,18 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
       continue;
     }
 
-    if (c == ',')
+    if (JSON_STRUCT_LIKELY(c == ','))
     {
       expecting_prop_or_annonymous_data = true;
       *chars_ahead = end + 1 - cursor_index;
       return Error::NoError;
     }
-    else if (c == ']' || c == '}')
+    else if (JSON_STRUCT_LIKELY(c == ']' || c == '}'))
     {
       *chars_ahead = end - cursor_index;
       return Error::NoError;
     }
-    else if (c == '\n')
+    else if (JSON_STRUCT_UNLIKELY(c == '\n'))
     {
       if (allow_new_lines)
       {
@@ -1880,7 +1987,7 @@ inline Error Tokenizer::findTokenEnd(const DataRef &json_data, size_t *chars_ahe
         return Error::NoError;
       }
     }
-    else if (Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull)
+    else if (JSON_STRUCT_LIKELY(Internal::lookup()[(unsigned char)c] & Internal::WhiteSpaceOrNull))
     {
       continue;
     }
@@ -1941,15 +2048,16 @@ inline void Tokenizer::requestMoreData()
 
 inline void Tokenizer::releaseFirstDataRef()
 {
-  if (data_list.empty())
+  if (JSON_STRUCT_UNLIKELY(data_list.empty()))
     return;
 
   const DataRef &json_data = data_list.front();
 
+  // Optimize string operations: append directly instead of creating temporary
   for (auto &copy_pair : copy_buffers)
   {
-    std::string data(json_data.data + copy_pair.first, json_data.size - copy_pair.first);
-    *copy_pair.second += data;
+    size_t copy_size = json_data.size - copy_pair.first;
+    copy_pair.second->append(json_data.data + copy_pair.first, copy_size);
     copy_pair.first = 0;
   }
 
