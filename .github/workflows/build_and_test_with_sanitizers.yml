@@ -1,45 +1,108 @@
 name: Build and Test with Clang sanitizers
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/json_struct-sanitizer
 
 jobs:
-  build-and-push-docker-image:
-    runs-on: ubuntu-latest
+  docker:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
     outputs:
-      imageTag: ${{ steps.docker-build.outputs.imageTag }}
+      image: ${{ steps.tag.outputs.image }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Build and Push Docker Image
-        id: docker-build
-        uses: ./.github/actions/docker-build-action
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag from Dockerfile
+        id: tag
+        run: |
+          tag="sha-$(sha256sum docker/ubuntu/Dockerfile | cut -c1-16)"
+          echo "image=${REGISTRY}/${IMAGE_NAME}:${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          imageName: json_struct_sanitizer_docker:4
-          dockerFile: docker/archlinux/Dockerfile
-          user: ${{ github.actor }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if image already exists
+        id: check
+        run: |
+          if docker manifest inspect "${{ steps.tag.outputs.image }}" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push image
+        if: steps.check.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/ubuntu
+          file: docker/ubuntu/Dockerfile
+          push: true
+          tags: ${{ steps.tag.outputs.image }}
+
   test-address-sanitizer:
-    runs-on: ubuntu-latest
-    needs: build-and-push-docker-image
-    container: ${{ needs.build-and-push-docker-image.outputs.imageTag }}
+    needs: docker
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.docker.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # The sanitizers disable ASLR via personality(ADDR_NO_RANDOMIZE) at startup
+      # (e.g. when catch_discover_tests runs the freshly built test binary). The
+      # default Docker seccomp profile blocks that syscall, which aborts MSan with
+      # a "CHECK failed: msan_linux.cpp" error, so relax it for these jobs.
+      options: --security-opt seccomp=unconfined
     steps:
-    - uses: actions/checkout@v2
-    - name: Run AddressSanitizer
-      run: |
-        mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined" -GNinja ..
-        ninja
-        ctest .
+      - uses: actions/checkout@v4
+
+      - name: Run AddressSanitizer + UndefinedBehaviorSanitizer
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build build
+          ctest --test-dir build --output-on-failure
 
   test-memory-sanitizer:
-    runs-on: ubuntu-latest
-    needs: build-and-push-docker-image
-    container: ${{ needs.build-and-push-docker-image.outputs.imageTag }}
+    needs: docker
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.docker.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # The sanitizers disable ASLR via personality(ADDR_NO_RANDOMIZE) at startup
+      # (e.g. when catch_discover_tests runs the freshly built test binary). The
+      # default Docker seccomp profile blocks that syscall, which aborts MSan with
+      # a "CHECK failed: msan_linux.cpp" error, so relax it for these jobs.
+      options: --security-opt seccomp=unconfined
     steps:
-    - uses: actions/checkout@v2
-    - name: Run MemorySanitizer
-      run: |
-        mkdir build && cd build
-        cmake -DCMAKE_CXX_FLAGS="$MSAN_CFLAGS" -DCMAKE_EXE_LINKER_FLAGS="$MSAN_LFLAGS" -DCMAKE_BUILD_TYPE=Debug -GNinja ..
-        ninja
-        ctest .
+      - uses: actions/checkout@v4
+
+      - name: Run MemorySanitizer
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="$MSAN_CFLAGS" \
+            -DCMAKE_EXE_LINKER_FLAGS="$MSAN_LFLAGS"
+          cmake --build build
+          ctest --test-dir build --output-on-failure
