@@ -8400,11 +8400,28 @@ inline bool float_mantissa_is_even(float g)
   return (b & 1) == 0;
 }
 
+// Clang builds compiled with -ffast-math (see the zero-value-test-fp-fast test
+// target) enable -Wnan-infinity-disabled and reject the isnan/isinf/infinity()
+// uses below. Those checks are intentional: json_struct keeps detecting and
+// handling non-finite values so the emitted JSON stays valid even in fast-math
+// builds. Suppress the warning locally (guarded against older clang that does
+// not know the option).
+#if defined(__clang__)
+#define JS_FP_NONFINITE_DIAG_PUSH                                                                                      \
+  _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wunknown-warning-option\"")                    \
+    _Pragma("clang diagnostic ignored \"-Wnan-infinity-disabled\"")
+#define JS_FP_NONFINITE_DIAG_POP _Pragma("clang diagnostic pop")
+#else
+#define JS_FP_NONFINITE_DIAG_PUSH
+#define JS_FP_NONFINITE_DIAG_POP
+#endif
+
 inline float correctly_round_float(const char *str, size_t size, double d, float f)
 {
   if (f != f || f == 0.0f)
     return f;
   float af = f < 0.0f ? -f : f;
+  JS_FP_NONFINITE_DIAG_PUSH
   if (!std::isfinite(af))
     return f;
   double ad = d < 0.0 ? -d : d;
@@ -8412,6 +8429,7 @@ inline float correctly_round_float(const char *str, size_t size, double d, float
   float dn = std::nextafter(af, 0.0f);
   bool have_up = up > af && std::isfinite(up);
   double ulp_d = std::nextafter(ad, std::numeric_limits<double>::infinity()) - ad;
+  JS_FP_NONFINITE_DIAG_POP
   bool near_hi = have_up && std::fabs(ad - 0.5 * (double(af) + double(up))) <= 4.0 * ulp_d;
   bool near_lo = std::fabs(ad - 0.5 * (double(dn) + double(af))) <= 4.0 * ulp_d;
   if (!near_hi && !near_lo)
@@ -8551,6 +8569,7 @@ struct TypeHandler<double>
 
   static inline void from(const double &d, Token &token, Serializer &serializer)
   {
+    JS_FP_NONFINITE_DIAG_PUSH
     if (std::isnan(d) || std::isinf(d))
     {
       // JSON has no NaN/Infinity literal; emit null so the output stays valid JSON
@@ -8561,6 +8580,7 @@ struct TypeHandler<double>
       serializer.write(token);
       return;
     }
+    JS_FP_NONFINITE_DIAG_POP
     // char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
     char buf[32];
     int size;
@@ -8594,6 +8614,7 @@ struct TypeHandler<float>
 
   static inline void from(const float &f, Token &token, Serializer &serializer)
   {
+    JS_FP_NONFINITE_DIAG_PUSH
     if (std::isnan(f) || std::isinf(f))
     {
       // JSON has no NaN/Infinity literal; emit null so the output stays valid JSON.
@@ -8603,6 +8624,7 @@ struct TypeHandler<float>
       serializer.write(token);
       return;
     }
+    JS_FP_NONFINITE_DIAG_POP
     char buf[16];
     int size;
     size = Internal::ft::ryu::to_buffer(f, buf, sizeof(buf));
@@ -8617,6 +8639,9 @@ struct TypeHandler<float>
     serializer.write(token);
   }
 };
+
+#undef JS_FP_NONFINITE_DIAG_PUSH
+#undef JS_FP_NONFINITE_DIAG_POP
 
 /// \private
 template <typename T>
