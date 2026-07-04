@@ -4556,8 +4556,6 @@ static bool skipArrayOrObject(ParseContext &context)
 template <typename T>
 JS_NODISCARD inline Error ParseContext::parseTo(T &to_type)
 {
-  missing_members.reserve(10);
-  unassigned_required_members.reserve(10);
   error = tokenizer.nextToken(token);
   if (error != JS::Error::NoError)
     return error;
@@ -5677,7 +5675,11 @@ inline Error TypeHandler<T, Enable>::to(T &to_type, ParseContext &context)
     {
 
       if (context.track_member_assignement_state)
+      {
+        if (context.missing_members.empty())
+          context.missing_members.reserve(16);
         context.missing_members.emplace_back(token_name.data, token_name.data + token_name.size);
+      }
       if (context.allow_missing_members)
       {
         Internal::skipArrayOrObject(context);
@@ -8818,10 +8820,11 @@ struct TypeHandler<std::vector<T, A>>
     if (error != JS::Error::NoError)
       return error;
     to_type.clear();
-    to_type.reserve(10);
+    if (context.token.value_type != JS::Type::ArrayEnd)
+      to_type.reserve(10);
     while (context.token.value_type != JS::Type::ArrayEnd)
     {
-      to_type.push_back(T());
+      to_type.emplace_back();
       error = TypeHandler<T>::to(to_type.back(), context);
       if (error != JS::Error::NoError)
         break;
