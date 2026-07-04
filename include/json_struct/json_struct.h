@@ -1922,6 +1922,14 @@ JSON_STRUCT_FORCE_INLINE void Tokenizer::resetForNewValue()
 
 JSON_STRUCT_FORCE_INLINE Error Tokenizer::findStringEnd(const DataRef &json_data, size_t *chars_ahead)
 {
+#if defined(JSON_STRUCT_HAS_AVX2) || defined(JSON_STRUCT_HAS_NEON) || defined(JSON_STRUCT_HAS_SSE2)
+  // The SIMD scan below mutates is_escaped across the whole remaining buffer. When
+  // it does not find the closing quote we fall through to the scalar scan starting
+  // again from cursor_index, which must re-derive escape state from the ORIGINAL
+  // value -- re-running the state machine from the SIMD end-state would flip escape
+  // parity for a string crossing a streaming buffer boundary. Snapshot and restore.
+  const bool escaped_before_simd = is_escaped;
+#endif
 #ifdef JSON_STRUCT_HAS_AVX2
   if (JSON_STRUCT_LIKELY(json_data.size - cursor_index >= 32))
   {
@@ -1956,6 +1964,12 @@ JSON_STRUCT_FORCE_INLINE Error Tokenizer::findStringEnd(const DataRef &json_data
       return Error::NoError;
     }
   }
+#endif
+
+#if defined(JSON_STRUCT_HAS_AVX2) || defined(JSON_STRUCT_HAS_NEON) || defined(JSON_STRUCT_HAS_SSE2)
+  // Restore the escape state to what it was before the SIMD scan re-mutated it, so
+  // the scalar fallback re-derives it correctly from cursor_index.
+  is_escaped = escaped_before_simd;
 #endif
 
   size_t end = cursor_index;

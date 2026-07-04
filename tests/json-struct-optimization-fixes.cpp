@@ -134,6 +134,42 @@ struct MultiInt
   JS_OBJ(a, b, c);
 };
 
+TEST_CASE("streaming_escape_parity_across_buffer_boundary", "[tokenizer]")
+{
+  // A string value whose escaped quote (\") straddles a buffer boundary: the
+  // first buffer ends on the backslash (is_escaped carried over), the second
+  // buffer starts with the escaped quote and is long enough (>=16 bytes) to hit
+  // the SIMD scan with no real closing quote. Previously the SIMD scan left
+  // is_escaped in its end-of-buffer state and the scalar fallback re-scanned from
+  // the start with the wrong parity, treating the escaped quote as the terminator.
+  const char BS = static_cast<char>(0x5c); // backslash
+
+  std::string b1 = std::string("[\"aaaaaaaa") + BS; // '[' '"' 8*a '\'
+  // >= 32 bytes so both the AVX2 (>=32) and SSE2 (>=16) SIMD scans engage.
+  std::string b2 = std::string("\"") + std::string(40, 'b'); // escaped quote + 40*b, no real quote
+  std::string b3 = std::string("\"]");                       // real closing quote + ']'
+
+  JS::Tokenizer tok;
+  tok.addData(b1.data(), b1.size());
+  tok.addData(b2.data(), b2.size());
+  tok.addData(b3.data(), b3.size());
+
+  JS::Token token;
+  REQUIRE(tok.nextToken(token) == JS::Error::NoError);
+  REQUIRE(token.value_type == JS::Type::ArrayStart);
+
+  JS::Error e = tok.nextToken(token);
+  REQUIRE(e == JS::Error::NoError);
+  REQUIRE(token.value_type == JS::Type::String);
+  // The raw token value keeps the escape sequences; the escaped quote must be
+  // part of the string, not a premature terminator.
+  std::string expected = std::string("aaaaaaaa") + BS + '"' + std::string(40, 'b');
+  REQUIRE(std::string(token.value.data, token.value.size) == expected);
+
+  REQUIRE(tok.nextToken(token) == JS::Error::NoError);
+  REQUIRE(token.value_type == JS::Type::ArrayEnd);
+}
+
 struct NestChild
 {
   int a = 0;
