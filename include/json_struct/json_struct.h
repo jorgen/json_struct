@@ -5881,60 +5881,112 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
   }
 }
 
+// Returns the offset of the first character in [data, data+len) that needs
+// JSON string escaping (byte <= 0x0d, '"', or '\\'), or len if none. The clean
+// (no-escape) run is by far the common case, so scan it with SIMD when possible.
+static JSON_STRUCT_FORCE_INLINE size_t findFirstEscapeOut(const char *JSON_STRUCT_RESTRICT data, size_t len)
+{
+  size_t i = 0;
+#if defined(JSON_STRUCT_HAS_AVX2)
+  {
+    const __m256i vquote = _mm256_set1_epi8('"');
+    const __m256i vbackslash = _mm256_set1_epi8('\\');
+    const __m256i vctrl = _mm256_set1_epi8(0x0d);
+    for (; i + 32 <= len; i += 32)
+    {
+      __m256i chunk = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(data + i));
+      __m256i le_ctrl = _mm256_cmpeq_epi8(_mm256_min_epu8(chunk, vctrl), chunk);
+      __m256i is_q = _mm256_cmpeq_epi8(chunk, vquote);
+      __m256i is_b = _mm256_cmpeq_epi8(chunk, vbackslash);
+      __m256i sp = _mm256_or_si256(_mm256_or_si256(le_ctrl, is_q), is_b);
+      int mask = _mm256_movemask_epi8(sp);
+      if (mask != 0)
+        return i + bit_scan_forward((unsigned int)mask);
+    }
+  }
+#elif defined(JSON_STRUCT_HAS_SSE2)
+  {
+    const __m128i vquote = _mm_set1_epi8('"');
+    const __m128i vbackslash = _mm_set1_epi8('\\');
+    const __m128i vctrl = _mm_set1_epi8(0x0d);
+    for (; i + 16 <= len; i += 16)
+    {
+      __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i *>(data + i));
+      __m128i le_ctrl = _mm_cmpeq_epi8(_mm_min_epu8(chunk, vctrl), chunk);
+      __m128i is_q = _mm_cmpeq_epi8(chunk, vquote);
+      __m128i is_b = _mm_cmpeq_epi8(chunk, vbackslash);
+      __m128i sp = _mm_or_si128(_mm_or_si128(le_ctrl, is_q), is_b);
+      int mask = _mm_movemask_epi8(sp);
+      if (mask != 0)
+        return i + bit_scan_forward((unsigned int)mask);
+    }
+  }
+#endif
+  for (; i < len; i++)
+  {
+    unsigned char c = static_cast<unsigned char>(data[i]);
+    if (c <= 0x0d || c == '"' || c == '\\')
+      return i;
+  }
+  return len;
+}
+
 static DataRef handle_json_escapes_out(const std::string &data, std::string &buffer)
 {
-  int start_index = 0;
-  for (size_t i = 0; i < data.size(); i++)
+  const char *d = data.data();
+  const size_t n = data.size();
+  size_t start_index = 0;
+  size_t i = 0;
+  while (i < n)
   {
-    const char cur = data[i];
-    if (static_cast<uint8_t>(cur) <= uint8_t('\r') || cur == '\"' || cur == '\\')
+    i += findFirstEscapeOut(d + i, n - i);
+    if (i >= n)
+      break;
+    const char cur = d[i];
+    if (buffer.empty())
     {
-      if (buffer.empty())
-      {
-        buffer.reserve(data.size() + 10);
-      }
-      size_t diff = i - start_index;
-      if (diff > 0)
-      {
-        buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
-      }
-      start_index = int(i) + 1;
-
-      switch (cur)
-      {
-      case '\b':
-        buffer += std::string("\\b");
-        break;
-      case '\t':
-        buffer += std::string("\\t");
-        break;
-      case '\n':
-        buffer += std::string("\\n");
-        break;
-      case '\f':
-        buffer += std::string("\\f");
-        break;
-      case '\r':
-        buffer += std::string("\\r");
-        break;
-      case '\"':
-        buffer += std::string("\\\"");
-        break;
-      case '\\':
-        buffer += std::string("\\\\");
-        break;
-      default:
-        buffer.push_back(cur);
-        break;
-      }
+      buffer.reserve(n + 10);
     }
+    if (i > start_index)
+    {
+      buffer.insert(buffer.end(), d + start_index, d + i);
+    }
+    start_index = i + 1;
+
+    switch (cur)
+    {
+    case '\b':
+      buffer.append("\\b", 2);
+      break;
+    case '\t':
+      buffer.append("\\t", 2);
+      break;
+    case '\n':
+      buffer.append("\\n", 2);
+      break;
+    case '\f':
+      buffer.append("\\f", 2);
+      break;
+    case '\r':
+      buffer.append("\\r", 2);
+      break;
+    case '\"':
+      buffer.append("\\\"", 2);
+      break;
+    case '\\':
+      buffer.append("\\\\", 2);
+      break;
+    default:
+      buffer.push_back(cur);
+      break;
+    }
+    i++;
   }
   if (buffer.size())
   {
-    size_t diff = data.size() - start_index;
-    if (diff > 0)
+    if (n > start_index)
     {
-      buffer.insert(buffer.end(), data.data() + start_index, data.data() + start_index + diff);
+      buffer.insert(buffer.end(), d + start_index, d + n);
     }
     return DataRef(buffer.data(), buffer.size());
   }
