@@ -17,8 +17,8 @@ RUN CLANG_VERSION=$(clang --version | head -n1 | sed 's/.*version \([0-9.]*\).*/
       -DLIBCXX_CXX_ABI=libcxxabi \
       -DLIBCXXABI_LIBCXX_INCLUDES=ON \
       -DCMAKE_INSTALL_PREFIX=/opt && \
-    ninja -C build cxx cxxabi && \
-    ninja -C build install-cxx install-cxxabi
+    ninja -C build unwind cxx cxxabi && \
+    ninja -C build install-unwind install-cxx install-cxxabi
 
 ENV MSAN_CFLAGS="-std=c++20 -fsanitize=memory -nostdinc++ -I/opt/include -I/opt/include/c++/v1"
 ENV MSAN_LFLAGS="-fsanitize=memory -stdlib=libc++ -L/opt/lib -lc++abi -Wl,-rpath,/opt/lib"
