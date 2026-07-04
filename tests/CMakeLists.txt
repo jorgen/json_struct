@@ -57,6 +57,8 @@ set(unit_test_sources
                            json-struct-nested.cpp
                            json-struct-map-typehandler.cpp
                            json-tokenizer-invalid-json.cpp
+                           json-struct-unicode-escape.cpp
+                           json-struct-optimization-fixes.cpp
                            )
 
 add_executable(unit-tests ${unit_test_sources})

@@ -2004,6 +2004,10 @@ JSON_STRUCT_FORCE_INLINE Error Tokenizer::findAsciiEnd(const DataRef &json_data,
     if (consumed < json_data.size - cursor_index)
     {
       *chars_ahead = consumed;
+      // Match the scalar path: an ascii token terminated by an embedded NUL is
+      // treated as incomplete (NeedMoreData), not finalized.
+      if (json_data.data[cursor_index + consumed] == '\0')
+        return Error::NeedMoreData;
       return Error::NoError;
     }
     end = cursor_index + consumed;
@@ -2016,6 +2020,10 @@ JSON_STRUCT_FORCE_INLINE Error Tokenizer::findAsciiEnd(const DataRef &json_data,
     if (consumed < json_data.size - cursor_index)
     {
       *chars_ahead = consumed;
+      // Match the scalar path: an ascii token terminated by an embedded NUL is
+      // treated as incomplete (NeedMoreData), not finalized.
+      if (json_data.data[cursor_index + consumed] == '\0')
+        return Error::NeedMoreData;
       return Error::NoError;
     }
     end = cursor_index + consumed;
@@ -2329,19 +2337,19 @@ JSON_STRUCT_FORCE_INLINE Error Tokenizer::findTokenEnd(const DataRef &json_data,
   // Skip whitespace using SIMD if available
   size_t end = cursor_index;
 #ifdef JSON_STRUCT_HAS_AVX2
-  if (JSON_STRUCT_LIKELY(json_data.size - end >= 32 && !allow_ascii_properties))
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 32 && !allow_new_lines && !allow_ascii_properties))
   {
     size_t ws_skipped = Internal::skipWhitespaceAVX2(json_data.data + end, json_data.size - end);
     end += ws_skipped;
   }
 #elif defined(JSON_STRUCT_HAS_NEON)
-  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16 && !allow_ascii_properties))
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16 && !allow_new_lines && !allow_ascii_properties))
   {
     size_t ws_skipped = Internal::skipWhitespaceNEON(json_data.data + end, json_data.size - end);
     end += ws_skipped;
   }
 #elif defined(JSON_STRUCT_HAS_SSE2)
-  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16 && !allow_ascii_properties))
+  if (JSON_STRUCT_LIKELY(json_data.size - end >= 16 && !allow_new_lines && !allow_ascii_properties))
   {
     size_t ws_skipped = Internal::skipWhitespaceSIMD(json_data.data + end, json_data.size - end);
     end += ws_skipped;
@@ -3212,7 +3220,22 @@ inline bool Serializer::write(const Token &in_token)
   bool shortcut_front = false;
   if (m_option.shiftSize() == 2 && !m_first)
   {
-    if (!m_token_start && !isEnd)
+    if (!m_token_start && !isEnd && m_option.tokenDelimiter().empty())
+    {
+      // skipDelimiter()/empty token delimiter: emit newline+indent WITHOUT the
+      // leading comma, matching the generic (non-shortcut) path.
+      if (m_option.depth() == 1)
+        shortcut_front = write(begining_literals.get<0>());
+      else if (m_option.depth() == 2)
+        shortcut_front = write(begining_literals.get<1>());
+      else if (m_option.depth() == 3)
+        shortcut_front = write(begining_literals.get<2>());
+      else if (m_option.depth() == 4)
+        shortcut_front = write(begining_literals.get<3>());
+      else if (m_option.depth() == 5)
+        shortcut_front = write(begining_literals.get<4>());
+    }
+    else if (!m_token_start && !isEnd)
     {
       if (m_option.depth() == 1)
         shortcut_front = write(begining_literals.get<5>());
@@ -5815,8 +5838,11 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
     }
     to_type.insert(to_type.end(), it, next_it);
     size -= next_it - it;
-    if (!size)
+    if (size < 2)
     {
+      // A lone trailing backslash cannot begin a valid escape; drop it instead
+      // of underflowing size_t on the "size -= 2" below (which would turn the
+      // next memchr into an out-of-bounds read).
       break;
     }
     size -= 2;
@@ -5842,26 +5868,67 @@ static void handle_json_escapes_in(const DataRef &ref, std::string &to_type)
       }
       if (ok)
       {
-        if (hex[0] || hex[1] & 0x08)
+        unsigned int cp = (static_cast<unsigned int>(hex[0]) << 12) | (static_cast<unsigned int>(hex[1]) << 8) |
+                          (static_cast<unsigned int>(hex[2]) << 4) | static_cast<unsigned int>(hex[3]);
+        size_t hex_consumed = 4; // hex digits after the leading "\u"
+
+        // UTF-16 surrogate pair: a high surrogate (0xD800..0xDBFF) followed by
+        // "\uXXXX" with a low surrogate (0xDC00..0xDFFF) encodes one code point
+        // in the astral range. size still counts the bytes from next_it+2, of
+        // which 4 are the current hex digits, so a trailing "\uXXXX" needs 6 more.
+        if (cp >= 0xD800 && cp <= 0xDBFF && size >= 10 && next_it[6] == '\\' && next_it[7] == 'u')
         {
-          // code points: 0x0800 .. 0xffff
-          to_type.push_back(0xd0 | hex[0]);
-          to_type.push_back(0x80 | (hex[1] << 2) | ((hex[2] & 0x0c) >> 2));
-          to_type.push_back(0x80 | ((hex[2] & 0x03) << 4) | hex[3]);
+          unsigned char lo[4];
+          bool lo_ok = true;
+          for (int k = 0; lo_ok && k < 4; k++)
+          {
+            const char d = *(next_it + 8 + k);
+            if (d >= '0' && d <= '9')
+              lo[k] = (d - '0');
+            else if (d >= 'A' && d <= 'F')
+              lo[k] = (d - 'A') + 10;
+            else if (d >= 'a' && d <= 'f')
+              lo[k] = (d - 'a') + 10;
+            else
+              lo_ok = false;
+          }
+          unsigned int lo_cp = (static_cast<unsigned int>(lo[0]) << 12) | (static_cast<unsigned int>(lo[1]) << 8) |
+                               (static_cast<unsigned int>(lo[2]) << 4) | static_cast<unsigned int>(lo[3]);
+          if (lo_ok && lo_cp >= 0xDC00 && lo_cp <= 0xDFFF)
+          {
+            cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo_cp - 0xDC00u);
+            hex_consumed = 10; // 4 high hex + "\u" + 4 low hex
+          }
         }
-        else if (hex[1] || hex[2] & 0x08)
+
+        if (cp >= 0x10000u)
         {
-          // code points: 0x0080 .. 0x07ff
-          to_type.push_back(0xc0 | (hex[1] << 2) | ((hex[2] & 0x0c) >> 2));
-          to_type.push_back(0x80 | ((hex[2] & 0x03) << 4) | hex[3]);
+          // code points: 0x10000 .. 0x10ffff (4-byte)
+          to_type.push_back(static_cast<char>(0xf0 | (cp >> 18)));
+          to_type.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3f)));
+          to_type.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3f)));
+          to_type.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
+        }
+        else if (cp >= 0x0800u)
+        {
+          // code points: 0x0800 .. 0xffff (3-byte)
+          to_type.push_back(static_cast<char>(0xe0 | (cp >> 12)));
+          to_type.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3f)));
+          to_type.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
+        }
+        else if (cp >= 0x0080u)
+        {
+          // code points: 0x0080 .. 0x07ff (2-byte)
+          to_type.push_back(static_cast<char>(0xc0 | (cp >> 6)));
+          to_type.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
         }
         else
         {
-          // code points: 0x0000 .. 0x007f
-          to_type.push_back((hex[2] << 4) | hex[3]);
+          // code points: 0x0000 .. 0x007f (1-byte)
+          to_type.push_back(static_cast<char>(cp));
         }
-        it = next_it + 6; // advance past hex digits
-        size -= 4;
+        it = next_it + 2 + hex_consumed; // advance past "\u" and hex digits
+        size -= hex_consumed;
       }
       else
       {
@@ -8455,6 +8522,16 @@ struct TypeHandler<double>
 
   static inline void from(const double &d, Token &token, Serializer &serializer)
   {
+    if (std::isnan(d) || std::isinf(d))
+    {
+      // JSON has no NaN/Infinity literal; emit null so the output stays valid JSON
+      // instead of the bare "nan"/"inf" text ft::ryu produces.
+      static const char nullChar[] = "null";
+      token.value_type = Type::Null;
+      token.value = DataRef(nullChar);
+      serializer.write(token);
+      return;
+    }
     // char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
     char buf[32];
     int size;
@@ -8488,6 +8565,15 @@ struct TypeHandler<float>
 
   static inline void from(const float &f, Token &token, Serializer &serializer)
   {
+    if (std::isnan(f) || std::isinf(f))
+    {
+      // JSON has no NaN/Infinity literal; emit null so the output stays valid JSON.
+      static const char nullChar[] = "null";
+      token.value_type = Type::Null;
+      token.value = DataRef(nullChar);
+      serializer.write(token);
+      return;
+    }
     char buf[16];
     int size;
     size = Internal::ft::ryu::to_buffer(f, buf, sizeof(buf));
@@ -8512,7 +8598,8 @@ struct TypeHandlerIntType
     const char *pointer;
     auto parse_error =
       Internal::ft::integer::to_integer(context.token.value.data, context.token.value.size, to_type, pointer);
-    if (parse_error != Internal::ft::parse_string_error::ok || context.token.value.data == pointer)
+    if (parse_error != Internal::ft::parse_string_error::ok ||
+        pointer != context.token.value.data + context.token.value.size)
       return Error::FailedToParseInt;
     return Error::NoError;
   }
@@ -8926,7 +9013,7 @@ public:
     while (context.token.value_type != JS::Type::ArrayEnd)
     {
 
-      bool toBool;
+      bool toBool = false; // TypeHandler<bool>::to leaves this unwritten on parse failure
       error = TypeHandler<bool>::to(toBool, context);
       to_type.push_back(toBool);
       if (error != JS::Error::NoError)
