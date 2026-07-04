@@ -7497,7 +7497,8 @@ inline void compute_shortest(uint64_t a, uint64_t b, uint64_t c, bool accept_sma
 static inline uint64_t umul128(uint64_t a, uint64_t b, uint64_t *hi)
 {
 #if defined(__SIZEOF_INT128__) && !defined(FT_NO_INT128)
-  unsigned __int128 p = (unsigned __int128)a * (unsigned __int128)b;
+  __extension__ typedef unsigned __int128 js_umul128_u128;
+  js_umul128_u128 p = (js_umul128_u128)a * (js_umul128_u128)b;
   *hi = uint64_t(p >> 64);
   return uint64_t(p);
 #elif defined(_MSC_VER) && defined(_WIN64)
