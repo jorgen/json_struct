@@ -1300,6 +1300,7 @@ enum class Error : unsigned char
   ScopeHasEnded,
   KeyNotFound,
   DuplicateInSet,
+  UnknownPropertyMember,
   UnknownError,
   UserDefinedErrors
 };
@@ -1868,6 +1869,7 @@ static const char *error_strings[] = {
   "ScopeHasEnded",
   "KeyNotFound",
   "DuplicateInSet",
+  "UnknownPropertyMember",
   "UnknownError",
   "UserDefinedErrors",
 };
@@ -4238,6 +4240,18 @@ struct NameChecker<NameTuple, 0>
   }
 };
 
+// Error::MissingPropertyMember doubles as the internal "this member name did not
+// match, keep scanning" sentinel. Once a member NAME has matched, the nested
+// parse must not be allowed to hand that sentinel back to the caller -- otherwise
+// the caller keeps scanning sibling members while the tokenizer is positioned
+// inside the half-parsed child (silent data corruption / desync in strict mode).
+// Remap a matched-member's MissingPropertyMember to the distinct
+// Error::UnknownPropertyMember so scanning stops and it propagates out.
+static JSON_STRUCT_FORCE_INLINE Error matchedMemberResult(Error nested)
+{
+  return nested == Error::MissingPropertyMember ? Error::UnknownPropertyMember : nested;
+}
+
 template <typename T, typename MI_T, typename MI_M, typename MI_NC>
 inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &memberInfo, ParseContext &context,
                           size_t index, bool primary, bool *assigned_members)
@@ -4247,7 +4261,7 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &membe
     if (compareDataRefWithStringLiteral(memberInfo.names.template get<0>(), context.token.name))
     {
       assigned_members[index] = true;
-      return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
+      return matchedMemberResult(TypeHandler<MI_T>::to(to_type.*memberInfo.member, context));
     }
   }
   else
@@ -4255,7 +4269,7 @@ inline Error unpackMember(T &to_type, const MemberInfo<MI_T, MI_M, MI_NC> &membe
     if (NameChecker<MI_NC, MI_NC::size>::compare(memberInfo.names, context.token.name))
     {
       assigned_members[index] = true;
-      return TypeHandler<MI_T>::to(to_type.*memberInfo.member, context);
+      return matchedMemberResult(TypeHandler<MI_T>::to(to_type.*memberInfo.member, context));
     }
   }
   return Error::MissingPropertyMember;

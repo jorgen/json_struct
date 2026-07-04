@@ -134,6 +134,52 @@ struct MultiInt
   JS_OBJ(a, b, c);
 };
 
+struct NestChild
+{
+  int a = 0;
+  JS_OBJ(a);
+};
+
+struct NestParent
+{
+  int collide = 0;
+  NestChild child;
+  JS_OBJ(collide, child);
+};
+
+TEST_CASE("nested_unknown_field_strict_stops_scanning", "[json_struct][error]")
+{
+  // The child object contains a field ("collide") that is unknown to NestChild
+  // but collides with a NestParent member name. In strict mode this previously
+  // made the parent resume scanning its own members against tokens inside the
+  // half-parsed child, silently assigning collide=99 and returning NoError.
+  static const char json_data[] = R"json({"child":{"a":1,"collide":99},"collide":7})json";
+
+  JS::ParseContext context(json_data);
+  context.allow_missing_members = false;
+  NestParent p;
+  auto error = context.parseTo(p);
+
+  // Must now report an error instead of silently corrupting data.
+  REQUIRE(error != JS::Error::NoError);
+  REQUIRE(p.collide != 99); // the stray child field must not leak into the parent
+}
+
+TEST_CASE("nested_unknown_field_allowed_by_default", "[json_struct][error]")
+{
+  // With the default allow_missing_members=true, an unknown nested field is
+  // simply skipped and parsing succeeds.
+  static const char json_data[] = R"json({"child":{"a":1,"extra":99},"collide":7})json";
+
+  JS::ParseContext context(json_data);
+  NestParent p;
+  auto error = context.parseTo(p);
+
+  REQUIRE(error == JS::Error::NoError);
+  REQUIRE(p.collide == 7);
+  REQUIRE(p.child.a == 1);
+}
+
 TEST_CASE("pretty_skip_delimiter_omits_comma", "[serializer]")
 {
   MultiInt m;
