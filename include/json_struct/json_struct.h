@@ -1079,19 +1079,9 @@ inline size_t skipWhitespaceAVX2(const char *JSON_STRUCT_RESTRICT data, size_t l
 
     int mask = _mm256_movemask_epi8(whitespace);
 
-    if (JSON_STRUCT_LIKELY(mask != 0xFFFFFFFF))
+    if (JSON_STRUCT_LIKELY(mask != int(0xFFFFFFFF)))
     {
-#ifdef JSON_STRUCT_HAS_BMI
-      int offset = _tzcnt_u32(~mask);
-#else
-      mask = ~mask;
-      int offset = 0;
-      while ((mask & 1) == 0)
-      {
-        mask >>= 1;
-        offset++;
-      }
-#endif
+      int offset = int(bit_scan_forward((unsigned int)(~mask)));
       current += offset;
       return current - data;
     }
@@ -1126,15 +1116,7 @@ inline size_t skipCommentAVX2(const char *JSON_STRUCT_RESTRICT data, size_t leng
 
     if (JSON_STRUCT_LIKELY(mask != 0))
     {
-#ifdef JSON_STRUCT_HAS_BMI
-      int offset = _tzcnt_u32(mask);
-#else
-      int offset = 0;
-      while ((mask & (1 << offset)) == 0)
-      {
-        offset++;
-      }
-#endif
+      int offset = int(bit_scan_forward((unsigned int)mask));
       current += offset;
       return current - data + 1;
     }
@@ -1172,15 +1154,7 @@ inline size_t findStringEndAVX2(const char *JSON_STRUCT_RESTRICT data, size_t le
     int mask = _mm256_movemask_epi8(combined_mask);
     if (JSON_STRUCT_LIKELY(mask != 0))
     {
-#ifdef JSON_STRUCT_HAS_BMI
-      int offset = _tzcnt_u32(mask);
-#else
-      int offset = 0;
-      while ((mask & (1 << offset)) == 0)
-      {
-        offset++;
-      }
-#endif
+      int offset = int(bit_scan_forward((unsigned int)mask));
       current += offset;
       break;
     }
@@ -1269,18 +1243,9 @@ inline size_t findAsciiEndAVX2(const char *JSON_STRUCT_RESTRICT data, size_t len
 
     int mask = _mm256_movemask_epi8(valid_chars);
 
-    if (JSON_STRUCT_LIKELY(mask != 0xFFFFFFFF))
+    if (JSON_STRUCT_LIKELY(mask != int(0xFFFFFFFF)))
     {
-#ifdef JSON_STRUCT_HAS_BMI
-      int offset = _tzcnt_u32(~mask);
-#else
-      mask = ~mask;
-      int offset = 0;
-      while ((mask & (1 << offset)) == 0)
-      {
-        offset++;
-      }
-#endif
+      int offset = int(bit_scan_forward((unsigned int)(~mask)));
       current += offset;
       return current - data;
     }
