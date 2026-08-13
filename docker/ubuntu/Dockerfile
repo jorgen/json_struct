@@ -11,6 +11,14 @@ ARG LLVM_VERSION=20
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+WORKDIR /
+
+RUN groupadd -r user && \
+    useradd -r -g user -m -d /home/user -s /bin/bash user
+
+USER user
+WORKDIR /user
+
 # Build tooling + clang/LLVM pinned from apt.llvm.org. g++ is installed so the
 # address/undefined jobs (which use clang with the default libstdc++) have the
 # standard library headers available.
