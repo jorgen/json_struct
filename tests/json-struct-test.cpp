@@ -118,7 +118,7 @@ struct JsonData1
             JS_MEMBER(subStruct2), JS_MEMBER(Field3), JS_MEMBER(NodeWithLiteral));
 };
 
-TEST_CASE("check_json_tree_nodes_json_struct")
+TEST_CASE("check_json_tree_nodes", "json_struct")
 {
   JS::ParseContext context(json_data1);
   JsonData1 data;
