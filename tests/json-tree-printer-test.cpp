@@ -40,7 +40,7 @@ static int check_json_tree_printer()
     check_json_tree_from_json_data2(root);
 
     JS::SerializerOptions printerOption(false);
-    char buffer[4096];
+    std::string buffer;
     memset(buffer,'\0', 4096);
     JS::TreeSerializer serializer(buffer,4096);
     assert(serializer.serialize(root->asObjectNode()));
@@ -71,7 +71,7 @@ static int check_json_tree_printer_pretty()
     check_json_tree_from_json_data2(root);
 
     JS::SerializerOptions printerOption(true);
-    char buffer[4096];
+    std::string buffer;
     memset(buffer,'\0', 4096);
     JS::TreeSerializer serializer(buffer,4096);
     assert(serializer.serialize(root->asObjectNode()));
@@ -102,17 +102,17 @@ static int check_multiple_print_buffers()
     JS::TreeSerializer serializer;
     serializer.setOptions(JS::SerializerOptions(true));
 
-    char buffer1[printed_size/2];
+    std::string buffer1;
     serializer.appendBuffer(buffer1, printed_size/2);
-    char buffer2[2];
+    std::string buffer2;
     serializer.appendBuffer(buffer2,2);
-    char buffer3[printed_size];
+    std::string buffer3;
     serializer.appendBuffer(buffer3,printed_size);
 
     assert(serializer.serialize(root->asObjectNode()));
 
     size_t complete_size = 0;
-    char target_buffer[4096];
+    std::string target_buffer;
     memset(target_buffer,'\0', 4096);
     auto buffers = serializer.buffers();
     for (auto it = buffers.begin(); it != buffers.end(); ++it) {
@@ -125,7 +125,7 @@ static int check_multiple_print_buffers()
 
     assert(complete_size == printed_size);
 
-    char valid_buffer[4096];
+    std::string valid_buffer;
     memset(valid_buffer,'\0', 4096);
     serializer = JS::TreeSerializer();
     serializer.setOptions(JS::SerializerOptions(true));
@@ -158,7 +158,7 @@ static int check_callback_print_buffers()
     assert(serializer.serialize(root->asObjectNode()));
 
     size_t complete_size = 0;
-    char target_buffer[4096];
+    std::string target_buffer;
     memset(target_buffer,'\0', 4096);
     auto buffers = serializer.buffers();
     for (auto it = buffers.begin(); it != buffers.end(); ++it) {
@@ -169,7 +169,7 @@ static int check_callback_print_buffers()
         }
     }
 
-    char valid_buffer[4096];
+    std::string valid_buffer;
     memset(valid_buffer,'\0', 4096);
     serializer = JS::TreeSerializer();
     serializer.setOptions(JS::SerializerOptions(true));
