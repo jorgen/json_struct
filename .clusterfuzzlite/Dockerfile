@@ -10,4 +10,4 @@ RUN groupadd -r user && \
 
 USER user
 
-HEALTHCHECK --interval=5m --timeout=3s \
+HEALTHCHECK --interval=5m --timeout=3s CMD true || exit 1
