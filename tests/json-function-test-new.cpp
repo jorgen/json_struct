@@ -76,6 +76,7 @@ struct CallFunction
   bool called_two = false;
   bool called_three = false;
 };
+} // namespace
 
 TEST_CASE("simpleFunctionTestShortNotation", "[function]")
 {
@@ -486,5 +487,3 @@ TEST_CASE("call_json_wrong_arg_typeShortNotation", "[function]")
   if (context.parse_context.error != JS::Error::NoError)
   REQUIRE(context.parse_context.error == JS::Error::NoError);
 }
-
-} // namespace
