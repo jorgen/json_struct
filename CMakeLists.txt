@@ -69,9 +69,9 @@ SYSTEM
 
 ### Tests
 if(JSON_STRUCT_OPT_BUILD_TESTS)
+  FetchContent_MakeAvailable(catch2)
   enable_testing()
   add_subdirectory(tests)
-  FetchContent_MakeAvailable(catch2)
 endif()
 
 ### Benchmarks
