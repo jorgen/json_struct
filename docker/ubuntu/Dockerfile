@@ -5,6 +5,12 @@
 # instead of a rolling distro toolchain, so compiler diagnostics and codegen do
 # not drift between image rebuilds (a rolling clang previously started rejecting
 # Catch2's __COUNTER__ under -Werror).
+#
+# Runs as root on purpose: this is a throwaway CI build image, not a service.
+# The apt and /opt installs need root, and GitHub Actions container jobs need
+# root to write to the mounted workspace.
+# checkov:skip=CKV_DOCKER_3:CI build image, root required
+# trivy:ignore:AVD-DS-0002
 FROM ubuntu:24.04
 
 ARG LLVM_VERSION=20
