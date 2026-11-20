@@ -124,6 +124,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <array>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -8584,7 +8585,7 @@ struct TypeHandler<double>
     }
     JS_FP_NONFINITE_DIAG_POP
     // char buf[1/*'-'*/ + (DBL_MAX_10_EXP+1)/*308+1 digits*/ + 1/*'.'*/ + 6/*Default? precision*/ + 1/*\0*/];
-    char buf[32];
+    std::array<char, 32> buf;
     int size;
     size = Internal::ft::ryu::to_buffer(d, buf, sizeof(buf));
 
@@ -8627,7 +8628,7 @@ struct TypeHandler<float>
       return;
     }
     JS_FP_NONFINITE_DIAG_POP
-    char buf[16];
+    std::array<char, 16> buf;
     int size;
     size = Internal::ft::ryu::to_buffer(f, buf, sizeof(buf));
     if (size < 0)
@@ -8662,7 +8663,7 @@ struct TypeHandlerIntType
 
   static inline void from(const T &from_type, Token &token, Serializer &serializer)
   {
-    char buf[40];
+    std::array<char, 40> buf;
     int digits_truncated;
     int size = Internal::ft::integer::to_buffer(from_type, buf, sizeof(buf), &digits_truncated);
     if (size <= 0 || digits_truncated)
